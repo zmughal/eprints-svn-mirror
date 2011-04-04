@@ -4,20 +4,25 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
-B<EPrints::List> - List of data objects, usually a L<EPrints::Search> result.
+B<EPrints::List> - List of data objects, usually a search result.
 
 =head1 SYNOPSIS
 
-	$list = $search->execute();
+	use EPrints::List;
+
+	$list = EPrints::List->new( session => $session, dataset => $dataset, ids => $ids); # ref to an array of ids to populate the list with
 
 	$new_list = $list->reorder( "-creation_date" ); # makes a new list ordered by reverse order creation_date
 
@@ -42,8 +47,6 @@ dataset. Usually this is the results of a search.
 
 =head1 SEE ALSO
 	L<EPrints::Search>
-
-=head1 METHODS
 
 =cut
 ######################################################################
@@ -88,23 +91,55 @@ package EPrints::List;
 
 use strict;
 
+######################################################################
 =pod
 
 =item $list = EPrints::List->new( 
-repository => $repository, 
-dataset => $dataset,
-ids => $ids, 
-[order => $order] ); 
+			session => $session,
+			dataset => $dataset,
+			[desc => $desc],
+			[desc_order => $desc_order],
+			ids => $ids,
+			[encoded => $encoded],
+			[keep_cache => $keep_cache],
+			[order => $order] );
 
 =item $list = EPrints::List->new( 
-repository => $repository, 
-dataset => $dataset,
-[desc => $desc],
-[desc_order => $desc_order],
-cache_id => $cache_id );
+			session => $session,
+			dataset => $dataset,
+			[desc => $desc],
+			[desc_order => $desc_order],
+			cache_id => $cache_id );
 
-Note the new() method will be called very rarely since lists will
-usually created by an L<EPrints::Search>.
+Creates a new list object in memory only. Lists will be
+cached if anything method requiring order is called, or an explicit 
+cache() method is called.
+
+encoded is the serialised version of the searchExpression which
+created this list, if there was one.
+
+If keep_cache is set then the cache will not be disposed of at the
+end of the current $session. If cache_id is set then keep_cache is
+automatically true.
+
+=cut
+######################################################################
+=pod
+
+=over 4
+
+=item $list = EPrints::List->new( 
+			session => $session,
+			dataset => $dataset,
+			ids => $ids, # a ref to the array of ids
+			[order => $order] ); # the field on which to order the list
+
+=item $list = EPrints::List->new( 
+			session => $session,
+			dataset => $dataset,
+			[desc => $desc],
+			[desc_order => $desc_order],
+			cache_id => $cache_id );
 
 Creates a new list object in memory only. Lists will be
 cached if any method requiring order is called, or an explicit 
@@ -121,19 +156,17 @@ automatically true.
 ######################################################################
 sub new
 {
-	my( $class, %self ) = @_;
+	my( $class, %opts ) = @_;
 
-	$self{session} = $self{repository} if !defined $self{session};
-
-	my $self = \%self;
-#	$self->{session} = $opts{session} || $opts{repository};
-#	$self->{dataset} = $opts{dataset};
-#	$self->{ids} = $opts{ids};
-#	$self->{order} = $opts{order};
-#	$self->{encoded} = $opts{encoded};
-#	$self->{cache_id} = $opts{cache_id};
-#	$self->{keep_cache} = $opts{keep_cache};
-#	$self->{searchexp} = $opts{searchexp};
+	my $self = {};
+	$self->{session} = $opts{session};
+	$self->{dataset} = $opts{dataset};
+	$self->{ids} = $opts{ids};
+	$self->{order} = $opts{order};
+	$self->{encoded} = $opts{encoded};
+	$self->{cache_id} = $opts{cache_id};
+	$self->{keep_cache} = $opts{keep_cache};
+	$self->{searchexp} = $opts{searchexp};
 
 	if( !defined $self->{cache_id} && !defined $self->{ids} ) 
 	{
@@ -250,7 +283,7 @@ sub union
 
 =item $new_list = $list->remainder( $list2, [$order] );
 
-Create a new list from $list with elements from $list2 removed. If order is not set
+Create a new list from this one minus another one. If order is not set
 then this list will not be in any certain order.
 
 Remove all items in $list2 from $list and return the result as a
@@ -320,13 +353,11 @@ sub intersect
 }
 
 ######################################################################
-=begin InternalDoc
+=for InternalDoc
 
 =item $list->cache
 
 Cause this list to be cached in the database.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -389,13 +420,11 @@ sub cache
 }
 
 ######################################################################
-=begin InternalDoc
+=for InternalDoc
 
 =item $cache_id = $list->get_cache_id
 
 Return the ID of the cache table for this list, or undef.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -410,13 +439,11 @@ sub get_cache_id
 
 
 ######################################################################
-=begin InternalDoc
+=for InternalDoc
 
 =item $list->dispose
 
 Clean up the cache table if appropriate.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -517,9 +544,8 @@ sub slice
 
 =item $ids = $list->ids( [$offset], [$count] )
 
-Return a reference to an array containing the object ids of the items 
-in the list. You can specify a range of ids using $offset and $count.
-This is more efficient if you just need the ids.
+Return a reference to an array containing the ids of the specified
+range from the list. This is more efficient if you just need the ids.
 
 $offset - what index through the list to start from.
 $count - the maximum to return.
@@ -713,13 +739,9 @@ sub export
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $dataset = $list->get_dataset
 
 Return the EPrints::DataSet which this list relates to.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -784,32 +806,4 @@ sub DESTROY
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

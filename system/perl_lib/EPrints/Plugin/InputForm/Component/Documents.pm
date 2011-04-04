@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Component::Documents
-
-=cut
-
 package EPrints::Plugin::InputForm::Component::Documents;
 
 use EPrints::Plugin::InputForm::Component;
@@ -243,7 +237,17 @@ sub _doc_update
 
 	if( $doc_internal eq "unlink_doc" )
 	{
-		$doc->remove_relation( undef, "isVolatileVersionOf" );
+		my $relation = EPrints::Utils::make_relation( "isVolatileVersionOf" );
+		my $parent = $doc->get_related_objects($relation)->[0];
+		$parent->remove_object_relations(
+				$doc,
+				EPrints::Utils::make_relation( "hasVolatileVersion" ),
+				);
+		$parent->commit;
+		$doc->remove_object_relations(
+				$parent,
+				EPrints::Utils::make_relation( "isVolatileVersionOf" ),
+				);
 		$doc->commit;
 		return;
 	}
@@ -304,9 +308,14 @@ sub _doc_update
 			$processor->add_message( "error", $self->html_phrase( "conversion_failed" ) );
 			return;
 		}
-		$new_doc->remove_relation( undef, "isVolatileVersionOf" );
+		$doc->remove_object_relations(
+				$new_doc,
+				EPrints::Utils::make_relation( "hasVolatileVersion" ) =>
+				EPrints::Utils::make_relation( "isVolatileVersionOf" )
+			);
+		$new_doc->make_thumbnails();
+		$doc->commit();
 		$new_doc->commit();
-		$new_doc->queue_files_modified();
 
 		$processor->{notes}->{upload_plugin}->{to_unroll}->{$new_doc->id} = 1;
 
@@ -576,14 +585,17 @@ sub _render_related_docs
 
 	my $div = $session->make_element( "div", id=>$self->{prefix}."_panels" );
 
-	$doc->search_related( "isVolatileVersionOf" )->map(sub {
-			my( undef, undef, $dataobj ) = @_;
+	my $relation = EPrints::Utils::make_relation( "hasVolatileVersion" );
 
-			# in the future we might get other objects coming back
-			next if !$dataobj->isa( "EPrints::DataObj::Document" );
+	foreach my $dataobj ( @{($doc->get_related_objects( $relation ))} )
+	{
+		# in the future we might get other objects coming back
+		next if !$dataobj->isa( "EPrints::DataObj::Document" );
+		# sanity check that this document actually belongs to us
+		next if $dataobj->get_parent->id ne $eprint->id;
 
-			$div->appendChild( $self->_render_volatile_div( $dataobj ) );
-		});
+		$div->appendChild( $self->_render_volatile_div( $dataobj ) );
+	}
 
 	if( !$div->hasChildNodes )
 	{
@@ -726,6 +738,7 @@ sub _render_doc_metadata
 		}
 
 		$table->appendChild( $session->render_row_with_help(
+			class=>($first?"ep_first":""),
 			label=>$label,
 			field=>$field->render_input_field(
 								$session,
@@ -1064,8 +1077,12 @@ sub validate
 
 		foreach my $field ( @{$self->{config}->{doc_fields}} )
 		{
-			my $for_archive = defined($field->{required}) &&
-				$field->{required} eq "for_archive";
+			my $for_archive = 0;
+			
+			if( $field->{required} eq "for_archive" )
+			{
+				$for_archive = 1;
+			}
 
 			# cjg bug - not handling for_archive here.
 			if( $field->{required} && !$doc->is_set( $field->{name} ) )
@@ -1112,31 +1129,3 @@ sub parse_config
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Component::Field
-
-=cut
-
 package EPrints::Plugin::InputForm::Component::Field;
 
 use EPrints::Plugin::InputForm::Component;
@@ -90,8 +84,12 @@ sub validate
 
 	my $field = $self->{config}->{field};
 	
-	my $for_archive = defined($field->{required}) &&
-		$field->{required} eq "for_archive";
+	my $for_archive = 0;
+	
+	if( $field->{required} eq "for_archive" )
+	{
+		$for_archive = 1;
+	}
 	
 	my @problems;
 
@@ -163,7 +161,7 @@ sub is_required
 	my $req = $self->{config}->{field}->{required};
 	# my $staff_mode = $self->{workflow}->get_parameter( "STAFF_MODE" );
 	
-	return( defined $req && $req == 1 );
+	return( $req == 1 );
 	
 	# || ( $req eq "for_archive" && $staff_mode ) );
 }
@@ -296,31 +294,3 @@ sub get_field
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

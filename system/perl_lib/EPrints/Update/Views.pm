@@ -4,96 +4,23 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
-B<EPrints::Update::Views> - Update view pages
-
-=head1 SYNOPSIS
-
-	$c->{browse_views} = [
-		{
-			id => "year",
-			order => "creators_name/title",
-			menus => [
-				{
-					fields => [qw( date;res=year )],
-					reverse_order => 1,
-					allow_null => 1,
-					new_column_at => [10, 10]
-				},
-			],
-			variations => [qw(
-				creators_name;first_letter
-				type
-				DEFAULT
-			)],
-		},
-	];
+B<EPrints::Update::Views
 
 =head1 DESCRIPTION
 
 Update the browse-by X web pages on demand.
-
-=head1 OPTIONS
-
-=over 4
-
-=item id
-
-Set the unique id for the view, which in the URL will be /view/[id]/...
-
-=item dataset = "archive"
-
-Set the dataset id to retrieve records from.
-
-=item menus = [ ... ]
-
-An array of hierarchical menu choices.
-
-=item order = ""
-
-Order matching records by the given field structure.
-
-=item variations = [qw( DEFAULT )]
-
-Add group-bys on additional pages. "DEFAULT" shows all of the records in a list.
-
-=item nolink = 0
-
-Don't show a link to this view from the /view/ page.
-
-=back
-
-=head2 Menus
-
-=over 4
-
-=item allow_null = 0
-
-=item fields = [qw( ... )]
-
-=item new_column_at = [x, y]
-
-=item reverse_order = 0
-
-=item mode = "default"
-
-Use "sections" to cause the menu to be broken into sections.
-
-=item open_first_section = 1
-
-Open the first section of the browse menu.
-
-=back
-
-=head1 METHODS
 
 =over 4
 
@@ -101,39 +28,53 @@ Open the first section of the browse menu.
 
 package EPrints::Update::Views;
 
-use Digest::MD5;
+use Data::Dumper;
 use Unicode::Collate;
-use EPrints::Const qw/ :http /;
-
-# TODO replace this with a system config
-our $DEBUG = 0;
 
 use strict;
   
-=item $filename = update_view_file( $repo, $langid, $localpath, $uri )
+# This is the function which decides which type of view it is:
+# * the main menu of views
+# * the top level menu of a view
+# * the sub menu of a view
+# * a page within a single value of a view
 
-This is the function which decides which type of view it is:
+# Does not update the file if it's not needed.
 
-	* the main menu of views
-	* the top level menu of a view
-	* the sub menu of a view
-	* a page within a single value of a view
+=item $path = abbr_path( $path )
 
-Does not update the file if it's not needed.
+This internal method replaces any part of $path that is longer than 40 characters with the MD5 of that part. It ignores file extensions (dot followed by anything).
 
 =cut
 
+sub abbr_path
+{
+	my( $path ) = @_;
+
+	my @parts = split /\//, $path;
+	foreach my $part (@parts)
+	{
+		next if length($part) < 40;
+		my( $name, $ext ) = split /\./, $part, 2;
+		$part = Digest::MD5::md5_hex($name);
+		$part .= ".$ext" if defined $ext;
+	}
+
+	return join "/", @parts;
+}
+
 sub update_view_file
 {
-	my( $repo, $langid, $uri ) = @_;
+	my( $session, $langid, $localpath, $uri ) = @_;
 
-	$uri =~ s# ^/ ##x;
+	my $repository = $session->get_repository;
 
-	# remove extension from target e.g. .type.html [grouping + HTML]
-	my $ext = $uri =~ s/(\.[^\/]*)$// ? $1 : "";
+	$localpath = abbr_path( $localpath );
 
-	my $target = join "/", $repo->config( "htdocs_path" ), $langid, abbr_path( split '/', $uri );
-
+	my $target = $repository->get_conf( "htdocs_path" )."/".$langid.$localpath;
+	my $ext = "";
+	# remove extension from target, if there is one
+	if( $target =~ s/(\.[^\.]*)$// ) { $ext = $1; }
 	my $age;
 	if( -e "$target.page" ) 
 	{
@@ -141,7 +82,7 @@ sub update_view_file
 
 		$age = time - $target_timestamp;
 
-		my $timestampfile = $repo->config( "variables_path" )."/views.timestamp";	
+		my $timestampfile = $repository->get_conf( "variables_path" )."/views.timestamp";	
 		if( -e $timestampfile )
 		{
 			my $poketime = (stat( $timestampfile ))[9];
@@ -151,107 +92,115 @@ sub update_view_file
 		}		
 	}
 
-# TODO replace this with a system config
-undef $age if $DEBUG;
-
-	# 'view', view-id, escaped path values
-	my( undef, $viewid, @view_path ) = split '/', $uri;
-
-	if( !@view_path )
+	if( $uri eq "/view/" )
 	{
-		# update the main browse view list once a day
-		return "$target$ext" if defined $age && $age < 24*60*60;
-
-		my $rc = update_browse_view_list( $repo, $target, $langid );
-		return $rc == OK ? "$target$ext" : undef;
+		# This should really be updated by hand, but updating it once
+		# a day shouldn't hurt.
+		if( defined $age && $age < 24*60*60 )
+		{
+			return "$target$ext";
+		}
+		my $file = update_browse_view_list( $session, $langid );
+		return undef if( !defined $file );
+		return $file.$ext;
 	}
 	
-	# retrieve the views configuration
+	$uri =~ m/^\/view(\/(([^\/]+)(\/(.*))?)?)?$/;
+
+	my( $x, $y, $viewid, $z, $viewinfo ) = ( $1,$2,$3,$4,$5 );
+
 	my $view;
-	foreach my $a_view ( @{$repo->config( "browse_views" )} )
+	foreach my $a_view ( @{$repository->get_conf( "browse_views" )} )
 	{
-		$view = $a_view, last if( $a_view->{id} eq $viewid );
+		$view = $a_view if( $a_view->{id} eq $viewid );
 	}
-	if( !defined $view )
+	if( !defined $view ) 
 	{
-		$repo->log( "'$viewid' was not found in browse_views configuration" );
-		return;
+		EPrints::abort( "view with ID '$viewid' is not available." );
 	}
 
 	my $max_menu_age = $view->{max_menu_age} || 24*60*60;
 	my $max_list_age = $view->{max_list_age} || 24*60*60;
 
-	my $fn;
-
-	# if page name is 'index' it must be a menu
-	if( $view_path[-1] eq 'index' )
+	if( !EPrints::Utils::is_set( $viewinfo ) || $viewinfo =~ s/^index[^\/]+$// )
 	{
-		return "$target$ext" if defined $age && $age < $max_menu_age;
+		if( defined $age && $age < $max_menu_age )
+		{
+			return "$target$ext";
+		}
 
-		# strip 'index'
-		pop @view_path;
-
-		$fn = \&update_view_menu;
-	}
-	# otherwise it's (probably) a view list
-	else
-	{
-		return "$target$ext" if defined $age && $age < $max_list_age;
-
-		$fn = \&update_view_list;
+		my $file = update_view_menu( $session, $view, $langid, [] );
+		return undef if( !defined $file );
+		return $file.$ext;
 	}
 
-	$view = __PACKAGE__->new( repository => $repo, view => $view );
+	if( $viewinfo =~ s/\/$// || $viewinfo =~ s/\/index[^\/]+$// )
+	{
+		if( defined $age && $age < $max_menu_age )
+		{
+			return "$target$ext";
+		}
 
-	# unescape the path values
-	@view_path = $view->unescape_path_values( @view_path );
+		# if it ends with "/" then it's a submenu
+		my @view_path = split( '/', $viewinfo );
+		
+		my $file = update_view_menu( $session, $view, $langid, \@view_path );
+		return undef if( !defined $file );
+		return $file.$ext;
+	}
 
-	my $rc = &$fn( $repo, $target, $langid, $view, \@view_path );
-	return $rc == OK ? "$target$ext" : undef;
+	# Otherwise it's (probably) a view list
+
+	if( defined $age && $age < $max_list_age )
+	{
+		return "$target$ext";
+	}
+
+	my @view_path = split( '/', $viewinfo );
+	my $file = update_view_list( $session, $view, $langid, \@view_path );
+	return undef if( !defined $file );
+	return $file.$ext;
 }
 
-=begin InternalDoc
 
-=item $rc = update_browse_view_list( $repo, $target, $langid )
 
-Update the main menu of views at C</view/>.
-
-Pretty cheap to do.
-
-=end InternalDoc
-
-=cut
+# Update the main menu of views (pretty cheap to do)
+# return list of files written
 
 sub update_browse_view_list
 {
-	my( $repo, $target, $langid ) = @_;
+	my( $session, $langid ) = @_;
 
-	my $xml = $repo->xml;
+	my $repository = $session->get_repository;
 
-	my( $ul, $li, $page, $file, $title );
+	my $target = $repository->get_conf( "htdocs_path" )."/".$langid."/view/index";
 
-	$page = $repo->make_doc_fragment();
-	$page->appendChild( $repo->html_phrase( "bin/generate_views:browseintro" ) );
+	my $ds = $repository->get_dataset( "archive" );
 
-	my $div = $repo->make_element( "div", class => "ep_view_browse_list" );
+	my( $ul, $li, $page, $a, $file, $title );
+
+	$page = $session->make_doc_fragment();
+	$page->appendChild( $session->html_phrase( "bin/generate_views:browseintro" ) );
+
+	my $div = $session->make_element( "div", class => "ep_view_browse_list" );
 	$page->appendChild( $div );
 
-	$ul = $repo->make_element( "ul" );
-	foreach my $view ( @{$repo->config( "browse_views" )} )
+	$ul = $session->make_element( "ul" );
+	foreach my $view ( @{$repository->get_conf( "browse_views" )} )
 	{
-		$view = __PACKAGE__->new( repository => $repo, view => $view );
+		modernise_view( $view );
 		next if( $view->{nolink} );
-		$li = $repo->make_element( "li" );
-		my $link = $repo->render_link( $view->{id}."/" );
-		$link->appendChild( $view->render_name );
-		$li->appendChild( $link );
+		$li = $session->make_element( "li" );
+		$a = $session->render_link( $view->{id}."/" );
+		$a->appendChild( $session->make_text( $session->get_view_name( $ds, $view->{id} ) ) );
+		$li->appendChild( $a );
 		$ul->appendChild( $li );
 	}
 	$div->appendChild( $ul );
 
-	$title = $repo->html_phrase( "bin/generate_views:browsetitle" );
+	$title = $session->html_phrase( "bin/generate_views:browsetitle" );
 
-	$repo->write_static_page( 
+	$session->write_static_page( 
 			$target, 
 			{
 				title => $title, 
@@ -259,81 +208,189 @@ sub update_browse_view_list
 			},
 			"browsemain" );
 
-	$xml->dispose( $title );
-	$xml->dispose( $page );
-
-	return OK;
+	return $target;
 }
 
-=begin InternalDoc
+# return an array of the filters required for the given path_values
+# or undef if something funny occurs.
 
-=item $rc = update_view_menu( $repo, $target, $langid, $view, $path_values )
+sub get_filters
+{
+	my( $session, $view, $esc_path_values ) = @_;
 
-Update a view menu at C</view/VIEWID(/VALUE)*/(index)?>. A view menu shows the unique values available to browse by (e.g. a list of years).
+	my $repository = $session->get_repository;
 
-Potentially expensive to do.
+	my $menus_fields = get_fields_from_view( $repository, $view );
 
-=end InternalDoc
+	my $menu_level = scalar @{$esc_path_values};
 
-=cut
+	my $filters = [];
 
+	for( my $i=0; $i<$menu_level; ++$i )
+	{
+		my $menu_fields = $menus_fields->[$i];
+		if( $esc_path_values->[$i] eq "NULL" )
+		{
+			push @{$filters}, { fields=>$menu_fields, value=>"" };
+			next;
+		}
+		my $key_values = get_fieldlist_values( $session, $menu_fields );
+		my $value = $key_values->{EPrints::Utils::unescape_filename( $esc_path_values->[$i] )};
+		if( !defined($value) )
+		{
+			$repository->log( "Invalid value id in get_filters '".$esc_path_values->[$i]."' in menu: ".$view->{id}."/".join( "/", @{$esc_path_values} )."/" );
+			return;
+		}
+		push @{$filters}, { fields=>$menu_fields, value=>$value };
+	}
+
+	push @$filters, {
+		fields => [ $repository->get_dataset( "eprint" )->get_field('metadata_visibility') ],
+		value => 'show'
+	};
+
+	return $filters;
+}
+
+# return a hash mapping keys at this level to number of items in db
+# if a leaf level, return undef
+
+# path_values is escaped 
+sub get_sizes
+{
+	my( $session, $view, $esc_path_values ) = @_;
+
+	my $menus_fields = get_fields_from_view( $session->get_repository, $view );
+
+	my $menu_level = scalar @{$esc_path_values};
+
+	my $menu_fields = $menus_fields->[$menu_level];
+	my $menu = $view->{menus}->[$menu_level];
+	if( !defined $menu_fields )
+	{
+		# no sub pages at this level
+		return undef;
+	}
+
+	my $filters = get_filters( $session, $view, $esc_path_values );
+
+	my $sizes = get_fieldlist_sizes( $session, $menu_fields, $filters, $menu->{allow_null} );
+
+	return $sizes;
+}
+
+# Update View Config to new structure
+sub modernise_view
+{
+	my( $view ) = @_;
+
+	if( defined $view->{fields} )
+	{
+		if( defined $view->{menus} )
+		{
+			EPrints::abort( "View ".$view->{id}." contains both fields and menus. Menus is the replacement for fields." );
+		}
+
+		$view->{menus} = [];
+		foreach my $cofieldconfig ( split( ",", $view->{fields} ))
+		{
+			my $menu = { fields=>[] };
+			if( $cofieldconfig =~ s/^-// )
+			{
+				$menu->{reverse_order} = 1;
+			}
+			my @cofields = ();
+			foreach my $fieldid ( split( "/", $cofieldconfig ))
+			{
+				push @{$menu->{fields}}, $fieldid;
+			}	
+			push @{$view->{menus}}, $menu;
+		}
+		delete $view->{fields};
+	}
+
+	foreach my $confid ( qw/ allow_null new_column_at hideempty render_menu / )
+	{
+		next if( !defined $view->{$confid} );
+		MENU: foreach my $menu ( @{$view->{menus}} )
+		{
+			next MENU if defined $menu->{$confid};
+			$menu->{$confid} = $view->{$confid};
+		}
+	}
+}
+
+# Update a view menu - potentially expensive to do.
+
+# nb. path_values are considered escaped at this point
 sub update_view_menu
 {
-	my( $repo, $target, $langid, $view, $path_values ) = @_;
+	my( $session, $view, $langid, $esc_path_values ) = @_;
 
-	my $menu_level = scalar @{$path_values};
-	my $menus_fields = $view->menus_fields;
+	modernise_view( $view );
 
-	# menu must be less than a leaf node
+	my $repository = $session->get_repository;
+	my $target = $repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id}."/";
+	if( defined $esc_path_values && scalar @$esc_path_values )
+	{
+		$target .= abbr_path(join( "/", @{$esc_path_values}, "index" ));
+	}
+	else
+	{
+		$target .= "index";
+	}
+
+	my $menu_level = scalar @{$esc_path_values};
+	my $filters = get_filters( $session, $view, $esc_path_values );
+	return if !defined $filters;
+	my $path_values = [];
+	foreach my $esc_value (@{$esc_path_values})
+	{
+		push @{$path_values}, EPrints::Utils::unescape_filename( $esc_value );
+	}
+
+	my $menus_fields = get_fields_from_view( $repository, $view );
+
+	# if number of fields is 1 then menu_level must be 0
+	# if number of fields is 2 then menu_level must be 0 or 1 
+	# etc.
 	if( $menu_level >= scalar @{$menus_fields} )
 	{
-		return NOT_FOUND;
+		$repository->log( "Too many values when asked for a for view menu: ".$view->{id}."/".join( "/", @{$esc_path_values} )."/" );
+		return;
 	}
 
 	# fields & config for the current menu level
 	my $menu_fields = $menus_fields->[$menu_level];
 	my $menu = $view->{menus}->[$menu_level];
 
-	# get the list of unique value-counts for this menu level
-	my $sizes = $view->fieldlist_sizes(
-		$path_values,
-		$menu_level,
-		$view->get_filters( $path_values, 1 ) # EXact matches only
-	);
+	my $key_values = get_fieldlist_values( $session, $menu_fields );
+	my @values = values %$key_values;
 
-	my $nav_sizes = $sizes;
-
-	my $nav_level = @$path_values ? $#$path_values : 0;
-	if( $menus_fields->[$nav_level]->[0]->isa( "EPrints::MetaField::Subject" ) )
+	if( !$menu->{allow_null} )
 	{
-		$nav_sizes = $view->fieldlist_sizes( $path_values, $nav_level );
+		my @new_values = ();
+		foreach( @values ) { push @new_values,$_ unless $_ eq ""; }
+		@values = @new_values;
 	}
-
-	# no values to show at this level nor a navigation tree (subjects)
-	if( !scalar(keys(%$sizes)) && !scalar(keys(%$nav_sizes)) )
-	{
-		$repo->log( sprintf( "Warning! No values were found for %s [%s] - configuration may be wrong",
-			$view->name,
-			join(',', map { $_->[0]->name } @{$menus_fields}[0..$nav_level])
-		) );
-	}
-
-	# translate ids to values
-	my @values = map { $menu_fields->[0]->get_value_from_id( $repo, $_ ) } keys %$sizes;
 
 	# OK now we have a sorted list of values....
-	@values = @{$menu_fields->[0]->sort_values( $repo, \@values, $langid )};
+
+	@values = @{$menu_fields->[0]->sort_values( $session, \@values )};
 
 	if( $menu->{reverse_order} )
 	{
 		@values = reverse @values;
 	}
 
+
 	# now render the menu page
+
+	my $sizes = get_fieldlist_sizes( $session, $menu_fields, $filters, $menu->{allow_null} );
 
 	# Not doing submenus just yet.
 	my $has_submenu = 0;
-	if( scalar @{$menus_fields} > $menu_level+1 )
+	if( scalar @{$view->{menus}} > $menu_level+1 )
 	{
 		$has_submenu = 1;
 	}
@@ -368,17 +425,7 @@ sub update_view_menu
 		closedir( $dh );
 	}
 
-	my @wrote_files = &{$fn}(
-			repository => $repo,
-			path_values => $path_values,
-			view => $view,
-			values => \@values,
-			sizes => $sizes,
-			nav_sizes => $nav_sizes,
-			has_submenu => $has_submenu,
-			menu_level => $menu_level,
-			langid => $langid
-		);
+	my @wrote_files = &{$fn}( $session, $path_values, $esc_path_values, $menus_fields, $view, $sizes, \@values, $menu_fields, $has_submenu, $menu_level, $langid );
 	
 	FILE: foreach my $old_index_file ( @indexes )
 	{
@@ -393,427 +440,6 @@ sub update_view_menu
 		unlink( $old_index_file );
 	}
 
-	return OK;
-}
-
-=begin InternalDoc
-
-=item $rc = update_view_list( $repo, $target, $langid, $view, $path_values [, %opts ] )
-
-Update a (set of) view list(s) at C</view/VIEWID(/VALUE)*/value.html>.
-
-Potentially expensive to do.
-
-Options:
-	sizes - cached copy of the sizes at this menu level
-
-=end InternalDoc
-
-=cut
-
-sub update_view_list
-{
-	my( $repo, $target, $langid, $view, $path_values, %opts ) = @_;
-
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
-
-	my $menus_fields = $view->menus_fields;
-	my $menu_level = scalar @{$path_values};
-
-	# update_view_list must be a leaf node
-	if( $menu_level != scalar @{$menus_fields} )
-	{
-		return;
-	}
-
-	# get all of the items for this level
-	my $filters = $view->get_filters( $path_values, 1 ); # EXact
-
-	my $ds = $view->dataset;
-
-	my $list = $ds->search(
-		custom_order=>$view->{order},
-		satisfy_all=>1,
-		filters=>$filters );
-
-	my @items = $list->get_records;
-	my $count = scalar @items;
-
-	# construct the export and navigation bars, which are common to all "alt_views"
-	my $menu_fields = $menus_fields->[$#$path_values];
-
-	my $nav_sizes = $opts{sizes};
-	if( !defined $nav_sizes && $menu_fields->[0]->isa( "EPrints::MetaField::Subject" ) )
-	{
-		$nav_sizes = $view->fieldlist_sizes( $path_values, $#$path_values );
-	}
-	$nav_sizes = {} if !defined $nav_sizes;
-
-	# nothing to show at this level or anywhere below a subject tree
-	return if !@items && !scalar(keys(%$nav_sizes));
-
-	my $export_bar = render_export_bar( $repo, $view, $path_values );
-
-	my $navigation_aids = render_navigation_aids( $repo, $path_values, $view, "list",
-		export_bar => $xml->clone( $export_bar ),
-		sizes => $nav_sizes,
-	);
-
-	# Timestamp div
-	my $time_div;
-	if( !$view->{notimestamp} )
-	{
-		$time_div = $repo->html_phrase(
-			"bin/generate_views:timestamp",
-			time=>$xml->create_text_node( EPrints::Time::human_time() ) );
-	}
-	else
-	{
-		$time_div = $xml->create_document_fragment;
-	}
-
-	# modes = first_letter, first_value, all_values (default)
-	my $alt_views = $view->{variations};
-	if( !defined $alt_views )
-	{
-		$alt_views = [ 'DEFAULT' ];
-	}
-
-	my @files = ();
-	my $first_view = 1;	
-	ALTVIEWS: foreach my $alt_view ( @{$alt_views} )
-	{
-		my( $fieldname, $options ) = split( ";", $alt_view );
-		my $opts = get_view_opts( $options, $fieldname );
-
-		my $page_file_name = "$target.".$opts->{"filename"};
-		if( $first_view ) { $page_file_name = $target; }
-
-		push @files, $page_file_name;
-
-		my $need_path = $page_file_name;
-		$need_path =~ s/\/[^\/]*$//;
-		EPrints::Platform::mkdir( $need_path );
-
-		my $title;
-		my $phrase_id = "viewtitle_".$ds->base_id()."_".$view->{id}."_list";
-		my $null_phrase_id = "viewnull_".$ds->base_id()."_".$view->{id};
-
-		my %files;
-
-		if( $repo->get_lang()->has_phrase( $phrase_id, $repo ) )
-		{
-			my %o = ();
-			for( my $i = 0; $i < scalar( @{$path_values} ); ++$i )
-			{
-				my $menu_fields = $menus_fields->[$i];
-				my $value = $path_values->[0];
-				$o{"value".($i+1)} = $menu_fields->[0]->render_single_value( $repo, $value);
-				if( !EPrints::Utils::is_set( $value ) && $repo->get_lang()->has_phrase($null_phrase_id) )
-				{
-					$o{"value".($i+1)} = $repo->html_phrase( $null_phrase_id );
-				}
-			}		
-			my $grouping_phrase_id = "viewgroup_".$ds->base_id()."_".$view->{id}."_".$opts->{filename};
-			if( $repo->get_lang()->has_phrase( $grouping_phrase_id, $repo ) )
-			{
-				$o{"grouping"} = $repo->html_phrase( $grouping_phrase_id );
-			}
-			elsif( $fieldname eq "DEFAULT" )
-			{
-				$o{"grouping"} = $repo->html_phrase( "Update/Views:no_grouping_title" );
-			}	
-			else
-			{
-				my $gfield = $ds->get_field( $fieldname );
-				$o{"grouping"} = $gfield->render_name( $repo );
-			}
-
-			$title = $repo->html_phrase( $phrase_id, %o );
-		}
-	
-		if( !defined $title )
-		{
-			$title = $repo->html_phrase(
-				"bin/generate_views:indextitle",
-				viewname=>$view->render_name,
-			);
-		}
-
-
-		# This writes the title including HTML tags
-		$files{"$page_file_name.title"} = $title;
-
-		# This writes the title with HTML tags stripped out.
-		$files{"$page_file_name.title.textonly"} = $title;
-
-		if( defined $view->{template} )
-		{
-			$files{"$page_file_name.template"} = $xml->create_text_node( $view->{template} );
-		}
-
-		$files{"$page_file_name.export"} = $export_bar;
-
-		my $PAGE = $files{"$page_file_name.page"} = $xml->create_document_fragment;
-		my $INCLUDE = $files{"$page_file_name.include"} = $xml->create_document_fragment;
-
-		$PAGE->appendChild( $xml->clone( $navigation_aids ) );
-		
-		$PAGE = $PAGE->appendChild( $xml->create_element( "div",
-			class => "ep_view_page ep_view_page_view_$view->{id}"
-		) );
-		$INCLUDE = $INCLUDE->appendChild( $xml->create_element( "div",
-			class => "ep_view_page ep_view_page_view_$view->{id}"
-		) );
-
-		# Render links to alternate groupings
-		if( scalar @{$alt_views} > 1 && $count )
-		{
-			my $groups = $repo->make_doc_fragment;
-			my $first = 1;
-			foreach my $alt_view2 ( @{$alt_views} )
-			{
-				my( $fieldname2, $options2 ) = split( /;/, $alt_view2 );
-				my $opts2 = get_view_opts( $options2,$fieldname2 );
-
-				my $link_name = join '/', $view->escape_path_values( @$path_values );
-				if( !$first ) { $link_name .= ".".$opts2->{"filename"} }
-
-				if( !$first )
-				{
-					$groups->appendChild( $repo->html_phrase( "Update/Views:group_seperator" ) );
-				}
-
-				my $group;
-				my $phrase_id = "viewgroup_".$ds->base_id()."_".$view->{id}."_".$opts2->{filename};
-				if( $repo->get_lang()->has_phrase( $phrase_id, $repo ) )
-				{
-					$group = $repo->html_phrase( $phrase_id );
-				}
-				elsif( $fieldname2 eq "DEFAULT" )
-				{
-					$group = $repo->html_phrase( "Update/Views:no_grouping" );
-				}
-				else
-				{
-					$group = $ds->get_field( $fieldname2 )->render_name( $repo );
-				}
-				
-				if( $opts->{filename} eq $opts2->{filename} )
-				{
-					$group = $repo->html_phrase( "Update/Views:current_group", group=>$group );
-				}
-				else
-				{
-					$link_name =~ /([^\/]+)$/;
-					my $link = $repo->render_link( "$1.html" );
-					$link->appendChild( $group );
-					$group = $link;
-				}
-		
-				$groups->appendChild( $group );
-
-				$first = 0;
-			}
-
-			$PAGE->appendChild( $repo->html_phrase( "Update/Views:group_by", groups=>$groups ) );
-		}
-
-		# Intro phrase, if any 
-		my $intro_phrase_id =
-			"viewintro_".$view->{id}.join('', map { "/$_" } $view->escape_path_values( @$path_values ));
-		my $intro;
-		if( $repo->get_lang()->has_phrase( $intro_phrase_id, $repo ) )
-		{
-			$intro = $repo->html_phrase( $intro_phrase_id );
-		}
-		else
-		{
-			$intro = $xml->create_document_fragment;
-		}
-
-		# Number of items div.
-		my $count_div;
-		if( !$view->{nocount} )
-		{
-			my $phraseid = "bin/generate_views:blurb";
-			if( $menus_fields->[-1]->[0]->isa( "EPrints::MetaField::Subject" ) )
-			{
-				$phraseid = "bin/generate_views:subject_blurb";
-			}
-			$count_div = $repo->html_phrase(
-				$phraseid,
-				n=>$xml->create_text_node( $count ) );
-		}
-		else
-		{
-			$count_div = $xml->create_document_fragment;
-		}
-
-
-		if( defined $opts->{render_fn} )
-		{
-			my $block = $repo->call( $opts->{render_fn}, 
-					$repo,
-					\@items,
-					$view,
-					$path_values,
-					$opts->{filename} );
-			$block = $xml->parse_string( $block )
-				if !ref( $block );
-
-			$PAGE->appendChild( $xml->clone( $intro ) );
-			$INCLUDE->appendChild( $xml->clone( $intro ) );
-
-			$PAGE->appendChild( $xml->clone( $count_div ) );
-			$INCLUDE->appendChild( $count_div );
-
-			$PAGE->appendChild( $xml->clone( $block ) );
-			$INCLUDE->appendChild( $block );
-
-			$PAGE->appendChild( $xml->clone( $time_div ) );
-			$INCLUDE->appendChild( $xml->clone( $time_div ) );
-
-			$first_view = 0;
-
-			output_files( $repo, %files );
-			next ALTVIEWS;
-		}
-
-
-		# If this grouping is "DEFAULT" then there is no actual grouping-- easy!
-		if( $fieldname eq "DEFAULT" ) 
-		{
-			my $block = render_array_of_eprints( $repo, $view, \@items );
-
-			$PAGE->appendChild( $xml->clone( $intro ) );
-			$INCLUDE->appendChild( $xml->clone( $intro ) );
-
-			$PAGE->appendChild( $xml->clone( $count_div ) );
-			$INCLUDE->appendChild( $count_div );
-
-			$PAGE->appendChild( $xml->clone( $block ) );
-			$INCLUDE->appendChild( $block );
-
-			$PAGE->appendChild( $xml->clone( $time_div ) );
-			$INCLUDE->appendChild( $xml->clone( $time_div ) );
-
-			$first_view = 0;
-			output_files( $repo, %files );
-			next ALTVIEWS;
-		}
-
-		my $data = group_items( $repo, \@items, $ds->field( $fieldname ), $opts );
-
-		my $first = 1;
-		my $jumps = $repo->make_doc_fragment;
-		my $total = 0;
-		my $maxsize = 1;
-		foreach my $group ( @{$data} )
-		{
-			my( $code, $heading, $items ) = @{$group};
-			my $n = scalar @$items;
-			if( $n > $maxsize ) { $maxsize = $n; }
-		}
-		my $range;
-		if( $opts->{cloud} )
-		{
-			$range = $opts->{cloudmax} - $opts->{cloudmin};
-		}
-		foreach my $group ( @{$data} )
-		{
-			my( $code, $heading, $items ) = @{$group};
-			if( scalar @$items == 0 )
-			{
-				print STDERR "ODD: $code has no items\n";
-				next;
-			}
-	
-			if( !$first )
-			{
-				if( $opts->{"no_seperator"} ) 
-				{
-					$jumps->appendChild( $repo->make_text( " " ) );
-				}
-				else
-				{
-					$jumps->appendChild( $repo->html_phrase( "Update/Views:jump_seperator" ) );
-				}
-			}
-
-			my $link = $repo->render_link( "#group_".EPrints::Utils::escape_filename( $code ) );
-			$link->appendChild( $repo->clone_for_me($heading,1) );
-			if( $opts->{cloud} )
-			{
-				my $size = int( $range * ( log(1+scalar @$items ) / log(1+$maxsize) ) ) + $opts->{cloudmin};
-				my $span = $repo->make_element( "span", style=>"font-size: $size\%" );
-				$span->appendChild( $link );
-				$jumps->appendChild( $span );
-			}
-			else
-			{
-				$jumps->appendChild( $link );
-			}
-
-			$first = 0;
-		}
-
-		if( $count )
-		{
-			# css for your convenience
-			my $jumpmenu = $xml->create_element( "div",
-				class => "ep_view_jump ep_view_$view->{id}_${fieldname}_jump"
-			);
-			if( $opts->{"jump"} eq "plain" ) 
-			{
-				$jumpmenu->appendChild( $jumps );
-			}
-			elsif( $opts->{"jump"} eq "default" )
-			{
-				$jumpmenu->appendChild( $repo->html_phrase(
-					"Update/Views:jump_to",
-					jumps=>$jumps ) );
-			}
-
-			$PAGE->appendChild( $xml->clone( $jumpmenu ) );
-			$INCLUDE->appendChild( $jumpmenu );
-		}
-
-		$PAGE->appendChild( $xml->clone( $intro ) );
-		$INCLUDE->appendChild( $xml->clone( $intro ) );
-
-		$PAGE->appendChild( $xml->clone( $count_div ) );
-		$INCLUDE->appendChild( $count_div );
-
-		foreach my $group ( @{$data} )
-		{
-			my( $code, $heading, $items ) = @{$group};
-
-			my $link = $xml->create_element( "a",
-				name => "group_".EPrints::Utils::escape_filename( $code )
-			);
-			my $h2 = $xml->create_element( "h2" );
-			$h2->appendChild( $heading );
-			my $block = render_array_of_eprints( $repo, $view, $items );
-
-			$PAGE->appendChild( $xml->clone( $link ) );
-			$INCLUDE->appendChild( $link );
-		
-			$PAGE->appendChild( $xml->clone( $h2 ) );
-			$INCLUDE->appendChild( $h2 );
-
-			$PAGE->appendChild( $xml->clone( $block ) );
-			$INCLUDE->appendChild( $block );
-		}
-
-		$PAGE->appendChild( $xml->clone( $time_div ) );
-		$INCLUDE->appendChild( $xml->clone( $time_div ) );
-
-		$first_view = 0;
-		output_files( $repo, %files );
-	}
-
 	return $target;
 }
 
@@ -821,16 +447,20 @@ sub update_view_list
 # char is optional, for browse-by-char menus
 sub create_single_page_menu
 {
-	my %args = @_;
-	my( $repo, $path_values, $view, $sizes, $values, $nav_sizes, $has_submenu, $menu_level, $langid, $ranges, $groupings, $range ) =
-		@args{qw( repository path_values view sizes values nav_sizes has_submenu menu_level langid ranges groupings range )};
+	my( $session, $path_values, $esc_path_values, $menus_fields, $view, $sizes, $values, $menu_fields, $has_submenu, $menu_level, $langid,    $ranges, $groupings, $range ) = @_;
 
-	my $menus_fields = $view->menus_fields;
-	my $menu_fields = $menus_fields->[$menu_level];
 	my $menu = $view->{menus}->[$menu_level];
 
 	# work out filename
-	my $target = join '/', $repo->config( "htdocs_path" ), $langid, "view", $view->{id}, abbr_path( $view->escape_path_values( @$path_values ) ), "index";
+	my $target = $session->get_repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id}."/";
+	if( defined $esc_path_values && scalar @{$esc_path_values} > 0 )
+	{
+		$target .= abbr_path(join( "/", @{$esc_path_values}, "index" ));
+	}
+	else
+	{
+		$target .= "index";
+	}
 	if( defined $range )
 	{
 		$target .= ".".EPrints::Utils::escape_filename( $range->[0] );
@@ -842,31 +472,26 @@ sub create_single_page_menu
 		$range = $ranges->[0];
 	}
 
-	my $page = $repo->make_element( "div", class=>"ep_view_menu" );
+	my $page = $session->make_element( "div", class=>"ep_view_menu" );
 
-	my $navigation_aids = render_navigation_aids( $repo, $path_values, $view, "menu",
-		sizes => $nav_sizes
-	);
+	my $navigation_aids = render_navigation_aids( $session, $path_values, $esc_path_values, $view, $menus_fields, "menu" );
 	$page->appendChild( $navigation_aids );
 
-	if( scalar @$values )
+	my $phrase_id = "viewintro_".$view->{id};
+	if( defined $esc_path_values && defined $path_values && scalar(@{$path_values}) )
 	{
-		my $phrase_id = "viewintro_".$view->{id};
-		if( scalar(@{$path_values}) )
-		{
-			$phrase_id.= "/".join( "/", @{$path_values} );
-		}
-		unless( $repo->get_lang()->has_phrase( $phrase_id, $repo ) )
-		{
-			$phrase_id = "bin/generate_views:intro";
-		}
-		$page->appendChild( $repo->html_phrase( $phrase_id ));
+		$phrase_id.= "/".join( "/", @{$path_values} );
 	}
+	unless( $session->get_lang()->has_phrase( $phrase_id, $session ) )
+	{
+		$phrase_id = "bin/generate_views:intro";
+	}
+	$page->appendChild( $session->html_phrase( $phrase_id ));
 
 	if( defined $ranges )
 	{
-		my $div_box = $repo->make_element( "div", class=>"ep_toolbox" );
-		my $div_contents = $repo->make_element( "div", class=>"ep_toolbox_content" );
+		my $div_box = $session->make_element( "div", class=>"ep_toolbox" );
+		my $div_contents = $session->make_element( "div", class=>"ep_toolbox_content" );
 		$page->appendChild( $div_box );
 		$div_box->appendChild( $div_contents );
 		my $first = 1;
@@ -875,19 +500,19 @@ sub create_single_page_menu
 			my $l;
 			if( !$first )
 			{
-				$div_contents->appendChild( $repo->make_text( " | " ) );
+				$div_contents->appendChild( $session->make_text( " | " ) );
 			}
 			$first = 0 ;
 			if( defined $range && $range->[0] eq $range_i->[0] )
 			{
-				$l = $repo->make_element( "b" );
+				$l = $session->make_element( "b" );
 			}
 			else
 			{
-				$l = $repo->make_element( "a", href=>"index.".EPrints::Utils::escape_filename( $range_i->[0] ).".html" );
+				$l = $session->make_element( "a", href=>"index.".EPrints::Utils::escape_filename( $range_i->[0] ).".html" );
 			}
 			$div_contents->appendChild( $l );
-			$l->appendChild( $repo->make_text( $range_i->[0] ) );
+			$l->appendChild( $session->make_text( $range_i->[0] ) );
 		}
 	}
 
@@ -895,16 +520,16 @@ sub create_single_page_menu
 	{
 		foreach my $group_id ( @{$range->[1]} )
 		{
-			my @render_menu_opts = ( $repo, $menu, $sizes, $groupings->{$group_id}, $menu_fields, $has_submenu, $view );
+			my @render_menu_opts = ( $session, $menu, $sizes, $groupings->{$group_id}, $menu_fields, $has_submenu, $view );
 
-			my $h2 = $repo->make_element( "h2" );
-			$h2->appendChild( $repo->make_text( "$group_id..." ));
+			my $h2 = $session->make_element( "h2" );
+			$h2->appendChild( $session->make_text( "$group_id..." ));
 			$page->appendChild( $h2 );
 	
 			my $menu_xhtml;	
 			if( $menu->{render_menu} )
 			{
-				$menu_xhtml = $repo->call( $menu->{render_menu}, @render_menu_opts );
+				$menu_xhtml = $session->get_repository->call( $menu->{render_menu}, @render_menu_opts );
 			}
 			else
 			{
@@ -915,22 +540,22 @@ sub create_single_page_menu
 		}
 	}
 
-	if( scalar(@$values) )
+	if( defined $values )
 	{
-		my @render_menu_opts = ( $repo, $menu, $sizes, $values, $menu_fields, $has_submenu, $view );
+		my @render_menu_opts = ( $session, $menu, $sizes, $values, $menu_fields, $has_submenu, $view );
 
 		my $menu_xhtml;
-		if( $menu_fields->[0]->isa( "EPrints::MetaField::Subject" ) )
+		if( $menu_fields->[0]->is_type( "subject" ) )
 		{
 			$menu_xhtml = render_subj_menu( @render_menu_opts );
 		}
 		elsif( $menu->{render_menu} )
 		{
-			$menu_xhtml = $repo->call( $menu->{render_menu}, @render_menu_opts );
+			$menu_xhtml = $session->get_repository->call( $menu->{render_menu}, @render_menu_opts );
 		}
 		else
 		{
-			$render_menu_opts[3] = get_showvalues_for_menu( $repo, $menu, $sizes, $values, $menu_fields );
+			$render_menu_opts[3] = get_showvalues_for_menu( $session, $menu, $sizes, $values, $menu_fields );
 			$menu_xhtml = render_menu( @render_menu_opts );
 
 		}
@@ -938,35 +563,39 @@ sub create_single_page_menu
 		$page->appendChild( $menu_xhtml );
 	}
 
-	my $ds = $view->dataset;
+	my $ds = $session->get_repository->get_dataset( "archive" );
 	my $title;
-	my $title_phrase_id = "viewtitle_".$ds->base_id()."_".$view->{id}."_menu_".( $menu_level + 1 );
+	my $title_phrase_id = "viewtitle_".$ds->confid()."_".$view->{id}."_menu_".( $menu_level + 1 );
 
-	if( $repo->get_lang()->has_phrase( $title_phrase_id, $repo ) )
+	if( $session->get_lang()->has_phrase( $title_phrase_id, $session ) && defined $esc_path_values )
 	{
 		my %o = ();
-		for( my $i = 0; $i < scalar( @{$path_values} ); ++$i )
+		for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
 		{
-			$o{"value".($i+1)} = $menus_fields->[$i]->[0]->render_single_value( $repo, $path_values->[$i]);
+			for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
+			{
+				$o{"value".($i+1)} = $menus_fields->[$i]->[0]->render_single_value( $session, $path_values->[$i]);
+			}
 		}
-		$title = $repo->html_phrase( $title_phrase_id, %o );
+		$title = $session->html_phrase( $title_phrase_id, %o );
 	}
-	else
+
+	if( !defined $title )
 	{
-		$title = $repo->html_phrase(
+		$title = $session->html_phrase(
 			"bin/generate_views:indextitle",
-			viewname=>$view->render_name,
-		);
+			viewname=>$session->make_text(
+				$session->get_view_name( $ds, $view->{id} ) ) );
 	}
 
 
 	# Write page to disk
-	$repo->write_static_page( 
+	$session->write_static_page( 
 			$target, 
 			{
 				title => $title, 
 				page => $page,
-				template => $repo->make_text($view->{template}),
+				template => $session->make_text($view->{template}),
 			},
 			"browseindex" );
 
@@ -979,76 +608,116 @@ sub create_single_page_menu
 	return $target;
 }
 
-# Update View Config to new structure
-# WARNING! This is also used in cgi/exportview!
-sub modernise_view
+sub get_fieldlist_sizes
 {
-	my( $view ) = @_;
+	my( $session, $fields, $filters ) = @_;
 
-	return if $view->{'.modernised'};
-	$view->{'.modernised'} = 1;
-
-	if( defined $view->{fields} )
+	if( $fields->[0]->is_type( "subject" ) )
 	{
-		if( defined $view->{menus} )
-		{
-			EPrints::abort( "View ".$view->{id}." contains both fields and menus. Menus is the replacement for fields." );
-		}
+		# this got compicated enough to need its own sub.
+		return get_fieldlist_sizes_subject( $session, $fields, $filters );
+	}
 
-		$view->{menus} = [];
-		foreach my $cofieldconfig ( split( ",", $view->{fields} ))
+	my $ds = $session->get_repository->get_dataset( "archive" );
+
+	my %map=();
+	my %only_these_values = ();
+	FIELD: foreach my $field ( @{$fields} )
+	{
+		my $vref = $field->get_ids_by_value( $session, $ds, filters=>$filters );
+
+		VALUE: foreach my $value ( keys %{$vref} )
 		{
-			my $menu = { fields=>[] };
-			if( $cofieldconfig =~ s/^-// )
-			{
-				$menu->{reverse_order} = 1;
+			$only_these_values{$value} = 1;
+			foreach my $itemid ( @{$vref->{$value}} ) 
+			{ 
+				$map{$value}->{$itemid} = 1; 
 			}
-			my @cofields = ();
-			foreach my $fieldid ( split( "/", $cofieldconfig ))
-			{
-				push @{$menu->{fields}}, $fieldid;
-			}	
-			push @{$view->{menus}}, $menu;
 		}
-		delete $view->{fields};
 	}
 
-	foreach my $base_id ( qw/ allow_null new_column_at hideempty render_menu / )
+	my $sizes = {};
+	foreach my $value ( keys %map )
 	{
-		next if( !defined $view->{$base_id} );
-		MENU: foreach my $menu ( @{$view->{menus}} )
-		{
-			next MENU if defined $menu->{$base_id};
-			$menu->{$base_id} = $view->{$base_id};
-		}
+		next unless $only_these_values{$value};
+		$sizes->{$value} = scalar keys %{$map{$value}};
 	}
 
-	$view->{dataset} = "archive" if !defined $view->{dataset};
+	return $sizes;
 }
 
-=begin InternalDoc
-
-=item $path = abbr_path( $path )
-
-This internal method replaces any part of $path that is longer than 40 characters with the MD5 of that part. It ignores file extensions (dot followed by anything).
-
-=end InternalDoc
-
-=cut
-
-sub abbr_path
+sub get_fieldlist_sizes_subject
 {
-	my( @parts ) = @_;
+	my( $session, $fields, $filters ) = @_;
 
-	foreach my $part (@parts)
+	my $ds = $session->get_repository->get_dataset( "archive" );
+
+	my( $subject_map, $subject_map_r ) = EPrints::DataObj::Subject::get_all( $session );
+
+	my %map=();
+	my %only_these_values = ();
+	FIELD: foreach my $field ( @{$fields} )
 	{
-		next if length($part) < 40;
-		my( $name, $ext ) = split /\./, $part, 2;
-		$part = Digest::MD5::md5_hex($name);
-		$part .= ".$ext" if defined $ext;
+		my $vref = $field->get_ids_by_value( $session, $ds, filters=>$filters );
+
+		my $top_node_id= $field->get_property( "top" );
+		SUBJECT: foreach my $subject_id ( keys %{$subject_map} )
+		{
+			foreach my $ancestor ( @{$subject_map->{$subject_id}->get_value( "ancestors" )} )
+			{
+				if( $ancestor eq $top_node_id )
+				{
+					$only_these_values{$subject_id} = 1;
+					next SUBJECT;
+				}
+			}
+		}
+
+		VALUE: foreach my $value ( keys %{$vref} )
+		{
+			$only_these_values{$value} = 1;
+
+			my $subject = $subject_map->{$value};
+			next VALUE if ( !defined $subject );
+			foreach my $ancestor ( @{$subject->get_value( "ancestors" )} )
+			{
+				foreach my $itemid ( @{$vref->{$value}} ) 
+				{ 
+					$map{$ancestor}->{$itemid} = 1; 
+				}
+			}
+		}
 	}
 
-	return @parts;
+	my $sizes = {};
+	foreach my $value ( keys %map )
+	{
+		next unless $only_these_values{$value};
+		$sizes->{$value} = scalar keys %{$map{$value}};
+	}
+
+	return $sizes;
+}
+
+sub get_fieldlist_values
+{
+	my( $session, $fields ) = @_;
+
+	my $ds = $session->get_repository->get_dataset( "archive" );
+
+	my $values = {};
+	foreach my $field ( @{$fields} )
+	{	
+		my @values = @{$field->get_values( $session, $ds )};
+		foreach my $value ( @values )
+		{ 
+			my $id = $fields->[0]->get_id_from_value( $session, $value );
+			$id = "" if !defined $id;
+			$values->{$id} = $value;
+		}
+	}
+
+	return $values;
 }
 
 sub group_by_a_to_z 
@@ -1069,13 +738,13 @@ sub group_by_5_characters { return group_by_n_chars( @_, 5 ); }
 
 sub group_by_n_chars
 {
-	my( $repo, $menu, $menu_fields, $values, $n ) = @_;
+	my( $session, $menu, $menu_fields, $values, $n ) = @_;
 
 	my $sections = {};
 	foreach my $value ( @{$values} )
 	{
 		my $v = EPrints::Utils::tree_to_utf8(
-				$menu_fields->[0]->render_single_value( $repo, $value) );
+				$menu_fields->[0]->render_single_value( $session, $value) );
 
 		utf8::decode( $v );
 		# lose everything not a letter or number
@@ -1093,7 +762,7 @@ sub group_by_n_chars
 
 sub default_sort
 {
-	my( $repo, $menu, $values ) = @_;
+	my( $session, $menu, $values ) = @_;
 
 	my $Collator = Unicode::Collate->new();
 
@@ -1106,7 +775,7 @@ sub default_sort
 # it. Rationalise into Repository.pm later.
 sub call
 {
-	my( $repo, $v, @args ) = @_;
+	my( $repository, $v, @args ) = @_;
 	
 	if( ref( $v ) eq "CODE" || $v =~ m/::/ )
 	{
@@ -1114,7 +783,7 @@ sub call
 		return &{$v}(@args);
 	}	
 
-	return $repo->call( $v, @args );
+	return $repository->call( $v, @args );
 }
 
 sub cluster_ranges_10 { return cluster_ranges_n( @_, 10 ); }
@@ -1131,7 +800,7 @@ sub cluster_ranges_200 { return cluster_ranges_n( @_, 200 ); }
 
 sub cluster_ranges_n
 {
-	my( $repo, $menu, $groupings, $order, $max ) = @_;
+	my( $session, $menu, $groupings, $order, $max ) = @_;
 
 	my $set = [];
 	my $startid;
@@ -1168,7 +837,7 @@ sub cluster_ranges_n
 }
 sub no_ranges
 {
-	my( $repo, $menu, $groupings, $order ) = @_;
+	my( $session, $menu, $groupings, $order ) = @_;
 
 	my $ranges;
 	foreach my $value ( @{$order} )
@@ -1180,67 +849,39 @@ sub no_ranges
 
 sub create_sections_menu
 {
-	my %args = @_;
-	my( $repo, $path_values, $view, $sizes, $values, $has_submenu, $menu_level, $langid ) =
-		@args{qw( repository path_values view sizes values has_submenu menu_level langid )};
+	my( $session, $path_values, $esc_path_values, $menus_fields, $view, $sizes, $values, $menu_fields, $has_submenu, $menu_level, $langid ) = @_;
 
-	my $menus_fields = $view->menus_fields;
-	my $menu_fields = $menus_fields->[$menu_level];
-
-	my $showvalues = get_showvalues_for_menu( $repo, $view, $sizes, $values, $menu_fields );
+	my $showvalues = get_showvalues_for_menu( $session, $view, $sizes, $values, $menu_fields );
 	my $menu = $view->{menus}->[$menu_level-1];
 
 	my $grouping_fn = $menu->{grouping_function};
 	$grouping_fn = \&group_by_first_character if( !defined $grouping_fn );
-	my $groupings = call( $repo, $grouping_fn,   $repo, $menu, $menu_fields, $showvalues );
+	my $groupings = call( $session->get_repository, $grouping_fn,   $session, $menu, $menu_fields, $showvalues );
 
 	my $groupsort_fn = $menu->{group_sorting_function};
 	$groupsort_fn = \&default_sort if( !defined $groupsort_fn );
-	my $order = call( $repo, $groupsort_fn,   $repo, $menu, [ keys %{$groupings} ] );
+	my $order = call( $session->get_repository, $groupsort_fn,   $session, $menu, [ keys %{$groupings} ] );
 
 	my $range_fn = $menu->{group_range_function};
 	$range_fn = \&no_ranges if( !defined $range_fn );
-	my $ranges = call( $repo, $range_fn,   $repo, $menu, $groupings, $order );
+	my $ranges = call( $session->get_repository, $range_fn,   $session, $menu, $groupings, $order );
 	# ranges are of the format:
 	#  [ [ "rangeid", ['groupid1','groupid2', ...]], ["rangeid2", ['groupid3', ...]], ... ]
 
 	my @wrote_files = ();
 	foreach my $range ( @{$ranges} )
 	{
-		push @wrote_files, create_single_page_menu(
-			repository => $repo,
-			path_values => $path_values,
-			view => $view,
-			sizes => $sizes,
-			values => [],
-			has_submenu => $has_submenu,
-			menu_level => $menu_level,
-			langid => $langid,
-			ranges => $ranges,
-			groupings => $groupings,
-			range => $range
-		);
+		push @wrote_files, create_single_page_menu( $session, $path_values, $esc_path_values, $menus_fields, $view, $sizes, undef, $menu_fields, $has_submenu, $menu_level, $langid,    $ranges, $groupings, $range );
 	}
 
-	push @wrote_files, create_single_page_menu(
-			repository => $repo,
-			path_values => $path_values,
-			view => $view,
-			sizes => $sizes,
-			values => [],
-			has_submenu => $has_submenu,
-			menu_level => $menu_level,
-			langid => $langid,
-			ranges => $ranges,
-			groupings => $groupings,
-		);
+	push @wrote_files, create_single_page_menu( $session, $path_values, $esc_path_values, $menus_fields, $view, $sizes, undef, $menu_fields, $has_submenu, $menu_level, $langid,     $ranges, $groupings );
 
 	return @wrote_files;
 }
 
 sub get_showvalues_for_menu
 {
-	my( $repo, $view, $sizes, $values, $fields ) = @_;
+	my( $session, $view, $sizes, $values, $fields ) = @_;
 
 	my $showvalues = [];
 
@@ -1248,7 +889,7 @@ sub get_showvalues_for_menu
 	{
 		foreach my $value ( @{$values} )
 		{
-			my $id = $fields->[0]->get_id_from_value( $repo, $value );
+			my $id = $fields->[0]->get_id_from_value( $session, $value );
 			push @{$showvalues}, $value if( $sizes->{$id} );
 		}
 	}
@@ -1280,52 +921,52 @@ sub get_cols_for_menu
 
 sub render_menu
 {
-	my( $repo, $menu, $sizes, $values, $fields, $has_submenu, $view ) = @_;
+	my( $session, $menu, $sizes, $values, $fields, $has_submenu, $view ) = @_;
 
 	if( scalar @{$values} == 0 )
 	{
-		if( !$repo->get_lang()->has_phrase( "Update/Views:no_items" ) )
+		if( !$session->get_lang()->has_phrase( "Update/Views:no_items" ) )
 		{
-			return $repo->make_doc_fragment;
+			return $session->make_doc_fragment;
 		}
-		return $repo->html_phrase( "Update/Views:no_items" );
+		return $session->html_phrase( "Update/Views:no_items" );
 	}
 
 	my( $cols, $col_len ) = get_cols_for_menu( $menu, scalar @{$values} );
 
 	my $add_ul;
 	my $col_n = 0;
-	my $f = $repo->make_doc_fragment;
+	my $f = $session->make_doc_fragment;
 	my $tr;
 
 	if( $cols > 1 )
 	{
-		my $table = $repo->make_element( "table", cellpadding=>"0", cellspacing=>"0", border=>"0", class=>"ep_view_cols ep_view_cols_$cols" );
-		$tr = $repo->make_element( "tr" );
+		my $table = $session->make_element( "table", cellpadding=>"0", cellspacing=>"0", border=>"0", class=>"ep_view_cols ep_view_cols_$cols" );
+		$tr = $session->make_element( "tr" );
 		$table->appendChild( $tr );	
 		$f->appendChild( $table );
 	}
 	else
 	{
-		$add_ul = $repo->make_element( "ul" );
+		$add_ul = $session->make_element( "ul" );
 		$f->appendChild( $add_ul );	
 	}
 
-	my $ds = $view->dataset;
+	my $ds = $session->dataset( "archive" );
 
 	for( my $i=0; $i<@{$values}; ++$i )
 	{
 		if( $cols>1 && $i % $col_len == 0 )
 		{
 			++$col_n;
-			my $td = $repo->make_element( "td", valign=>"top", class=>"ep_view_col ep_view_col_".$col_n );
-			$add_ul = $repo->make_element( "ul" );
+			my $td = $session->make_element( "td", valign=>"top", class=>"ep_view_col ep_view_col_".$col_n );
+			$add_ul = $session->make_element( "ul" );
 			$td->appendChild( $add_ul );	
 			$tr->appendChild( $td );	
 		}
 		my $value = $values->[$i];
 		my $size = 0;
-		my $id = $fields->[0]->get_id_from_value( $repo, $value );
+		my $id = $fields->[0]->get_id_from_value( $session, $value );
 		if( defined $sizes && defined $sizes->{$id} )
 		{
 			$size = $sizes->{$id};
@@ -1333,15 +974,15 @@ sub render_menu
 
 		next if( $menu->{hideempty} && $size == 0 );
 
-		my $fileid = $fields->[0]->get_id_from_value( $repo, $value );
+		my $fileid = $fields->[0]->get_id_from_value( $session, $value );
 
-		my $li = $repo->make_element( "li" );
+		my $li = $session->make_element( "li" );
 
-		my $xhtml_value = $fields->[0]->get_value_label( $repo, $value ); 
-		my $null_phrase_id = "viewnull_".$ds->base_id()."_".$view->{id};
-		if( !EPrints::Utils::is_set( $value ) && $repo->get_lang()->has_phrase($null_phrase_id) )
+		my $xhtml_value = $fields->[0]->get_value_label( $session, $value ); 
+		my $null_phrase_id = "viewnull_".$ds->confid()."_".$view->{id};
+		if( !EPrints::Utils::is_set( $value ) && $session->get_lang()->has_phrase($null_phrase_id) )
 		{
-			$xhtml_value = $repo->html_phrase( $null_phrase_id );
+			$xhtml_value = $session->html_phrase( $null_phrase_id );
 		}
 
 		if( defined $sizes && (!defined $sizes->{$fileid} || $sizes->{$fileid} == 0 ))
@@ -1352,21 +993,21 @@ sub render_menu
 		{
 			my $link = EPrints::Utils::escape_filename( $fileid );
 			if( $has_submenu ) { $link .= '/'; } else { $link .= '.html'; }
-			my $a = $repo->render_link( $link );
+			my $a = $session->render_link( $link );
 			$a->appendChild( $xhtml_value );
 			$li->appendChild( $a );
 		}
 
 		if( defined $sizes && defined $sizes->{$fileid} )
 		{
-			$li->appendChild( $repo->make_text( " (".$sizes->{$fileid}.")" ) );
+			$li->appendChild( $session->make_text( " (".$sizes->{$fileid}.")" ) );
 		}
 		$add_ul->appendChild( $li );
 	}
 	while( $cols > 1 && $col_n < $cols )
 	{
 		++$col_n;
-		my $td = $repo->make_element( "td", valign=>"top", class=>"ep_view_col ep_view_col_".$col_n );
+		my $td = $session->make_element( "td", valign=>"top", class=>"ep_view_col ep_view_col_".$col_n );
 		$tr->appendChild( $td );	
 	}
 
@@ -1375,7 +1016,7 @@ sub render_menu
 
 sub render_subj_menu
 {
-	my( $repo, $menu, $sizes, $values, $fields, $has_submenu ) = @_;
+	my( $session, $menu, $sizes, $values, $fields, $has_submenu ) = @_;
 
 	my $subjects_to_show = $values;
 
@@ -1386,7 +1027,7 @@ sub render_subj_menu
 		{
 			next unless( defined $sizes->{$value} && $sizes->{$value} > 0 );
 			my $subject = EPrints::DataObj::Subject->new(
-					 $repo, $value );
+					 $session, $value );
 			my @ids= @{$subject->get_value( "ancestors" )};
 			foreach my $id ( @ids ) { $show{$id} = 1; }
 		}
@@ -1398,11 +1039,11 @@ sub render_subj_menu
 		}
 	}
 
-	my $f = $repo->make_doc_fragment;
+	my $f = $session->make_doc_fragment;
 	foreach my $field ( @{$fields} )
 	{
 		$f->appendChild(
-			$repo->render_subjects(
+			$session->render_subjects(
 				$subjects_to_show,
 				$field->get_property( "top" ),
 				undef,
@@ -1413,37 +1054,451 @@ sub render_subj_menu
 	return $f;
 }
 
-sub output_files
+sub get_fields_from_view
 {
-	my( $repo, %files ) = @_;
+	my( $repository, $view ) = @_;
 
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
+	modernise_view( $view );
 
-	foreach my $fn (sort keys %files)
+	my $ds = $repository->get_dataset( "archive" );
+	my $menus_fields = [];
+	foreach my $menu ( @{$view->{menus}} )
 	{
-		open(my $fh, ">:utf8", $fn)
-			or EPrints->abort( "Error writing to $fn: $!" );
-		if( $fn =~ /\.textonly$/ )
+		my $menu_fields = [];
+		foreach my $field_id ( @{$menu->{fields}} )
 		{
-			print $fh $xhtml->to_text_dump( $files{$fn} );
+			my $field = EPrints::Utils::field_from_config_string( $ds, $field_id );
+			unless( $field->is_browsable() )
+			{
+				EPrints::abort( "Cannot generate browse pages for field \"".$field_id."\"\n- Type \"".$field->get_type()."\" cannot be browsed.\n" );
+			}
+			push @{$menu_fields}, $field;
 		}
-		else
-		{
-			print $fh $xhtml->to_xhtml( $files{$fn} );
-		}
-		$xml->dispose( $files{$fn} );
-		close( $fh );
+		push @{$menus_fields},$menu_fields;
 	}
+
+	return $menus_fields
+}
+
+
+
+# Update a (set of) view list(s) - potentially expensive to do.
+
+# nb. path_values are considered escaped at this point
+sub update_view_list
+{
+	my( $session, $view, $langid, $esc_path_values ) = @_;
+
+	modernise_view( $view );
+
+	my $repository = $session->get_repository;
+
+	my $target = $repository->get_conf( "htdocs_path" )."/".$langid."/view/".$view->{id}."/";
+
+	my $filename = pop @{$esc_path_values};
+	my( $value, $suffix ) = split( /\./, $filename );
+	$target .= abbr_path( join "/", @$esc_path_values, $value );
+
+	push @{$esc_path_values}, $value;
+
+	my $menu_level = scalar @{$esc_path_values};
+	my $filters = get_filters( $session, $view, $esc_path_values );
+	return if !defined $filters;
+	my $path_values = [];
+	foreach my $esc_value (@{$esc_path_values})
+	{
+		push @{$path_values}, EPrints::Utils::unescape_filename( $esc_value );
+	}
+
+	my $ds = $repository->get_dataset( "archive" );
+
+	my $menus_fields = get_fields_from_view( $repository, $view );
+
+	# if number of fields is 1 then menu_level must be 1
+	# if number of fields is 2 then menu_level must be 2
+	# etc.
+	if( $menu_level != scalar @{$view->{menus}} )
+	{
+		$repository->log( "Wrong depth to generate a view list: ".$view->{id}."/".join( "/", @{$esc_path_values} ) );
+		return;
+	}
+
+	my $searchexp = new EPrints::Search(
+				custom_order=>$view->{order},
+				satisfy_all=>1,
+				session=>$session,
+				dataset=>$ds );
+	$searchexp->add_field( $ds->get_field('metadata_visibility'), 'show', 'EQ' );
+	my $n=0;
+	foreach my $filter ( @{$filters} )
+	{
+     		$searchexp->add_field( $filter->{fields}, $filter->{value}, "EX", undef, "filter".($n++), 1 );
+	}
+      	my $list = $searchexp->perform_search;
+
+	my $count = $list->count;
+	my @items = $list->get_records;
+	$list->dispose;
+
+	# modes = first_letter, first_value, all_values (default)
+	my $alt_views = $view->{variations};
+	if( !defined $alt_views )
+	{
+		$alt_views = [ 'DEFAULT' ];
+	}
+
+	my @files = ();
+	my $first_view = 1;	
+	ALTVIEWS: foreach my $alt_view ( @{$alt_views} )
+	{
+		my( $fieldname, $options ) = split( ";", $alt_view );
+		my $opts = get_view_opts( $options, $fieldname );
+
+		my $page_file_name = "$target.".$opts->{"filename"};
+		if( $first_view ) { $page_file_name = $target; }
+
+		push @files, $page_file_name;
+
+		my $need_path = $page_file_name;
+		$need_path =~ s/\/[^\/]*$//;
+		EPrints::Platform::mkdir( $need_path );
+
+		my $title;
+		my $phrase_id = "viewtitle_".$ds->confid()."_".$view->{id}."_list";
+		my $null_phrase_id = "viewnull_".$ds->confid()."_".$view->{id};
+		if( $session->get_lang()->has_phrase( $phrase_id, $session ) )
+		{
+			my %o = ();
+			for( my $i = 0; $i < scalar( @{$esc_path_values} ); ++$i )
+			{
+				my $menu_fields = $menus_fields->[$i];
+				my $value = EPrints::Utils::unescape_filename($esc_path_values->[$i]);
+				$value = $menu_fields->[0]->get_value_from_id( $session, $value );
+				$o{"value".($i+1)} = $menu_fields->[0]->render_single_value( $session, $value);
+				if( !EPrints::Utils::is_set( $value ) && $session->get_lang()->has_phrase($null_phrase_id) )
+				{
+					$o{"value".($i+1)} = $session->html_phrase( $null_phrase_id );
+				}
+			}		
+			my $grouping_phrase_id = "viewgroup_".$ds->confid()."_".$view->{id}."_".$opts->{filename};
+			if( $session->get_lang()->has_phrase( $grouping_phrase_id, $session ) )
+			{
+				$o{"grouping"} = $session->html_phrase( $grouping_phrase_id );
+			}
+			elsif( $fieldname eq "DEFAULT" )
+			{
+				$o{"grouping"} = $session->html_phrase( "Update/Views:no_grouping_title" );
+			}	
+			else
+			{
+				my $gfield = $ds->get_field( $fieldname );
+				$o{"grouping"} = $gfield->render_name( $session );
+			}
+
+			$title = $session->html_phrase( $phrase_id, %o );
+		}
+	
+		if( !defined $title )
+		{
+			$title = $session->html_phrase(
+				"bin/generate_views:indextitle",
+				viewname=>$session->make_text( $session->get_view_name( $ds, $view->{id} ) ) );
+		}
+
+
+		# This writes the title including HTML tags
+		open( TITLE, ">:utf8", "$page_file_name.title" ) || EPrints::abort( "Failed to write $page_file_name.title: $!" );
+		print TITLE EPrints::XML::to_string( $title, undef, 1 );
+		close TITLE;
+
+		# This writes the title with HTML tags stripped out.
+		open( TITLETXT, ">:utf8", "$page_file_name.title.textonly" ) || EPrints::abort( "Failed to write $page_file_name.title.textonly: $!" );
+		print TITLETXT EPrints::Utils::tree_to_utf8( $title );
+		close TITLETXT;
+
+		if( defined $view->{template} )
+		{
+			open( TEMPLATE, ">:utf8", "$page_file_name.template" ) || EPrints::abort( "Failed to write $page_file_name.template: $!" );
+			print TEMPLATE $view->{template};
+			close TEMPLATE;
+		}
+
+		open( EXPORT , ">:utf8", "$page_file_name.export" )  || EPrints::abort( "Failed to write $page_file_name.export: $!" );
+		print EXPORT EPrints::XML::to_string( render_export_bar( $session, $esc_path_values, $view ) , undef, 1);
+		close EXPORT;
+
+		open( PAGE, ">:utf8", "$page_file_name.page" ) || EPrints::abort( "Failed to write $page_file_name.page: $!" );
+		open( INCLUDE, ">:utf8", "$page_file_name.include" ) || EPrints::abort( "Failed to write $page_file_name.include: $!" );
+
+		my $navigation_aids = EPrints::XML::to_string( 
+		render_navigation_aids( $session, $path_values, $esc_path_values, $view, $menus_fields, "list" ) );
+
+		print PAGE $navigation_aids;
+		
+		print PAGE "<div class='ep_view_page ep_view_page_view_".$view->{id}."'>";
+		print INCLUDE "<div class='ep_view_page ep_view_page_view_".$view->{id}."'>";
+
+		# Render links to alternate groupings
+		if( scalar @{$alt_views} > 1 && $count )
+		{
+			my $groups = $session->make_doc_fragment;
+			my $first = 1;
+			foreach my $alt_view2 ( @{$alt_views} )
+			{
+				my( $fieldname2, $options2 ) = split( /;/, $alt_view2 );
+				my $opts2 = get_view_opts( $options2,$fieldname2 );
+
+				my $link_name = join '/', @$esc_path_values;
+				if( !$first ) { $link_name .= ".".$opts2->{"filename"} }
+
+				if( !$first )
+				{
+					$groups->appendChild( $session->html_phrase( "Update/Views:group_seperator" ) );
+				}
+
+				my $group;
+				my $phrase_id = "viewgroup_".$ds->confid()."_".$view->{id}."_".$opts2->{filename};
+				if( $session->get_lang()->has_phrase( $phrase_id, $session ) )
+				{
+					$group = $session->html_phrase( $phrase_id );
+				}
+				elsif( $fieldname2 eq "DEFAULT" )
+				{
+					$group = $session->html_phrase( "Update/Views:no_grouping" );
+				}
+				else
+				{
+					$group = $ds->get_field( $fieldname2 )->render_name( $session );
+				}
+				
+				if( $opts->{filename} eq $opts2->{filename} )
+				{
+					$group = $session->html_phrase( "Update/Views:current_group", group=>$group );
+				}
+				else
+				{
+					$link_name =~ /([^\/]+)$/;
+					my $link = $session->render_link( "$1.html" );
+					$link->appendChild( $group );
+					$group = $link;
+				}
+		
+				$groups->appendChild( $group );
+
+				$first = 0;
+			}
+
+			print PAGE EPrints::XML::to_string( $session->html_phrase( "Update/Views:group_by", groups=>$groups ), undef, 1 );
+		}
+
+		my $field;
+		if( $fieldname ne "DEFAULT" )
+		{
+			$field = $ds->get_field( $fieldname );
+		}
+
+
+		# Intro phrase, if any 
+		my $intro_phrase_id = "viewintro_".$view->{id};
+		if( defined $esc_path_values )
+		{
+			$intro_phrase_id.= "/".join( "/", @{$esc_path_values} );
+		}
+		my $intro = "";
+		if( $session->get_lang()->has_phrase( $intro_phrase_id, $session ) )
+		{
+			$intro = EPrints::XML::to_string( $session->html_phrase( $intro_phrase_id ), undef, 1 );
+		}
+
+		# Number of items div.
+		my $count_div = "";
+		unless( $view->{nocount} )
+		{
+			my $phraseid = "bin/generate_views:blurb";
+			if( $menus_fields->[-1]->[0]->is_type( "subject" ) )
+			{
+				$phraseid = "bin/generate_views:subject_blurb";
+			}
+			$count_div = EPrints::XML::to_string( $session->html_phrase(
+				$phraseid,
+				n=>$session->make_text( $count ) ), undef, 1 );
+		}
+
+		# Timestamp div
+		my $time_div = "";
+		unless( $view->{notimestamp} )
+		{
+			$time_div = EPrints::XML::to_string( $session->html_phrase(
+				"bin/generate_views:timestamp",
+					time=>$session->make_text(
+						EPrints::Time::human_time() ) ), undef, 1 );
+		}
+
+
+		if( defined $opts->{render_fn} )
+		{
+			my $block = $repository->call( $opts->{render_fn}, 
+					$session,
+					\@items,
+					$view,
+					$path_values,
+					$opts->{filename} );
+
+			print PAGE $intro;
+			print PAGE $count_div;
+			print PAGE $block;
+			print PAGE $time_div;
+			print PAGE "</div>\n";
+			close PAGE;
+
+			print INCLUDE $intro;
+			print INCLUDE $count_div;
+			print INCLUDE $block;
+			print INCLUDE $time_div;
+			print INCLUDE "</div>\n";
+			close INCLUDE;
+
+			$first_view = 0;
+			next ALTVIEWS;
+		}
+
+
+		# If this grouping is "DEFAULT" then there is no actual grouping-- easy!
+		if( $fieldname eq "DEFAULT" ) 
+		{
+			my( $block, $n ) = render_array_of_eprints( $session, $view, \@items );
+			print PAGE $intro;
+			print PAGE $count_div;
+			print PAGE $block;
+			print PAGE $time_div;
+			print PAGE "</div>\n";
+			close PAGE;
+
+			print INCLUDE $intro;
+			print INCLUDE $count_div;
+			print INCLUDE $block;
+			print INCLUDE $time_div;
+			print INCLUDE "</div>\n";
+			close INCLUDE;
+
+			$first_view = 0;
+			next ALTVIEWS;
+		}
+
+		my $data = group_items( $session, \@items, $field, $opts );
+
+		my $first = 1;
+		my $jumps = $session->make_doc_fragment;
+		my $total = 0;
+		my $maxsize = 1;
+		foreach my $group ( @{$data} )
+		{
+			my( $code, $heading, $items ) = @{$group};
+			my $n = scalar @$items;
+			if( $n > $maxsize ) { $maxsize = $n; }
+		}
+		my $range;
+		if( $opts->{cloud} )
+		{
+			$range = $opts->{cloudmax} - $opts->{cloudmin};
+		}
+		foreach my $group ( @{$data} )
+		{
+			my( $code, $heading, $items ) = @{$group};
+			if( scalar @$items == 0 )
+			{
+				print STDERR "ODD: $code has no items\n";
+				next;
+			}
+	
+			if( !$first )
+			{
+				if( $opts->{"no_seperator"} ) 
+				{
+					$jumps->appendChild( $session->make_text( " " ) );
+				}
+				else
+				{
+					$jumps->appendChild( $session->html_phrase( "Update/Views:jump_seperator" ) );
+				}
+			}
+
+			my $link = $session->render_link( "#group_".EPrints::Utils::escape_filename( $code ) );
+			$link->appendChild( $session->clone_for_me($heading,1) );
+			if( $opts->{cloud} )
+			{
+				my $size = int( $range * ( log(1+scalar @$items ) / log(1+$maxsize) ) ) + $opts->{cloudmin};
+				my $span = $session->make_element( "span", style=>"font-size: $size\%" );
+				$span->appendChild( $link );
+				$jumps->appendChild( $span );
+			}
+			else
+			{
+				$jumps->appendChild( $link );
+			}
+
+			$first = 0;
+		}
+		my $jumpmenu = "";
+		if( $opts->{"jump"} eq "plain" ) 
+		{
+			$jumpmenu = EPrints::XML::to_string( $jumps, undef, 1);
+		}
+		if( $opts->{"jump"} eq "default" )
+		{
+			$jumpmenu = EPrints::XML::to_string( $session->html_phrase( "Update/Views:jump_to", jumps=>$jumps ), undef, 1 );
+		}
+
+		# css for your convenience
+		my $viewid = $view->{id};
+		$jumpmenu =  "<div class='ep_view_jump ep_view_${viewid}_${fieldname}_jump'>$jumpmenu</div>";
+
+		if( $count )
+		{
+			print PAGE $jumpmenu;
+			print INCLUDE $jumpmenu;
+		}
+
+		print PAGE $intro;
+		print INCLUDE $intro;
+
+		print PAGE $count_div;
+		print INCLUDE $count_div;
+
+		foreach my $group ( @{$data} )
+		{
+			my( $code, $heading, $items ) = @{$group};
+
+			print PAGE "<a name='group_".EPrints::Utils::escape_filename( $code )."'></a>\n";
+			print INCLUDE "<a name='group_".EPrints::Utils::escape_filename( $code )."'></a>\n";
+		
+			print PAGE "<h2>".EPrints::XML::to_string( $heading, undef, 1 )."</h2>";
+			print INCLUDE "<h2>".EPrints::XML::to_string( $heading, undef, 1 )."</h2>";
+			my( $block, $n ) = render_array_of_eprints( $session, $view, $items );
+			print PAGE $block;
+			print INCLUDE $block;
+		}
+
+		print PAGE $time_div;
+		print INCLUDE $time_div;
+
+		print PAGE "</div>\n";
+		print INCLUDE "</div>\n";
+
+		close PAGE;
+		close INCLUDE;
+		$first_view = 0;
+	}
+
+	return $target;
 }
 
 # pagetype is "menu" or "list"
 sub render_navigation_aids
 {
-	my( $repo, $path_values, $view, $pagetype, %opts ) = @_;
+	my( $session, $path_values, $esc_path_values, $view, $menus_fields, $pagetype ) = @_;
 
-	my $menus_fields = $view->menus_fields;
-	my $f = $repo->make_doc_fragment();
+	my $f = $session->make_doc_fragment();
 
 	my $menu_level = scalar @{$path_values};
 
@@ -1456,13 +1511,13 @@ sub render_navigation_aids
 		{
 			$url = "./";
 		}
-		$f->appendChild( $repo->html_phrase( "Update/Views:up_a_level", 
-			url => $repo->render_link( $url ) ) );
+		$f->appendChild( $session->html_phrase( "Update/Views:up_a_level", 
+			url => $session->render_link( $url ) ) );
 	}
 
-	if( defined $opts{export_bar} )
+	if( $pagetype eq "list" )
 	{
-		$f->appendChild( $opts{export_bar} );
+		$f->appendChild( render_export_bar( $session, $esc_path_values, $view ) );
 	}
 
 	# this is the field of the level ABOVE this level. So we get options to 
@@ -1473,13 +1528,12 @@ sub render_navigation_aids
 		$menu_fields = $menus_fields->[$menu_level-1];
 	}
 
-	if( defined $menu_fields && $menu_fields->[0]->isa( "EPrints::MetaField::Subject" ) )
+	if( defined $menu_fields && $menu_fields->[0]->is_type( "subject" ) )
 	{
-		my $subject = EPrints::Subject->new( $repo, $path_values->[-1] );
-		if( !defined $subject )
-		{
-			EPrints->abort( "Weird, no subject match for: '".$path_values->[-1]."'" );
-		}
+		my @all_but_this_level_path_values = @{$path_values};
+		pop @all_but_this_level_path_values;
+		my $sizes = get_sizes( $session, $view, \@all_but_this_level_path_values );
+		my $subject = EPrints::Subject->new( $session, $path_values->[-1] );
 		my @ids= @{$subject->get_value( "ancestors" )};
 		foreach my $sub_subject ( $subject->get_children() )
 		{
@@ -1493,7 +1547,7 @@ sub render_navigation_aids
 			my @newids = ();
 			foreach my $id ( @ids )
 			{
-				push @newids, $id if $opts{sizes}->{$id};
+				push @newids, $id if $sizes->{$id};
 			}
 			@ids = @newids;
 		}
@@ -1502,17 +1556,17 @@ sub render_navigation_aids
 		if( $pagetype eq "menu" ) { $mode = 4; }
 		foreach my $field ( @{$menu_fields} )
 		{
-			my $div_box = $repo->make_element( "div", class=>"ep_toolbox" );
-			my $div_contents = $repo->make_element( "div", class=>"ep_toolbox_content" );
+			my $div_box = $session->make_element( "div", class=>"ep_toolbox" );
+			my $div_contents = $session->make_element( "div", class=>"ep_toolbox_content" );
 			$f->appendChild( $div_box );
 			$div_box->appendChild( $div_contents );
 			$div_contents->appendChild( 
-				$repo->render_subjects( 
+				$session->render_subjects( 
 					\@ids, 
 					$field->get_property( "top" ), 
 					$path_values->[-1], 
 					$mode, 
-					$opts{sizes} ) );
+					$sizes ) );
 		}
 	}
 
@@ -1521,72 +1575,86 @@ sub render_navigation_aids
 
 sub render_export_bar
 {
-	my( $repo, $view, $path_values ) = @_;
+	my( $session, $esc_path_values, $view ) = @_;
 
-	my $esc_path_values = [$view->escape_path_values( @$path_values )];
+	my %opts =  (
+			type=>"Export",
+			can_accept=>"list/eprint",
+			is_visible=>"all",
+			is_advertised=>1,
+	);
+	my @plugins = $session->plugin_list( %opts );
 
-	my @plugins = $view->export_plugins();
+	if( scalar @plugins == 0 ) 
+	{
+		return $session->make_doc_fragment;
+	}
 
-	return $repo->make_doc_fragment if scalar @plugins == 0;
-
-	my $export_url = $repo->config( "perl_url" )."/exportview";
+	my $export_url = $session->get_repository->get_conf( "perl_url" )."/exportview";
 	my $values = join( "/", @{$esc_path_values} );	
 
-	my $feeds = $repo->make_doc_fragment;
-	my $tools = $repo->make_doc_fragment;
-	my $select = $repo->make_element( "select", name=>"format" );
-	foreach my $plugin ( @plugins )
+	my $feeds = $session->make_doc_fragment;
+	my $tools = $session->make_doc_fragment;
+	my $options = {};
+	foreach my $plugin_id ( @plugins ) 
 	{
-		my $id = $plugin->get_id;
-		$id =~ s/^Export:://;
+		$plugin_id =~ m/^[^:]+::(.*)$/;
+		my $id = $1;
+		my $plugin = $session->plugin( $plugin_id );
+		my $dom_name = $plugin->render_name;
 		if( $plugin->is_feed || $plugin->is_tool )
 		{
 			my $type = "feed";
 			$type = "tool" if( $plugin->is_tool );
-			my $span = $repo->make_element( "span", class=>"ep_search_$type" );
+			my $span = $session->make_element( "span", class=>"ep_search_$type" );
 
 			my $fn = join( "_", @{$esc_path_values} );	
 			my $url = $export_url."/".$view->{id}."/$values/$id/$fn".$plugin->param("suffix");
 
-			my $a1 = $repo->render_link( $url );
-			my $icon = $repo->make_element( "img", src=>$plugin->icon_url(), alt=>"[$type]", border=>0 );
+			my $a1 = $session->render_link( $url );
+			my $icon = $session->make_element( "img", src=>$plugin->icon_url(), alt=>"[$type]", border=>0 );
 			$a1->appendChild( $icon );
-			my $a2 = $repo->render_link( $url );
-			$a2->appendChild( $plugin->render_name );
+			my $a2 = $session->render_link( $url );
+			$a2->appendChild( $dom_name );
 			$span->appendChild( $a1 );
-			$span->appendChild( $repo->make_text( " " ) );
+			$span->appendChild( $session->make_text( " " ) );
 			$span->appendChild( $a2 );
 
 			if( $type eq "tool" )
 			{
-				$tools->appendChild( $repo->make_text( " " ) );
+				$tools->appendChild( $session->make_text( " " ) );
 				$tools->appendChild( $span );	
 			}
 			if( $type eq "feed" )
 			{
-				$feeds->appendChild( $repo->make_text( " " ) );
+				$feeds->appendChild( $session->make_text( " " ) );
 				$feeds->appendChild( $span );	
 			}
 		}
 		else
 		{
-			my $option = $repo->make_element( "option", value=>$id );
-			$option->appendChild( $plugin->render_name );
-			$select->appendChild( $option );
+			my $option = $session->make_element( "option", value=>$id );
+			$option->appendChild( $dom_name );
+			$options->{EPrints::XML::to_string($dom_name, undef, 1 )} = $option;
 		}
 	}
 
-	my $button = $repo->make_doc_fragment;
-	$button->appendChild( $repo->render_button(
+	my $select = $session->make_element( "select", name=>"format" );
+	foreach my $optname ( sort keys %{$options} )
+	{
+		$select->appendChild( $options->{$optname} );
+	}
+	my $button = $session->make_doc_fragment;
+	$button->appendChild( $session->render_button(
 			name=>"_action_export_redir",
-			value=>$repo->phrase( "lib/searchexpression:export_button" ) ) );
+			value=>$session->phrase( "lib/searchexpression:export_button" ) ) );
 	$button->appendChild( 
-		$repo->render_hidden_field( "view", $view->{id} ) );
+		$session->render_hidden_field( "view", $view->{id} ) );
 	$button->appendChild( 
-		$repo->render_hidden_field( "values", $values ) ); 
+		$session->render_hidden_field( "values", $values ) ); 
 
-	my $form = $repo->render_form( "GET", $export_url );
-	$form->appendChild( $repo->html_phrase( "Update/Views:export_section",
+	my $form = $session->render_form( "GET", $export_url );
+	$form->appendChild( $session->html_phrase( "Update/Views:export_section",
 					feeds => $feeds,
 					tools => $tools,
 					menu => $select,
@@ -1598,7 +1666,7 @@ sub render_export_bar
 	
 sub group_items
 {
-	my( $repo, $items, $field, $opts ) = @_;
+	my( $session, $items, $field, $opts ) = @_;
 
 	my $code_to_list = {};
 	my $code_to_heading = {};
@@ -1606,14 +1674,10 @@ sub group_items
 	
 	foreach my $item ( @$items )
 	{
-		my $values = $field->get_value( $item );
+		my $values = $item->get_value( $field->get_name );
 		if( !$field->get_property( "multiple" ) )
 		{
 			$values = [$values];
-		}
-		elsif( !scalar(@$values) )
-		{
-			$values = [$field->empty_value];
 		}
 		VALUE: foreach my $value ( @$values )
 		{
@@ -1629,7 +1693,7 @@ sub group_items
 
 					if( !defined $code_to_heading->{"\L$keyword"} )
 					{
-						$code_to_heading->{"\L$keyword"} = $repo->make_text( $keyword );
+						$code_to_heading->{"\L$keyword"} = $session->make_text( $keyword );
 					}
 					push @{$code_to_list->{"\L$keyword"}}, $item;
 				}
@@ -1638,7 +1702,7 @@ sub group_items
 			{
 				my $code = $value;
 				if( ! defined $code ) { $code = ""; }
-				if( $field->isa( "EPrints::MetaField::Name" ) )
+				if( $field->get_type eq "name" )
 				{
 					$code = "";
 					$code.= $value->{family} if defined $value->{family};
@@ -1668,16 +1732,16 @@ sub group_items
 					{
 						if( $code eq "" )
 						{
-							$code_to_heading->{$code} = $repo->html_phrase( "Update/Views:no_value" );
+							$code_to_heading->{$code} = $session->html_phrase( "Update/Views:no_value" );
 						}
 						else
 						{
-							$code_to_heading->{$code} = $repo->make_text( $code );
+							$code_to_heading->{$code} = $session->make_text( $code );
 						}
 					}
 					else
 					{
-						$code_to_heading->{$code} = $field->render_single_value( $repo, $value );
+						$code_to_heading->{$code} = $field->render_single_value( $session, $value );
 					}
 				}
 			}
@@ -1686,20 +1750,25 @@ sub group_items
 		}
 	}
 
-	my $langid = $repo->get_langid;
+	my $langid = $session->get_langid;
 	my $data = [];
-	my @codes = keys %$code_to_list;
+	my @codes;
 
 	if( $opts->{"string"} )
 	{
-		@codes = sort @codes;
+		@codes = sort keys %{$code_to_list};
 	}
 	else
 	{
-		my %cmp = map {
-			$_ => $field->ordervalue_basic( $code_to_value->{$_}, $repo, $langid )
-		} @codes;
-		@codes = sort { $cmp{$a} cmp $cmp{$b} } @codes;
+		@codes = sort 
+			{ 
+				my $v_a = $code_to_value->{$a};
+				my $v_b = $code_to_value->{$b};
+				my $o_a = $field->ordervalue_basic( $v_a, $session, $langid );
+				my $o_b = $field->ordervalue_basic( $v_b, $session, $langid );
+				return $o_a cmp $o_b;
+			}
+			keys %{$code_to_list};
 	}
 
 	if( $opts->{reverse} )
@@ -1716,22 +1785,7 @@ sub group_items
 
 sub render_array_of_eprints
 {
-	my( $repo, $view, $items ) = @_;
-
-	my $xml = $repo->xml;
-	my $frag;
-	if( defined $view->{layout} && $view->{layout} eq "orderedlist" )
-	{
-		$frag = $xml->create_element( "ol" );
-	}
-	elsif( defined $view->{layout} && $view->{layout} eq "unorderedlist" )
-	{
-		$frag = $xml->create_element( "ol" );
-	}
-	else
-	{
-		$frag = $xml->create_document_fragment;
-	}
+	my( $session, $view, $items ) = @_;
 
 	my @r = ();
 
@@ -1739,27 +1793,48 @@ sub render_array_of_eprints
 	foreach my $item ( @{$items} )
 	{
 
-		my $cite = $view->render_citation_link( $item );
+		my $ctype = $view->{citation}||"default";
+		my $key = $ctype . ":" . $item->internal_uri;
+		if( !defined $session->{citesdone}->{$key} )
+		{
+			my $cite = EPrints::XML::to_string( $item->render_citation_link( $view->{citation} ), undef, 1 );
+			$session->{citesdone}->{$key} = $cite;
+		}
+		my $cite = $session->{citesdone}->{$key};
 
 		if( $view->{layout} eq "paragraph" )
 		{
-			$frag->appendChild( $xml->create_element( "p" ) )
-				->appendChild( $xml->clone( $cite ) );
+			push @r, "<p>", $cite, "</p>\n";
 		}
 		elsif( 
 			$view->{layout} eq "orderedlist" ||
 			$view->{layout} eq "unorderedlist" )
 		{
-			$frag->appendChild( $xml->create_element( "li" ) )
-				->appendChild( $xml->clone( $cite ) );
+			push @r, "<li>", $cite, "</li>\n";
 		}
 		else
 		{
-			$frag->appendChild( $xml->clone( $cite ) );
+			push @r, $cite, "\n";
 		}
 	}
 
-	return $frag;
+	my $n = @{$items};
+	if( !defined $view->{layout} )
+	{
+		return( join( "", @r ), $n );
+	}
+	elsif( $view->{layout} eq "orderedlist" )
+	{
+		return( join( "", "<ol>",@r,"</ol>" ), $n );
+	}
+	elsif( $view->{layout} eq "unorderedlist" )
+	{
+		return( join( "", "<ul>",@r,"</ul>" ), $n );
+	}
+	else
+	{
+		return( join( "", @r ), $n );
+	}
 }
 
 
@@ -1817,422 +1892,11 @@ sub get_view_opts
 	return $opts;
 }
 
-=head2 Pseudo-Views Class
 
-=cut
 
-sub new
-{
-	my( $class, %opts ) = @_;
 
-	modernise_view( $opts{view} );
 
-	return bless {
-		%{$opts{view}},
-		_repository => $opts{repository},
-		_citescache => {},
-	}, __PACKAGE__;
-}
 
-=item $desc = $view->name
 
-Returns a human-readable name of this view (for debugging).
-
-=cut
-
-sub name
-{
-	my( $self ) = @_;
-
-	return sprintf("%s.view.%s",
-		$self->dataset->base_id,
-		$self->{id},
-	);
-}
-
-sub escape_path_values
-{
-	my( $self, @path_values ) = @_;
-
-	my $menus_fields = $self->menus_fields;
-	for(my $i = 0; $i < @path_values && $i < @$menus_fields; ++$i)
-	{
-		$path_values[$i] = EPrints::Utils::escape_filename(
-			$menus_fields->[$i]->[0]->get_id_from_value(
-				$self->{_repository},
-				$path_values[$i]
-			) );
-	}
-
-	return @path_values;
-}
-
-sub unescape_path_values
-{
-	my( $self, @esc_path_values ) = @_;
-
-	my $menus_fields = $self->menus_fields;
-	for(my $i = 0; $i < @esc_path_values && $i < @$menus_fields; ++$i)
-	{
-		$esc_path_values[$i] = $menus_fields->[$i]->[0]->get_value_from_id(
-			$self->{_repository},
-			EPrints::Utils::unescape_filename( $esc_path_values[$i] )
-		);
-	}
-
-	return @esc_path_values;
-}
-
-=begin InternalDoc
-
-=item $filters = $view->get_filters( $path_values [, $exact? ] )
-
-Return an array of the filters required for the given $path_values.
-
-If $exact is true will only return values that match $path_values exactly e.g. not any children for subject-fields.
-
-=end InternalDoc
-
-=cut
-
-sub get_filters
-{
-	my( $self, $path_values, $exact ) = @_;
-
-	my $menus_fields = $self->menus_fields;
-
-	my $filters = $self->{filters};
-	$filters = [] if !defined $filters;
-
-	if( $self->dataset->base_id eq "eprint" )
-	{
-		push @$filters, { meta_fields=>[qw( metadata_visibility )], value=>"show" };
-	}
-
-	for( my $i = 0; $i < @$path_values && $i < @$menus_fields; ++$i )
-	{
-		my $filter = { meta_fields=>[map { $_->get_name } @{$menus_fields->[$i]}], value=>$path_values->[$i] };
-		# if the value is higher than the current level then apply the match
-		# exactly (only really applies to Subjects, which at the current level
-		# show all ancestors)
-		if( !EPrints::Utils::is_set( $path_values->[$i] ) || $i < $#$path_values || $exact )
-		{
-			$filter->{match} = "EX";
-		}
-		push @$filters, $filter;
-	}
-
-	return $filters;
-}
-
-=begin InternalDoc
-
-=item $id_map = $view->fieldlist_sizes( $path_values, $menu_level [, $filters ] )
-
-Returns a map of values (encoded as ids) to counts.
-
-$menu_level is the level you want to get value-counts for.
-
-If $filters is given will use the given filters instead of calling get_filters( $path_values ).
-
-=end InternalDoc
-
-=cut
-
-sub fieldlist_sizes
-{
-	my( $self, $path_values, $menu_level, $filters ) = @_;
-
-	my $repo = $self->repository;
-
-	my $dataset = $self->dataset;
-	my $menus_fields = $self->menus_fields;
-	$filters = $self->get_filters( $path_values ) if !defined $filters;
-
-	my $menu_fields = $menus_fields->[$menu_level];
-
-	# if there are lower levels that require a value being set then we need to
-	# check that, otherwise we get the wrong counts at this level
-	for(my $i = @$path_values; $i < @$menus_fields; ++$i)
-	{
-		my $menu_fields = $menus_fields->[$i];
-		my $menu = $self->{menus}->[$i];
-		if( !$menu->{allow_null} )
-		{
-			push @$filters, 
-				{ meta_fields => [map { $_->name } @$menu_fields], match => "SET" };
-		}
-	}
-
-	my $searchexp = $dataset->prepare_search(
-		filters => $filters,
-	);
-	
-	# get the id/counts for the menu level requested
-	my $id_map = $searchexp->perform_distinctby( $menu_fields );
-
-	# if the field is a subject then we populate sizes with the entire tree of
-	# values - each ancestor is the sum of all unique child node entries
-	if( $menu_fields->[0]->isa( "EPrints::MetaField::Subject" ) )
-	{
-		my( $subject_map, $subject_map_r ) = EPrints::DataObj::Subject::get_all( $repo );
-
-		my %subj_map;
-
-		# for every subject build a running-total for all its ancestors
-		foreach my $id (keys %$id_map)
-		{
-			my $subject = $subject_map->{$id};
-			next if !defined $subject; # Hmm, unknown subject
-			foreach my $ancestor (@{$subject->value( "ancestors" )})
-			{
-				next if $ancestor eq $EPrints::DataObj::Subject::root_subject;
-				foreach my $item_id (@{$id_map->{$id}})
-				{
-					$subj_map{$ancestor}->{$item_id} = 1;
-				}
-			}
-		}
-
-		# calculate the totals
-		$_ = scalar keys %$_ for values %subj_map;
-
-		return \%subj_map;
-	}
-
-	# calculate the totals
-	$_ = scalar @$_ for values %$id_map;
-
-	return $id_map;
-}
-
-=begin InternalDoc
-
-=item $list = $view->menus_fields()
-
-Returns a list of lists of fields that this view represents.
-
-=end InternalDoc
-
-=cut
-
-sub menus_fields
-{
-	my( $self ) = @_;
-
-	return $self->{_menus_fields} if defined $self->{_menus_fields};
-
-	my $ds = $self->dataset;
-
-	my $menus_fields = [];
-	foreach my $menu ( @{$self->{menus}} )
-	{
-		my $menu_fields = [];
-		foreach my $field_id ( @{$menu->{fields}} )
-		{
-			my $field = EPrints::Utils::field_from_config_string( $ds, $field_id );
-			unless( $field->is_browsable() )
-			{
-				EPrints::abort( "Cannot generate browse pages for field \"".$field_id."\"\n- Type \"".$field->get_type()."\" cannot be browsed.\n" );
-			}
-			push @{$menu_fields}, $field;
-		}
-		push @{$menus_fields},$menu_fields;
-	}
-
-	return $self->{_menus_fields} = $menus_fields
-}
-
-=begin InternalDoc
-
-=item $dataset = $view->dataset()
-
-Returns the dataset this view uses items from.
-
-=end InternalDoc
-
-=cut
-
-sub dataset
-{
-	my( $self ) = @_;
-
-	return $self->{_dataset} ||= $self->{_repository}->dataset( $self->{dataset} );
-}
-
-sub repository
-{
-	my( $self ) = @_;
-
-	return $self->{_repository};
-}
-
-=begin InternalDoc
-
-=item $xhtml = $view->render_name()
-
-Render the name of this view.
-
-=end InternalDoc
-
-=cut
-
-sub render_name
-{
-	my( $self ) = @_;
-
-	return $self->{_repository}->html_phrase( join "_", "viewname", $self->dataset->base_id, $self->{id} );
-}
-
-=item $view->update_view_by_path( %opts )
-
-Updates the view source files.
-
-Options:
-
-	on_write - callback called with the filename written
-	langid - language to write
-	do_menus - suppress generation of menus
-	do_lists - suppress generation of lists
-
-=cut
-
-sub update_view_by_path
-{
-	my( $self, %opts ) = @_;
-
-	$opts{on_write} ||= sub {};
-
-	$self->_update_view_by_path(
-		%opts,
-		path => [],
-		sizes => $self->fieldlist_sizes( [], 0 ),
-	);
-}
-
-sub _update_view_by_path
-{
-	my( $self, %opts ) = @_;
-
-	my $repo = $self->repository;
-
-	my $target = join "/", $repo->config( "htdocs_path" ), $opts{langid}, "view", $self->{id}, abbr_path( $self->escape_path_values( @{$opts{path}} ) );
-
-	if( scalar @{$opts{path}} == scalar @{$self->{menus}} )
-	{
-		# is a leaf node
-		if( $opts{do_lists} )
-		{
-			my $rc = update_view_list(
-				$self->repository,
-				$target,
-				$opts{langid},
-				$self,
-				$opts{path},
-				sizes => $opts{sizes},
-			);
-			&{$opts{on_write}}( $target );
-		}
-	}
-	else
-	{
-		# has sub levels
-		if( $opts{do_menus} )
-		{
-			my $rc = update_view_menu(
-				$self->repository,
-				$target,
-				$opts{langid},
-				$self,
-				$opts{path}
-			);
-			&{$opts{on_write}}( $target );
-		}
-
-		my $sizes = $self->fieldlist_sizes( $opts{path}, scalar(@{$opts{path}}) );
-		foreach my $id ( keys %{$sizes} )
-		{
-			my $field = $self->menus_fields->[scalar @{$opts{path}}]->[0];
-			my $value = $field->get_value_from_id( $self->repository, $id );
-			$self->_update_view_by_path( %opts,
-				path => [@{$opts{path}}, $value],
-				sizes => $sizes,
-				);
-		}
-	}
-}
-
-=begin InternalDoc
-
-=item $xhtml = $view->render_citation_link( $item )
-
-Renders a citation link for $item and caches the result.
-
-=end InternalDoc
-
-=cut
-
-sub render_citation_link
-{
-	my( $self, $item ) = @_;
-
-	my $key = join ":", ($self->{citation}||''), $self->dataset->id, $item->id;
-
-	return $self->{_citescache}->{$key} ||=
-		$item->render_citation_link( $self->{citation} );
-}
-
-=begin InternalDoc
-
-=item @plugins = $view->export_plugins()
-
-Returns a sorted cached list of plugins that can be used to export items from this view.
-
-=end InternalDoc
-
-=cut
-
-sub export_plugins
-{
-	my( $self ) = @_;
-
-	return @{$self->{_pluginscache} ||= [
-		sort { $a->get_name cmp $b->get_name }
-		$self->{_repository}->get_plugins(
-			type => "Export",
-			can_accept => "list/".$self->dataset->base_id,
-			is_visible => "all",
-			is_advertised => 1,
-		)
-	]};
-}
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

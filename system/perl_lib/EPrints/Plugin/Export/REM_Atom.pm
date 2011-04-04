@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -136,8 +141,6 @@ sub xml_dataobj
 	$lastmod =~ s/ /T/;
 	$lastmod = $lastmod."Z";
 	my $eprint_id = $dataobj->get_value( "eprintid" );
-	my $eprint_uri = $dataobj->uri;
-	my $eprint_status = $dataobj->get_value ( "eprint_status" );
 	my $eprint_rev = $dataobj->get_value( "rev_number" );
 	my $eprint_url = $dataobj->get_url;
 	my $resmap_url = $plugin->dataobj_export_url( $dataobj );
@@ -150,7 +153,7 @@ sub xml_dataobj
 	my $topcontent = $session->render_data_element(
 		4,
 		"id",
-		"$eprint_uri"
+		"$resmap_url#aggregation"
 	);
 	$response->appendChild( $topcontent );
 	
@@ -191,13 +194,6 @@ sub xml_dataobj
 		4,
 		"title",
 		$title
-	);
-	$response->appendChild( $topcontent );
-
-	$topcontent = $session->render_data_element(
-		4,
-		"status",
-		$eprint_status
 	);
 	$response->appendChild( $topcontent );
 
@@ -451,31 +447,3 @@ sub _root
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

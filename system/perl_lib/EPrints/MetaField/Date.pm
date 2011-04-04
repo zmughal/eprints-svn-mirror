@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -270,20 +275,44 @@ sub get_unsorted_values
 	return \@outvalues;
 }
 
-sub get_id_from_value
+sub get_ids_by_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $session, $dataset, %opts ) = @_;
 
-	return 'NULL' if !EPrints::Utils::is_set( $value );
-	my $id = $self->SUPER::get_id_from_value( $session, $value );
+	my $in_ids = $session->get_database->get_ids_by_field_values( $self, $dataset, %opts );
 
 	my $res = $self->{render_res};
 
-	return substr($id,0,4) if $res eq "year";
-	return substr($id,0,7) if $res eq "month";
-	return substr($id,0,10) if $res eq "day";
+	if( $res eq "day" )
+	{
+		return $in_ids;
+	}
 
-	return $res;
+	my $l = 10;
+	if( $res eq "month" ) { $l = 7; }
+	if( $res eq "year" ) { $l = 4; }
+
+	my $id_map = {};
+	foreach my $value ( keys %{$in_ids} )
+	{
+		my $proc_v = "undef";
+		if( defined $value )
+		{
+			$proc_v = substr($value,0,$l);
+		}
+
+		foreach my $id ( @{$in_ids->{$value}} )
+		{
+			$id_map->{$proc_v}->{$id} = 1;
+		}
+	}
+	my $out_ids = {};
+	foreach my $value ( keys %{$id_map} )
+	{
+		$out_ids->{$value} = [ keys %{$id_map->{$value}} ];
+	}
+
+	return $out_ids;
 }
 
 sub get_value_label
@@ -384,11 +413,6 @@ sub get_search_conditions
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
 
-	if( $match eq "SET" )
-	{
-		return $self->SUPER::get_search_conditions( @_[1..$#_] );
-	}
-
 	if( $match eq "EX" )
 	{
 		if( !EPrints::Utils::is_set( $search_value ) )
@@ -413,7 +437,7 @@ sub get_search_conditions_not_ex
 {
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
-
+	
 	# DATETIME
 	# DATETIME-
 	# -DATETIME
@@ -541,31 +565,3 @@ sub render_xml_schema_type
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

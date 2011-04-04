@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -55,10 +60,6 @@ empty, as oppose to skipping this search field.
 
 In the case of subjects, match the specified subjects, but not their
 decendants.
-
-=item match=SET
-
-If the value is non-empty.
 
 =item match=NO
 
@@ -167,29 +168,19 @@ sub new
 	my $self = {};
 	bless $self, $class;
 	
-	if( ref( $fields ) ne "ARRAY" )
-	{
-		$fields = [ $fields ];
-	}
-	$self->{"fieldlist"} = $fields;
-	$self->{"field"} = $fields->[0];
-
 	$self->{"session"} = $session;
 	$self->{"dataset"} = $dataset;
 
 	$self->{"value"} = $value;
-
-	# argument or field default or EQ/ALL
-	$self->{"match"} = $match ? $match : (defined $self->{field} ?
-				$self->{field}->property( "match" ) : "EQ");
-	$self->{"merge"} = $merge ? $merge : (defined $self->{field} ?
-				$self->{field}->property( "merge" ) : "ALL");
-
-	if( $self->{match} ne "EQ" && $self->{match} ne "IN" && $self->{match} ne "EX" && $self->{match} ne "SET" )
+	$self->{"match"} = "EQ";
+	$self->{"match"} = $match if( EPrints::Utils::is_set( $match ) );
+	$self->{"merge"} = "ALL";
+	$self->{"merge"} = $merge if( EPrints::Utils::is_set( $merge ) );
+	if( $self->{match} ne "EQ" && $self->{match} ne "IN" && $self->{match} ne "EX" )
 	{
 		$session->get_repository->log( 
 "search field match value was '".$self->{match}."'. Should be EQ, IN or EX." );
-		$self->{match} = "EQ";
+		$self->{merge} = "ALL";
 	}
 
 	if( $self->{merge} ne "ALL" && $self->{merge} ne "ANY" )
@@ -207,6 +198,13 @@ sub new
 "search field show_help value was '".$self->{"show_help"}."'. Should be toggle, always or never." );
 		$self->{"show_help"} = "toggle";
 	}
+
+	if( ref( $fields ) ne "ARRAY" )
+	{
+		$fields = [ $fields ];
+	}
+
+	$self->{"fieldlist"} = $fields;
 
 	$prefix = "" unless defined $prefix;
 		
@@ -235,6 +233,7 @@ sub new
 	$self->{"id"} = $id || $self->{rawid};
 
 	$self->{"form_name_prefix"} = $prefix.$self->{"id"};
+	$self->{"field"} = $fields->[0];
 
 	# a search is "simple" if it contains a mix of fields. 
 	# 'text indexable" fields (longtext,text,url & email) all count 
@@ -299,23 +298,26 @@ sub from_form
 {
 	my( $self ) = @_;
 
-	my( $value, $match, $merge, $problem) =
+	my $problem;
+
+	( $self->{"value"}, $self->{"merge"}, $self->{"match"}, $problem ) =
 		$self->{"field"}->from_search_form( 
 			$self->{"session"}, 
 			$self->{"form_name_prefix"} );
 
-	$self->{value} = defined $value ? $value : "";
-	$self->{match} = $match if $match && $match =~ /^EQ|IN|EX|SET$/;
-	$self->{merge} = $merge if $merge && $merge =~ /^ANY|ALL$/;
+	$self->{"value"} = "" unless( defined $self->{"value"} );
+	$self->{"merge"} = "ALL" unless( defined $self->{"merge"} );
+	$self->{"match"} = "EQ" unless( defined $self->{"match"} );
 
 	# match = NO? if value==""
 
 	if( $problem )
 	{
 		$self->{"match"} = "NO";
+		return $problem;
 	}
 
-	return $problem;
+	return;
 }
 	
 	
@@ -347,11 +349,6 @@ sub get_conditions
 		return $self->get_conditions_no_split( $self->{"value"} );
 	}
 
-	if( $self->{"match"} eq "SET" )
-	{
-		return $self->get_conditions_no_split( $self->{"value"} );
-	}
-
 	if( !EPrints::Utils::is_set( $self->{"value"} ) )
 	{
 		return EPrints::Search::Condition->new( 'FALSE' );
@@ -360,9 +357,11 @@ sub get_conditions
 	my @parts;
 	if( $self->{"search_mode"} eq "simple" )
 	{
-		@parts = EPrints::Index::Tokenizer::split_search_value( 
-			$self->{"session"},
-			$self->{"value"} );
+		@parts = EPrints::Index::split_words( 
+			$self->{"session"},  # could be just archive?
+			EPrints::Index::apply_mapping( 
+				$self->{"session"}, 
+				$self->{"value"} ) );
 		# unless we strip stop-words 'the' will get passed through to name
 		# matches causing no results (doesn't help in the search description)
 		my $freetext_stop_words = $self->{session}->config(
@@ -704,10 +703,7 @@ sub is_set
 {
 	my( $self ) = @_;
 
-	return
-		EPrints::Utils::is_set( $self->{"value"} ) ||
-		($self->{"match"} eq "EX" && $self->{"merge"} eq "ALL") ||
-		$self->{"match"} eq "SET";
+	return EPrints::Utils::is_set( $self->{"value"} ) || $self->{"match"} eq "EX";
 }
 
 
@@ -734,7 +730,7 @@ sub serialise
 		$self->{"match"}, 
 		$self->{"value"} )
 	{
-		my $item = defined $_ ? $_ : "";
+		my $item = $_;
 		$item =~ s/[\\\:]/\\$&/g;
 		push @escapedparts, $item;
 	}
@@ -848,32 +844,4 @@ sub set_dataset
 =cut
 
 
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

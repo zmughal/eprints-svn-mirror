@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -225,10 +230,6 @@ sub connect
 	if( $rc )
 	{
 		$self->do("SET NAMES 'utf8'");
-	}
-	elsif( $DBI::err == 1040 )
-	{
-		EPrints->abort( "Error connecting to MySQL server: $DBI::errstr. To fix this increase max_connections in my.cnf:\n\n[mysqld]\nmax_connections=300\n" );
 	}
 
 	return $rc;
@@ -538,24 +539,6 @@ sub retry_error
 	return ($err == 2006);
 }
 
-sub type_info
-{
-	my( $self, $data_type ) = @_;
-
-	if( $data_type eq SQL_CLOB )
-	{
-		return {
-			TYPE_NAME => "longtext",
-			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2 ** 31,
-		};
-	}
-	else
-	{
-		return $self->SUPER::type_info( $data_type );
-	}
-}
-
 1; # For use/require success
 
 ######################################################################
@@ -564,32 +547,4 @@ sub type_info
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

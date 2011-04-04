@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -132,7 +137,6 @@ sub make_header
 				}
 				else
 				{
-					$v = $afield->get_id_from_value( $session, $v );
 					@l = ( encode_setspec( $v ) );
 				}
 
@@ -310,8 +314,13 @@ Converts a string into hex. eg. "A" becomes "41".
 
 sub text2bytestring
 {
-	use bytes;
-	return join '', map { sprintf("%02X", ord($_) ) } split //, $_[0];
+	my( $string ) = @_;
+	my $encstring = "";
+	for(my $i=0; $i<length($string); $i++)
+	{
+		$encstring.=sprintf("%02X", ord(substr($string, $i, 1)));
+	}
+	return $encstring;
 }
 
 
@@ -327,9 +336,14 @@ Does the reverse of text2bytestring.
 
 sub bytestring2text
 {
-	my( $text ) = @_;
-	$text =~ s/(..)/pack("H*", $1)/eg;
-	return $text;
+	my( $encstring ) = @_;
+
+	my $string = "";
+	for(my $i=0; $i<length($encstring); $i+=2)
+	{
+		$string.=pack("H*",substr($encstring,$i,2));
+	}
+	return $string;
 }
 
 
@@ -342,32 +356,4 @@ sub bytestring2text
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

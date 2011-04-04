@@ -92,7 +92,7 @@ sub get_system_field_info
 	return (
 		{ name=>"eventqueueid", type=>"counter", sql_counter=>"eventqueueid", required=>1 },
 		{ name=>"datestamp", type=>"timestamp", required=>1, },
-		{ name=>"hash", type=>"id", sql_index=>1, },
+		{ name=>"hash", type=>"text", sql_index=>1, },
 		{ name=>"unique", type=>"boolean", },
 		{ name=>"oneshot", type=>"boolean", },
 		{ name=>"priority", type=>"int", },
@@ -129,8 +129,8 @@ sub create_unique
 	my $results = $dataset->search(
 		filters => [
 			{ meta_fields => [qw( hash )], value => $data->{hash} },
-		],
-		limit => 1);
+			{ meta_fields => [qw( status )], value => "waiting inprogress", match => "EQ", merge => "ANY" },
+		]);
 	my $count = $results->count;
 
 	if( $count > 0 )
@@ -291,31 +291,3 @@ sub message
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

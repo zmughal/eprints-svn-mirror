@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::AbstractSearch
-
-=cut
-
 package EPrints::Plugin::Screen::AbstractSearch;
 
 @ISA = ( 'EPrints::Plugin::Screen' );
@@ -63,7 +57,6 @@ sub export_url
 
 	$url->query_form(
 		screen => $self->{processor}->{screenid},
-		dataset => $self->search_dataset->id,
 		_action_export => 1,
 		output => $format,
 		exp => $self->{processor}->{search}->serialise,
@@ -166,23 +159,25 @@ sub from
 	# maybe this can be removed later, but for a minor release this seems safest.
 	if( !EPrints::Utils::is_set( $self->{processor}->{action} ) )
 	{
-		my %params = map { $_ => 1 } $self->{session}->param();
-		delete $params{screen};
-		delete $params{dataset};
-		if( scalar keys %params )
+		my @paramlist = $self->{session}->param();
+		my $has_params = 0;
+		$has_params = 1 if( scalar @paramlist );
+		$has_params = 0 if( scalar @paramlist == 1 && $paramlist[0] eq 'screen' );
+		if( $has_params )
 		{
 			$self->{processor}->{action} = "search";
 		}
 	}
 
-	$self->{processor}->{search} = EPrints::Search->new(
+	$self->{processor}->{search} = new EPrints::Search(
 		keep_cache => 1,
+		for_web => 1,
 		session => $self->{session},
 		filters => [$self->search_filters],
 		dataset => $self->search_dataset,
 		%{$self->{processor}->{sconf}} );
 
-
+	$self->{actions} = [qw/ update search newsearch export_redir export /]; 
 	if( 	$self->{processor}->{action} eq "search" || 
 	 	$self->{processor}->{action} eq "update" || 
 	 	$self->{processor}->{action} eq "export" || 
@@ -291,6 +286,7 @@ sub _get_export_plugins
 {
 	my( $self, $include_not_advertised ) = @_;
 
+	my $is_advertised = 1;
 	my %opts =  (
 			type=>"Export",
 			can_accept=>"list/".$self->{processor}->{search}->{dataset}->confid, 
@@ -369,6 +365,12 @@ sub render_export_bar
 {
 	my( $self ) = @_;
 
+	if( !defined $self->{processor}->{results} || 
+		ref($self->{processor}->{results}) ne "EPrints::List" )
+	{
+                return $self->{session}->make_doc_fragment;
+	}
+
 	my @plugins = $self->_get_export_plugins;
 	my $cacheid = $self->{processor}->{results}->{cache_id};
 	my $order = $self->{processor}->{search}->{custom_order};
@@ -431,7 +433,8 @@ sub render_export_bar
 	$button->appendChild( $session->render_button(
 			name=>"_action_export_redir",
 			value=>$session->phrase( "lib/searchexpression:export_button" ) ) );
-	$button->appendChild( $self->render_hidden_bits );
+	$button->appendChild( 
+		$session->render_hidden_field( "screen", $self->{processor}->{screenid} ) ); 
 	$button->appendChild( 
 		$session->render_hidden_field( "order", $order ) ); 
 	$button->appendChild( 
@@ -457,14 +460,8 @@ sub get_basic_controls_before
 	my $cacheid = $self->{processor}->{results}->{cache_id};
 	my $escexp = $self->{processor}->{search}->serialise;
 
-	my $baseurl = URI->new( $self->{session}->get_uri );
-	$baseurl->query_form(
-		cache => $cacheid,
-		exp => $escexp,
-		screen => $self->{processor}->{screenid},
-		dataset => $self->search_dataset->id,
-		order => $self->{processor}->{search}->{custom_order},
-	);
+	my $baseurl = $self->{session}->get_uri . "?cache=$cacheid&exp=$escexp&screen=".$self->{processor}->{screenid};
+	$baseurl .= "&order=".$self->{processor}->{search}->{custom_order};
 	my @controls_before = (
 		{
 			url => "$baseurl&_action_update=1",
@@ -489,6 +486,12 @@ sub get_controls_before
 sub paginate_opts
 {
 	my( $self ) = @_;
+
+	if( !defined $self->{processor}->{results} || 
+		ref($self->{processor}->{results}) ne "EPrints::List" )
+	{
+                return $self->{session}->make_doc_fragment;
+	}
 
 	my %bits = ();
 
@@ -528,7 +531,8 @@ sub paginate_opts
 	$form->appendChild( $self->{session}->render_button(
 			name=>"_action_search",
 			value=>$self->{session}->phrase( "lib/searchexpression:reorder_button" ) ) );
-	$form->appendChild( $self->render_hidden_bits );
+	$form->appendChild( 
+		$self->{session}->render_hidden_field( "screen", $self->{processor}->{screenid} ) ); 
 	$form->appendChild( 
 		$self->{session}->render_hidden_field( "exp", $escexp, ) );
 
@@ -563,9 +567,9 @@ sub render_results
 	my( $self ) = @_;
 
 	if( !defined $self->{processor}->{results} || 
-		!$self->{processor}->{results}->isa( "EPrints::List" ) )
+		ref($self->{processor}->{results}) ne "EPrints::List" )
 	{
-		return $self->{session}->make_doc_fragment;
+                return $self->{session}->make_doc_fragment;
 	}
 
 	my %opts = $self->paginate_opts;
@@ -612,10 +616,14 @@ sub render_search_form
 	my( $self ) = @_;
 
 	my $form = $self->{session}->render_form( "get" );
+	$form->appendChild( 
+		$self->{session}->render_hidden_field ( "screen", $self->{processor}->{screenid} ) );		
 
-	$form->appendChild( $self->render_hidden_bits );
-
-	$form->appendChild( $self->render_preamble );
+	my $pphrase = $self->{processor}->{sconf}->{"preamble_phrase"};
+	if( defined $pphrase )
+	{
+		$form->appendChild( $self->{"session"}->html_phrase( $pphrase ));
+	}
 
 	$form->appendChild( $self->render_controls );
 
@@ -633,18 +641,6 @@ sub render_search_form
 	return( $form );
 }
 
-sub render_preamble
-{
-	my( $self ) = @_;
-
-	my $pphrase = $self->{processor}->{sconf}->{"preamble_phrase"};
-	if( defined $pphrase )
-	{
-		return $self->{"session"}->html_phrase( $pphrase );
-	}
-
-	return $self->{session}->make_doc_fragment;
-}
 
 sub render_search_fields
 {
@@ -731,7 +727,6 @@ sub render_order_menu
 	my( $self ) = @_;
 
 	my $raworder = $self->{processor}->{search}->{custom_order};
-	$raworder = "" if !defined $raworder;
 
 	my $order = $self->{processor}->{sconf}->{default_order};
 
@@ -829,31 +824,3 @@ sub export_mimetype
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

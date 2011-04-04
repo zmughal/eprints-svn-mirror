@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Listing
-
-=cut
-
 package EPrints::Plugin::Screen::Listing;
 
 use EPrints::Plugin::Screen;
@@ -37,68 +31,28 @@ sub properties_from
 	my $processor = $self->{processor};
 	my $session = $self->{session};
 
-	if( !defined $processor->{dataset} )
-	{
-		my $datasetid = $session->param( "dataset" );
+	my $datasetid = $session->param( "dataset" );
 
-		if( $datasetid )
-		{
-			$processor->{"dataset"} = $session->dataset( $datasetid );
-		}
-	}
-
-	my $dataset = $processor->{"dataset"};
+	my $dataset = $session->dataset( $datasetid );
 	if( !defined $dataset )
 	{
 		$processor->{screenid} = "Error";
 		$processor->add_message( "error", $session->html_phrase(
 			"lib/history:no_such_item",
-			datasetid=>$session->make_text( $session->param( "dataset" ) ),
+			datasetid=>$session->make_text( $datasetid ),
 			objectid=>$session->make_text( "" ) ) );
 		return;
 	}
 
+	$processor->{"dataset"} = $dataset;
+
 	my $columns = $self->show_columns();
 	$processor->{"columns"} = $columns;
-	my %columns = map { $_->name => 1 } @$columns;
-
-	my $order = $session->param( "_listing_order" );
-	if( !EPrints::Utils::is_set( $order ) )
-	{
-		# default to ordering by the first column
-		$order = join '/', map {
-			($_->should_reverse_order ? '-' : '') . $_->name
-		} (@$columns)[0];
-	}
-	else
-	{
-		# remove any order-bys that aren't visible
-		$order = join '/', 
-			map { ($_->[0] ? '-' : '') . $_->[1] }
-			grep { $columns{$_->[1]} }
-			map { [ $_ =~ s/^-//, $_ ]}
-			split /\//, $order;
-	}
-
-	my $filters = [$self->get_filters];
-	my $priv = $self->{processor}->{dataset}->id . "/view";
-	if( !$self->allow( $priv ) )
-	{
-		if( $self->allow( "$priv:owner" ) )
-		{
-			push @$filters, {
-				meta_fields => [qw( userid )], value => $session->current_user->id,
-			};
-		}
-	}
 
 	$self->{processor}->{search} = $dataset->prepare_search(
-		filters => $filters,
 		search_fields => [
 			(map { { meta_fields => [$_->name] } } @$columns)
-		],
-		custom_order => $order,
-	);
+	]);
 
 	$self->SUPER::properties_from;
 }
@@ -112,11 +66,7 @@ sub from
 	my $search = $self->{processor}->{search};
 	my $exp = $session->param( "exp" );
 
-	if( $exp )
-	{
-		$search->from_string( $exp );
-	}
-	else
+	if( $self->{processor}->{action} eq "search" )
 	{
 		foreach my $sf ( $search->get_non_filter_searchfields )
 		{
@@ -126,6 +76,10 @@ sub from
 				$self->{processor}->add_message( "warning", $prob );
 			}
 		}
+	}
+	elsif( $exp )
+	{
+		$search->from_string( $exp );
 	}
 
 	$self->SUPER::from();
@@ -142,9 +96,7 @@ sub can_be_viewed
 {
 	my( $self ) = @_;
 
-	my $priv = $self->{processor}->{dataset}->id . "/view";
-
-	return $self->allow( $priv ) || $self->allow( "$priv:owner" ) || $self->allow( "$priv:editor" );
+	return $self->allow( $self->{processor}->{dataset}->id."/view" );
 }
 
 sub allow_action
@@ -232,16 +184,17 @@ sub get_filters
 {
 	my( $self ) = @_;
 
-	return ();
+	my %f = ( inbox=>1, buffer=>1, archive=>0, deletion=>0 );
+
+	foreach my $filter ( keys %f )
+	{
+		my $v = $self->{session}->param( "show_$filter" );
+		$f{$filter} = $v if defined $v;
+	}	
+
+	return %f;
 }
-
-sub perform_search
-{
-	my( $self ) = @_;
-
-	return $self->{processor}->{search}->perform_search;
-}
-
+	
 sub render_links
 {
 	my( $self ) = @_;
@@ -317,12 +270,17 @@ sub render
 	### Get the items owned by the current user
 	my $ds = $self->{processor}->{dataset};
 
-	my $search = $self->{processor}->{search};
-	my $list = $self->perform_search;
 	my $exp;
-	if( !$search->is_blank )
+	my $list;
+	my $search = $self->{processor}->{search};
+	if( defined $search && !$search->is_blank )
 	{
+		$list = $search->perform_search;
 		$exp = $search->serialise;
+	}
+	else
+	{
+		$list = $ds->search;
 	}
 
 	my $columns = $self->{processor}->{columns};
@@ -413,7 +371,6 @@ sub render
 			dataset => $self->{processor}->{dataset}->id,
 			exp => $exp,
 		},
-		custom_order => $search->{custom_order},
 		columns => [(map{ $_->name } @{$columns}), undef ],
 		above_results => $session->make_doc_fragment,
 		render_result => sub {
@@ -433,13 +390,11 @@ sub render
 				$td->appendChild( $dataobj->render_value( $_ ) );
 			}
 
-			my $datasetid = $dataobj->{dataset}->base_id;
-
 			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_last", align=>"left" );
 			$tr->appendChild( $td );
 			$td->appendChild( 
-				$self->render_action_list_icons( ["${datasetid}_item_actions", "dataobj_actions"], {
-					dataset => $datasetid,
+				$self->render_action_list_icons( "dataobj_actions", {
+					dataset => $self->{processor}->{dataset}->id,
 					dataobj => $dataobj->id,
 				} ) );
 
@@ -449,7 +404,7 @@ sub render
 		},
 		rows_after => $final_row,
 	);
-	$chunk->appendChild( EPrints::Paginate::Columns->paginate_list( $session, "_listing", $list, %opts ) );
+	$chunk->appendChild( EPrints::Paginate::Columns->paginate_list( $session, "_buffer", $list, %opts ) );
 
 
 	# Add form
@@ -492,6 +447,69 @@ sub render
 	# End of Add form
 
 	return $chunk;
+}
+
+sub _render_action_aux
+{
+	my( $self, $params, $asicon ) = @_;
+	
+	my $session = $self->{session};
+	
+	my $method = "GET";	
+	if( defined $params->{action} )
+	{
+		$method = "POST";
+	}
+
+	my $form = $session->render_form( $method, $session->current_url( path => "cgi" ) . "/users/home" );
+
+	$form->appendChild( 
+		$session->render_hidden_field( 
+			"screen", 
+			substr( $params->{screen_id}, 8 ) ) );
+	foreach my $id ( keys %{$params->{hidden}} )
+	{
+		$form->appendChild( 
+			$session->render_hidden_field( 
+				$id, 
+				$params->{hidden}->{$id} ) );
+	}
+	my( $action, $title, $icon );
+	if( defined $params->{action} )
+	{
+		$action = $params->{action};
+		$title = $params->{screen}->phrase( "action:$action:title" );
+		$icon = $params->{screen}->action_icon_url( $action );
+	}
+	else
+	{
+		$action = "null";
+		$title = $params->{screen}->phrase( "title" );
+		$icon = $params->{screen}->icon_url();
+	}
+	if( defined $icon && $asicon )
+	{
+		$form->appendChild( 
+			$session->make_element(
+				"input",
+				type=>"image",
+				class=>"ep_form_action_icon",
+				name=>"_action_$action", 
+				src=>$icon,
+				title=>$title,
+				alt=>$title,
+				value=>$title ));
+	}
+	else
+	{
+		$form->appendChild( 
+			$session->render_button(
+				class=>"ep_form_action_button",
+				name=>"_action_$action", 
+				value=>$title ));
+	}
+
+	return $form;
 }
 
 sub render_hidden_bits
@@ -621,31 +639,3 @@ sub render_controls
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

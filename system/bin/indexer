@@ -1,10 +1,12 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
 
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -24,10 +26,6 @@ B<indexer> start [B<options>]
 B<indexer> stop 
 
 B<indexer> status
-
-B<indexer> install
-
-B<indexer> uninstall
 
 B<indexer> --help
 
@@ -73,10 +71,6 @@ May be repeated for greater effect.
 =item B<--clear>
 
 Clear broken event queue items (items that are "inprogress" or "failed") before commencing.
-
-=item B<--retry>
-
-Retry broken event queue items (items that are "inprogress" or "failed") before commencing.
 
 =item B<--logfile> I<filename>
 
@@ -124,6 +118,7 @@ To make the indexer into a service which starts and stops on reboots etc. like h
 
 The epindexer script runs as root, changes user to "eprints" (or whatever uid your eprints install runs as) and then calls indexer. 
 
+__GENERICPOD__
 
 =cut
 
@@ -146,7 +141,6 @@ my $rollcount = 5;
 my $notdaemon = 0;
 my $once = 0;
 my $opt_clear;
-my $opt_retry;
 my $opt_respawn = 86400;
 
 Getopt::Long::Configure("permute");
@@ -165,7 +159,6 @@ GetOptions(
 	'logfile=s' => \$logfile,
 	'loglevel=s' => \$loglevel,
 	'clear' => \$opt_clear,
-	'retry' => \$opt_retry,
 	'respawn=s' => \$opt_respawn,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "indexer" ) if $version;
@@ -211,10 +204,10 @@ elsif( $ARGV[0] eq "start" )
 		$daemon->remove_pid;
 	}
 
-	if( $opt_clear || $opt_retry )
+	if( $opt_clear )
 	{
 		my $eprints = EPrints->new;
-		print "Processing stale events\n" if $verbose;
+		print "Clearing stale events\n" if $verbose;
 		foreach my $repoid ($eprints->repository_ids())
 		{
 			my $repo = $eprints->repository( $repoid );
@@ -225,17 +218,9 @@ elsif( $ARGV[0] eq "start" )
 			$result->map(sub {
 				my( undef, undef, $event ) = @_;
 
-				if( $opt_clear )
-				{
-					$event->remove();
-				}
-				else
-				{
-					$event->set_value( "status", "waiting" );
-					$event->commit;
-				}
+				$event->remove();
 			});
-			print "".($opt_clear ? "Removed " : "Retrying ").$result->count()." stale events\n" if $verbose;
+			print "Removed ".$result->count()." stale events\n" if $verbose;
 		}
 	}
 
@@ -244,19 +229,6 @@ elsif( $ARGV[0] eq "start" )
 elsif( $ARGV[0] eq "stop" )
 {
 	stop();
-}
-elsif( $ARGV[0] eq "install" && $^O eq 'MSWin32' )
-{
-	install();
-}
-elsif( $ARGV[0] eq "uninstall" && $^O eq 'MSWin32' )
-{
-	uninstall();
-}
-elsif( $daemon->can( "run_".$ARGV[0] ) )
-{
-	my $f = "run_".shift(@ARGV);
-	$daemon->$f( @ARGV );
 }
 else
 {
@@ -338,7 +310,8 @@ If indexer is not already running you may either:
 END
 		exit 1;
 	}
-	elsif( $notdaemon )
+
+	if( $notdaemon )
 	{
 		$daemon->run_index();
 	}
@@ -348,43 +321,5 @@ END
 	}
 }
 
-sub install
-{
-	$daemon->create_service();
-}
-
-sub uninstall
-{
-	$daemon->delete_service();
-}
-
 ####################################################################################
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-License for more details.
-
-You should have received a copy of the GNU General Public License
-along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

@@ -54,7 +54,7 @@ $node->appendChild( $xml->create_element( "script", type => 'text/javascript' ) 
 $node->appendChild( $xml->create_element( "div" ) );
 $node->appendChild( $xml->create_element( "br" ) );
 my $str = $xml->to_string( $node );
-is($str,'<html><script type="text/javascript"/><div/><br/></html>',"to_string");
+is($str,'<html><script type="text/javascript"/><div/><br/></html>',"to_string $xml");
 $str = $xhtml->to_xhtml( $node );
 is($str,'<html xmlns="http://www.w3.org/1999/xhtml"><script type="text/javascript">// <!-- No script --></script><div></div><br /></html>',"to_xhtml");
 

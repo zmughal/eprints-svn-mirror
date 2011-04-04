@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -182,6 +187,10 @@ so force certain search parameters on the user.
 An optional parameter of describe=>0 can be set to supress the filter
 being mentioned in the description of the search.
 
+=item for_web
+
+Internal use. Indicates this search object is going to be used to build
+a webpage or read and process results via CGI.
 =back
 
 =cut
@@ -193,7 +202,7 @@ being mentioned in the description of the search.
 	"custom_order", "keep_cache", 	"cache_id", 	
 	"prefix", 	"defaults", 	"filters", 
 	"search_fields","show_zero_results", "show_help",
-	"limit",
+	"limit",	"for_web",
 );
 
 sub new
@@ -276,12 +285,26 @@ END
 			$show_help = $fielddata->{show_help};
 		}
 
+		my $match = $fielddata->{match};
+		my $merge = $fielddata->{merge};
+		if( $self->{for_web} )
+		{
+			if( !defined $match )
+			{
+				$match = $meta_fields[0]->default_web_search_match_code();
+			}
+			if( !defined $merge )
+			{
+				$merge = $meta_fields[0]->default_web_search_merge_code();
+			}
+		}
+
 		# Add a reference to the list
 		my $sf = $self->add_field( 
 			\@meta_fields, 
 			$fielddata->{default},
-			$fielddata->{match},
-			$fielddata->{merge},
+			$match,
+			$merge,
 			$fielddata->{id},
 			0,
 			$show_help );
@@ -1087,7 +1110,6 @@ sub perform_search
 			encoded => $self->serialise,
 			cache_id => $self->{cache_id}, 
 			searchexp => $self,
-			order => $self->{custom_order},
 		);
 	}
 
@@ -1126,7 +1148,6 @@ sub perform_search
 		ids => $unsorted_matches, 
 		cache_id => (defined $cachemap ? $cachemap->get_id : undef ),
 		searchexp => $self,
-		order => $self->{custom_order},
 	);
 
 	$self->{cache_id} = $results->get_cache_id;
@@ -1134,23 +1155,6 @@ sub perform_search
 	return $results;
 }
 
-=item $ids_map = $searchexp->perform_distinctby( $fields )
-
-Perform a DISTINCT on $fields to find all unique ids by value.
-
-=cut
-
-sub perform_distinctby
-{
-	my( $self, $fields ) = @_;
-
-	# we don't do any caching of DISTINCT BY
-	return $self->get_conditions->process_distinctby( 
-			session => $self->{session},
-			dataset => $self->{dataset},
-			fields => $fields,
-		);
-}
 
 =item ($values, $counts) = $searchexp->perform_groupby( $field )
 
@@ -1248,7 +1252,24 @@ sub get_ids_by_field_values
 {
 	my( $self, $field ) = @_;
 
-	return $self->process_distinctby( [$field] );
+	my @filters = @{$self->{filters}};
+
+	foreach my $sf_id ( keys %{$self->{searchfieldmap}} )
+	{
+		my $sf = $self->{searchfieldmap}->{$sf_id};
+		push @filters, {
+			fields => $sf->get_fields,
+			value => $sf->get_value,
+		};
+	}
+
+	my $counts = $field->get_ids_by_value(
+		$self->{session},
+		$self->{dataset},
+		filters => \@filters
+	);
+
+	return $counts;
 }
 
 
@@ -1263,32 +1284,4 @@ sub get_ids_by_field_values
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Sword::DepositHandler
-
-=cut
-
 package EPrints::Sword::DepositHandler;
 
 use strict;
@@ -46,8 +40,7 @@ sub handler
                 
 		if( $error->{no_auth} )
                 {
-			my $realm = $session->phrase( "archive_name" );
-                        $request->err_headers_out->{'WWW-Authenticate'} = 'Basic realm="'.$realm.'"';
+                        $request->headers_out->{'WWW-Authenticate'} = 'Basic realm="SWORD"';
 			$request->status( $error->{status_code} );
 			$session->terminate;
 			return Apache2::Const::DONE;
@@ -238,7 +231,7 @@ sub handler
 	}
 
 	# Create a temp directory which will be automatically removed by PERL
-	my $tmp_dir = File::Temp->newdir( "swordXXXX", TMPDIR => 1 );
+	my $tmp_dir = EPrints::TempDir->new( "swordXXX", UNLINK => 1 );	
  
 	if( !defined $tmp_dir )
         {
@@ -305,10 +298,6 @@ sub handler
 			return Apache2::Const::DONE;
 		}
 	}
-	
-	if($headers->{content_type} eq "application/atom+xml") {
-		$import_plugin_id = "Import::XSLT::Atom";
-	}
 
 	unless(defined $import_plugin_id)
 	{
@@ -350,60 +339,22 @@ sub handler
 
 	my %opts;
 	$opts{file} = $file;
-	$opts{filename} = $file;
 	$opts{mime_type} = $headers->{content_type};
         $opts{dataset_id} = $target_collection;
-	$opts{dataset} = $session->get_repository()->get_dataset( $target_collection );
         $opts{owner_id} = $owner->get_id;
         $opts{depositor_id} = $depositor->get_id if(defined $depositor);
 	$opts{verbose} = $VERBOSE;
 	$opts{no_op} = $NO_OP;
-	
-	my $grammar = EPrints::Sword::Utils::get_grammar();
-	my $flags = {};
-	my $headers_in = $request->headers_in;
-	foreach my $key (keys %{$headers_in}) {
-		my $value = $grammar->{$key};
-		if ((defined $value) and ($headers_in->{$key} eq "true")) {
-			$flags->{$value} = 1;
-		}
-	}
-	$opts{flags} = $flags;
-	$import_plugin->{parse_only} = $NO_OP;
-
-	my $handler = EPrints::CLIProcessor->new(
-			session => $session,
-			scripted => 0,
-	);
-	$import_plugin->set_handler($handler);
-
 	my $eprint = $import_plugin->input_file( %opts );
-	
-	my $count = $NO_OP ? $handler->{parsed} : $handler->{wrote};
-
-	if ($eprint->isa( "EPrints::List" )) {
-		$eprint = $eprint->item(0);
-	}
-	if (defined $eprint) {
-		$eprint->set_value( "userid", $owner->get_id);
-		if (defined $depositor) {
-			$eprint->set_value( "sword_depositor", $depositor->get_id);
-		}
-		$eprint->commit();
-	}
-
-#	$verbose_desc .= $import_plugin->get_verbose();
+	$verbose_desc .= $import_plugin->get_verbose();
 
 	if( $NO_OP )
 	{
+		my $code = $import_plugin->get_status_code();
+		$code = 400 unless( defined $code );	
 
-#		my $code = $import_plugin->get_status_code();
-#		$code = 400 unless( defined $code );	
-
-		my $code = 400;
-		if($count > 0)
+		if( $code == 200 )
 		{
-			$code = 200;
 			my %xml_opts;
 			$xml_opts{user_agent} = $headers->{user_agent};
 			$xml_opts{x_packaging} = $headers->{x_packaging};
@@ -417,10 +368,10 @@ sub handler
 			$request->headers_out->{'Content-Length'} = length $noop_xml;
 			$request->content_type( 'application/atom+xml' );
 			$request->status( 200 );        # Successful
-			$request->print( $noop_xml );
+		        $request->print( $noop_xml );
 		        $session->terminate;
 		        return Apache2::Const::OK;
-		} 
+		}
 
                 my $error_doc = EPrints::Sword::Utils::generate_error_document( $session,
 					user_agent => $headers->{user_agent},
@@ -440,10 +391,10 @@ sub handler
 
 	unless(defined $eprint)
 	{
-#		my $code = $import_plugin->get_status_code();
-#		$code = 400 unless(defined $code);
-#	        $request->status( $code );
-                my $code = 400;
+		my $code = $import_plugin->get_status_code();
+		$code = 400 unless(defined $code);
+	        $request->status( $code );
+                
                 my $error_doc = EPrints::Sword::Utils::generate_error_document( $session,
 					user_agent => $headers->{user_agent},
                                         href => "http://purl.org/net/sword/error/ErrorContent",
@@ -457,32 +408,20 @@ sub handler
                 $session->terminate;
                 return Apache2::Const::DONE;
         }
-	
-#	my %xml_opts;
-#	$xml_opts{eprint} = $eprint;
-#	$xml_opts{x_packaging} = $headers->{x_packaging};
-#	$xml_opts{sword_treatment} = $sword_treatment;
-#	$xml_opts{owner} = $owner;
-#	$xml_opts{depositor} = $depositor;
-#	$xml_opts{verbose_desc} = $verbose_desc if( $VERBOSE );
-#	$xml_opts{user_agent} = $headers->{user_agent};
-#	$xml_opts{deposited_file_docid} = $import_plugin->get_deposited_file_docid();
-#
-	my $accept = $request->headers_in->{'Accept'};
-	$accept = "application/atom+xml" if (!defined $accept);
-	my $repository = $session->get_repository();
-	my $match = EPrints::Apache::Rewrite::content_negotiate_best_plugin( 
-		$repository, 
-		accept_header => $accept,
-		plugins => [$repository->get_plugins(
-			type => "Export",
-			is_visible => "all",
-			can_accept => 'dataobj/eprint' )],
-	);
-	my $xml = $match->output_eprint($eprint);
 
-	$request->headers_out->{'Location'} = $eprint->uri;
-	#$request->headers_out->{'Content-Location'} = ATOM URL LOCATION;
+	my %xml_opts;
+	$xml_opts{eprint} = $eprint;
+	$xml_opts{x_packaging} = $headers->{x_packaging};
+	$xml_opts{sword_treatment} = $sword_treatment;
+	$xml_opts{owner} = $owner;
+	$xml_opts{depositor} = $depositor;
+	$xml_opts{verbose_desc} = $verbose_desc if( $VERBOSE );
+	$xml_opts{user_agent} = $headers->{user_agent};
+	$xml_opts{deposited_file_docid} = $import_plugin->get_deposited_file_docid();
+
+	my $xml = EPrints::Sword::Utils::create_xml( $session, %xml_opts );
+
+	$request->headers_out->{'Location'} = EPrints::Sword::Utils::get_atom_url( $session, $eprint );
 	$request->headers_out->{'Content-Length'} = length $xml;
 	$request->content_type('application/atom+xml');
 
@@ -494,32 +433,4 @@ sub handler
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

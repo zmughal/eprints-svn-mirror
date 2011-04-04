@@ -1,15 +1,29 @@
+######################################################################
+#
+# EPrints
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+
+=pod
+
 =for Pod2Wiki
 
 =head1 NAME
 
-EPrints - Institutional Repository software
+B<EPrints> - Institutional Repository software
 
 =head1 SYNOPSIS
 
 	use EPrints qw();
-
-	# don't check current user (CLI only)
-	use EPrints qw( no_check_user );
 
 	$eprints = EPrints->new;
 
@@ -19,10 +33,7 @@ EPrints - Institutional Repository software
 	# CGI
 	$repo = $eprints->current_repository;
 
-	if( EPrints->VERSION() gt v3.2.0 )
-	{
-		...
-	}
+	...
 
 =head1 DESCRIPTION
 
@@ -42,8 +53,6 @@ Do not check the current user/group is the same as the user/group in SystemSetti
 
 =back
 
-=begin InternalDoc
-
 =head2 Debugging Slow Processes
 
 This module installs a signal handler that will print a stack trace if given a USR2 signal (if your system supports this signal). To print a stack trace to the error log execute:
@@ -54,8 +63,6 @@ Where PID is the id number of the stalled process.
 
 A shell script will print the stack trace to the console.
 
-=end InternalDoc
-
 =head1 METHODS
 
 =over 4
@@ -64,105 +71,87 @@ A shell script will print the stack trace to the console.
 
 package EPrints;
 
-my $conf;
-
-BEGIN
-{
-	$conf = $EPrints::SystemSettings::conf = {};
-	eval "use EPrints::SystemSettings;";
-
-	# set default global configuration values
-	if( !defined $conf->{base_path} )
-	{
-		my $base_path = $INC{'EPrints.pm'};
-		$base_path =~ s#[^/]+/\.\.(/|$)##g;
-		$base_path =~ s/.perl_lib.EPrints\.pm$//; # ignore / \
-		$conf->{base_path} = $base_path;
-	}
-}
+use EPrints::SystemSettings;
+use EPrints::Config;
 
 use Data::Dumper;
 use Scalar::Util;
-use File::Temp;
-
-use Carp qw( verbose );
 
 use strict;
 
-our $VERSION = v3.3.0;
-$conf->{version} = "EPrints ".EPrints->human_version;
-$conf->{versionid} = "eprints-".EPrints->human_version;
+our $VERSION = v3.2.7;
 
-=item $version = EPrints->VERSION()
+BEGIN {
+	use Carp;
 
-Returns the version of EPrints in 'v' format (this is the UNIVERSAL method).
+	# load the configuration - required by EPrints::Platform et al
+	EPrints::Config::init();
 
-=item EPrints->human_version()
+	umask( 0002 );
 
-Returns the EPrints version in a human-readable form.
+	sub human_version
+	{
+		return EPrints->VERSION =~ /^v/ ?
+			substr(EPrints->VERSION,1) :
+			join('.', map { ord($_) } split(//, EPrints->VERSION));
+	}
 
-=cut
-
-sub human_version
-{
-	return EPrints->VERSION =~ /^v/ ?
-		substr(EPrints->VERSION,1) :
-		join('.', map { ord($_) } split(//, EPrints->VERSION));
-}
+######################################################################
+=pod
 
 =item EPrints->abort( $errmsg )
 
-This subroutine is loaded before other modules so that it may be used to report errors when initialising modules.
+This subroutine is loaded before other modules so that it may be
+used to report errors when initialising modules.
 
 When running under Mod_Perl this method is replaced.
 
 =cut
+######################################################################
 
-sub abort
-{
-	my( $errmsg ) = pop @_; # last parameter
+	sub abort
+	{
+		my( $errmsg ) = pop @_; # last parameter
 
-	print STDERR <<END;
-
+		print STDERR <<END;
+	
 ------------------------------------------------------------------
 ---------------- EPrints System Error ----------------------------
 ------------------------------------------------------------------
 $errmsg
 ------------------------------------------------------------------
 END
-	$@="";
-	Carp::cluck( "EPrints System Error inducing stack dump\n" );
-	if( $EPrints::die_on_abort ) { die $errmsg; }
-	exit( 1 );
-}
+		$@="";
+		Carp::cluck( "EPrints System Error inducing stack dump\n" );
+		if( $EPrints::die_on_abort ) { die $errmsg; }
+		exit( 1 );
+	}
 
-sub deprecated
-{
-	my @c = caller(1);
-	print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
-}
+	sub deprecated
+	{
+		my @c = caller(1);
+		print STDERR "Called deprecated function $c[3] from $c[1] line $c[2]\n";
+	}
 
-sub try
-{
-	my( $code ) = @_;
+	sub try
+	{
+		my( $code ) = @_;
 
-	my $r = eval { &$code };
+		my $r = eval { &$code };
 
-	if( $@ ) { EPrints->abort( $@ ); }
+		if( $@ ) { EPrints->abort( $@ ); }
 
-	return $r;
+		return $r;
+	}
 }
 
 use Apache::DBI; # must be first! 	 	 
-
-use EPrints::Const; # must be before any use of constants
 
 use EPrints::Apache;
 use EPrints::Apache::AnApache;
 use EPrints::Apache::LogHandler;
 use EPrints::Apache::Login;
 use EPrints::Apache::Auth;
-use EPrints::Apache::Export;
 use EPrints::Apache::Rewrite;
 use EPrints::Apache::VLit;
 use EPrints::Apache::Template;
@@ -172,25 +161,20 @@ use EPrints::Apache::RobotsTxt;
 use EPrints::Apache::SiteMap;
 
 use EPrints::BackCompatibility;
-
-use EPrints::Config;
-use EPrints::System;
 use EPrints::XML;
+use EPrints::XHTML;
+use EPrints::Utils;
 use EPrints::Time;
 
 use EPrints::Box;
 use EPrints::Database;
 use EPrints::Storage;
-use EPrints::Citation;
-use EPrints::Citation::EPC;
-eval "use EPrints::Citation::XSL"; # only works if XML::LibXSLT is available
 use EPrints::DataObj;
 use EPrints::DataObj::SubObject;
 use EPrints::DataObj::Access;
 use EPrints::DataObj::Cachemap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
-use EPrints::DataObj::EPM;
 use EPrints::DataObj::File;
 use EPrints::DataObj::History;
 use EPrints::DataObj::Import;
@@ -205,8 +189,6 @@ use EPrints::DataObj::SavedSearch;
 use EPrints::DataObj::Triple;
 use EPrints::DataObj::UploadProgress;
 use EPrints::DataObj::User;
-use EPrints::DataObj::OpenID;
-use EPrints::DataObj::OAuth;
 use EPrints::DataSet;
 use EPrints::Email;
 use EPrints::Extras;
@@ -216,13 +198,13 @@ use EPrints::Language;
 use EPrints::Latex;
 use EPrints::List;
 use EPrints::MetaField;
-use EPrints::NamedSet;
 use EPrints::OpenArchives;
 use EPrints::Page;
 use EPrints::Page::Text;
 use EPrints::Page::DOM;
 use EPrints::Paginate;
 use EPrints::Paginate::Columns;
+use EPrints::Platform;
 use EPrints::Plugin;
 use EPrints::PluginFactory;
 use EPrints::Probity;
@@ -245,15 +227,6 @@ use EPrints::Update::Abstract;
 use EPrints::Workflow;
 use EPrints::Workflow::Stage;
 use EPrints::XML::EPC;
-use EPrints::XHTML;
-use EPrints::Utils;
-use EPrints::EPM;
-
-# SAX utilities
-use EPrints::XML::SAX::Builder;
-use EPrints::XML::SAX::Generator;
-use EPrints::XML::SAX::PrettyPrint;
-use EPrints::XML::SAX::Writer;
 
 our $__loaded;
 our $__cloned;
@@ -286,7 +259,7 @@ sub new($%)
 
 Initialise the EPrints environment based on the request $r.
 
-=end InternalDoc
+=end
 
 =cut
 
@@ -328,7 +301,7 @@ sub init_from_request
 
 Cleanup the EPrints environment after the request is complete.
 
-=end InternalDoc
+=end
 
 =cut
 
@@ -356,7 +329,7 @@ sub CLONE
 
 Initialise the EPrints mod_perl environment.
 
-=end InternalDoc
+=end
 
 =cut
 
@@ -448,9 +421,9 @@ END
 
 =pod
 
-=item $repo = $ep->repository( $repository_id, [%options] );
+=item $repo = $ep->repository( $repository_id, %options );
 
-Return the L<EPrints::Repository> with the given ID, or undef. Options are... optional.
+Return the repository with the given ID, or undef. Options are... optional.
 
 Options noise=>1, etc.
 
@@ -475,8 +448,7 @@ sub repository($$%)
 
 =item $repo = $ep->current_repository();
 
-Returns the current L<EPrints::Repository>. The current 
-repository is determined by the apache request.
+Returns the current repository.
 
 Returns undef if there is no current repository active.
 
@@ -497,7 +469,7 @@ Takes following pragmas:
 
 	no_check_user - don't verify effective UID is configured UID
 
-=end InternalDoc
+=end
 
 =cut
 
@@ -514,19 +486,15 @@ sub import
 	# we can become the required user.
 	if( !$__loaded && !$opts{"no_check_user"} && !$ENV{MOD_PERL} && !$ENV{EPRINTS_NO_CHECK_USER} )
 	{
-		EPrints->system->test_uid();
+		EPrints::Platform::test_uid();
 	}
 
 	$__loaded = 1;
 }
 
-=begin InternalDoc
-
 =item @ids = $eprints->repository_ids
 
 Returns a list of the active repository ids.
-
-=end InternalDoc
 
 =cut
 
@@ -545,7 +513,7 @@ sub repository_ids
 
 Loads and caches all repositories. These are used to make L</current_repository> fast.
 
-=end InternalDoc
+=end
 
 =cut
 
@@ -574,7 +542,7 @@ Returns the current mod_perl request object (note: this might be a sub-request o
 
 Returns undef if there is no current request.
 
-=end InternalDoc
+=end
 
 =cut
 
@@ -583,21 +551,6 @@ sub request
 	my( $self ) = @_;
 
 	return $EPrints::HANDLE->{request};
-}
-
-=begin InternalDoc
-
-=item $sys = $ep->system()
-
-Returns the L<EPrints::System> object.
-
-=end InternalDoc
-
-=cut
-
-sub system
-{
-	return $EPrints::SYSTEM;
 }
 
 sub sigusr2_cluck
@@ -610,19 +563,7 @@ sub sigusr2_cluck
 {
 	no warnings;
 	$SIG{'USR2'} = \&sigusr2_cluck;
-	#$SIG{__DIE__} = \&EPrints::abort; # uncomment this to help with debugging
 };
-
-umask( 0002 );
-
-# create a system object
-our $SYSTEM = EPrints::System->new();
-
-# load the real XML module
-EPrints::XML::init();
-
-# load the configuration
-EPrints::Config::init();
 
 1;
 
@@ -636,28 +577,8 @@ L<EPrints::Repository>
 
 =head1 COPYRIGHT
 
-=for COPYRIGHT OPEN
+__COPYRIGHT__
 
-Copyright 2000-2011 University of Southampton.
+Copyright 2000-2008 University of Southampton. All Rights Reserved.
 
-=for COPYRIGHT CLOSE
-
-=for LICENSE OPEN
-
-This file is part of EPrints <http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see <http://www.gnu.org/licenses/>.
-
-=for LICENSE CLOSE
-
+__LICENSE__

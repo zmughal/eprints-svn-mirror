@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -203,7 +208,6 @@ sub render_search_set_input
 	}
 
 	return $session->render_option_list( 
-		checkbox => $self->property( "search_input_style" ) eq "checkbox",
 		name => $prefix,
 		defaults_at_top => 1,
 		default => \@defaults,
@@ -257,7 +261,6 @@ sub get_property_defaults
 {
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
-	$defaults{search_input_style} = "default"; # "checkbox"
 	$defaults{input_style} = 0;
 	$defaults{showall} = 0;
 	$defaults{showtop} = 0;
@@ -296,31 +299,3 @@ sub tags
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

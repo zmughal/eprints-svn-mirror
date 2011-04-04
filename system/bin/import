@@ -1,10 +1,12 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
 
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -70,7 +72,15 @@ Don't import, just check the file.
 
 =item B<--migration>
 
-Turn on all the options needed to correctly import an XML data file exported from version 2, using the migration toolkit. Implies --enable-web-imports --enable-file-imports --force
+Turn on all the options needed to correctly import an XML data file exported from version 2, using the migration toolkit. This is the same as using --enable-import-ids --enable-import-datestamps --enable-file-imports --force
+
+=item B<--enable-import-ids>
+
+By default import will generate a new eprintid, or userid for each record. This option tells it to use the id spcified in the imported data. This is generally used for importing into a new repository from an old one.
+
+=item B<--enable-import-datestamps>
+
+Normally import will set the datestamp the the time the eprint was imported. This option causes it to take the datestamp from the imported data, if available.
 
 =item B<--enable-file-imports>
 
@@ -117,6 +127,7 @@ Output version information and exit.
 =back   
 
 
+__GENERICPOD__
 
 =cut
 
@@ -139,7 +150,8 @@ my $user = undef;
 my $parse_only = 0;
 my $enable_file_imports = 0;
 my $enable_web_imports = 0;
-my $enable_import_fields = 0;
+my $enable_import_ids = 0;
+my $enable_import_datestamps = 0;
 my $migration = 0;
 my $update = 0;
 
@@ -159,6 +171,8 @@ GetOptions(
 	'parse-only' => \$parse_only,
 	'enable-file-imports' => \$enable_file_imports,
 	'enable-web-imports' => \$enable_web_imports,
+	'enable-import-ids' => \$enable_import_ids,
+	'enable-import-datestamps' => \$enable_import_datestamps,
 	'migration' => \$migration,
 	'update' => \$update,
 ) || pod2usage( 2 );
@@ -175,11 +189,12 @@ if( $migration )
 	$force = 1;
 	$enable_file_imports = 1;
 	$enable_web_imports = 1;
-	$enable_import_fields = 1;
+	$enable_import_ids = 1;
+	$enable_import_datestamps = 1;
 }
 if( $update )
 {
-	$enable_import_fields = 1;
+	$enable_import_ids = 1;
 }
 
 if( $scripted ) { $noise = 0; }
@@ -209,10 +224,17 @@ if( $enable_web_imports )
 	# doesn't use a setter method!
 	$session->get_repository->{config}->{enable_web_imports} = 1;
 }
-if( $enable_import_fields )
-{
-	$session->get_repository->{config}->{enable_import_fields} = 1;
+if( $enable_import_ids ) 
+{ 
+	# doesn't use a setter method!
+	$session->get_repository->{config}->{enable_import_ids} = 1;
 }
+if( $enable_import_datestamps ) 
+{ 
+	# doesn't use a setter method!
+	$session->get_repository->{config}->{enable_import_datestamps} = 1;
+}
+
 
 my $ds = $session->get_repository->get_dataset( $datasetid ) ;
 if( !defined $ds )
@@ -393,31 +415,3 @@ if( $count > 0 )
 
 $session->terminate();
 exit;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-License for more details.
-
-You should have received a copy of the GNU General Public License
-along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

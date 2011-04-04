@@ -16,7 +16,7 @@ $session = EPrints::Test::OnlineSession->new( $session, {
 	path => "/cgi/users/home",
 	username => "admin",
 	query => {
-		screen => "EPrint::View",
+		screen => "EPrint::View::Editor",
 		eprintid => $eprintid,
 	},
 });

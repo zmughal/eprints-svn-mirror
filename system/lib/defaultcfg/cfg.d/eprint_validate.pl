@@ -2,14 +2,14 @@
 
 ######################################################################
 #
-# validate_eprint( $eprint, $repository, $for_archive ) 
+# validate_eprint( $eprint, $session, $for_archive ) 
 #
 ######################################################################
 #
 # $eprint 
 # - EPrint object
-# $repository 
-# - Repository object (the current repository)
+# $session 
+# - Session object (the current session)
 # $for_archive
 # - boolean (see comments at the start of the validation section)
 #
@@ -25,9 +25,7 @@
 
 $c->{validate_eprint} = sub
 {
-	my( $eprint, $repository, $for_archive ) = @_;
-
-	my $xml = $repository->xml();
+	my( $eprint, $session, $for_archive ) = @_;
 
 	my @problems = ();
 
@@ -37,8 +35,8 @@ $c->{validate_eprint} = sub
 	if( !$eprint->is_set( "creators" ) && 
 		!$eprint->is_set( "editors" ) )
 	{
-		my $fieldname = $xml->create_element( "span", class=>"ep_problem_field:creators" );
-		push @problems, $repository->html_phrase( 
+		my $fieldname = $session->make_element( "span", class=>"ep_problem_field:creators" );
+		push @problems, $session->html_phrase( 
 				"validate:need_creators_or_editors",
 				fieldname=>$fieldname );
 	}

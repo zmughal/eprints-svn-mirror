@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Workflow
-
-=cut
-
 
 package EPrints::Plugin::Screen::Workflow;
 
@@ -33,25 +27,48 @@ sub new
 	return $self;
 }
 
-sub view_screen
+sub get_view_screen
 {
 	my( $self ) = @_;
 
-	return "Workflow::View";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::View/;
+
+	return $screenid;
 }
 
-sub edit_screen
+sub get_edit_screen
 {
 	my( $self ) = @_;
 
-	return "Workflow::Edit";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Edit/;
+
+	return $screenid;
 }
 
-sub listing_screen
+sub get_commit_screen
 {
 	my( $self ) = @_;
 
-	return "Listing";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Commit/;
+
+	return $screenid;
+}
+
+sub get_save_screen
+{
+	my( $self ) = @_;
+
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Save/;
+
+	return $screenid;
 }
 
 sub properties_from
@@ -93,7 +110,7 @@ sub properties_from
 	$processor->{"dataobj"} = $dataset->dataobj( $id );
 
 	my $plugin = $self->{session}->plugin(
-		"Screen::" . $self->edit_screen,
+		"Screen::" . $self->get_edit_screen,
 		processor => $self->{processor},
 		);
 	$self->{processor}->{can_be_edited} = $plugin->can_be_viewed();
@@ -204,10 +221,9 @@ sub render_blister
 	$table->appendChild( $tr );
 	my $first = 1;
 	my @stages = $workflow->get_stage_ids;
+	push @stages, "commit";
 	foreach my $stage_id ( @stages )
 	{
-		my $stage = $workflow->get_stage( $stage_id );
-
 		if( !$first )  
 		{ 
 			my $td = $session->make_element( "td", class=>"ep_blister_join" );
@@ -221,12 +237,11 @@ sub render_blister
 		{ 
 			$class="ep_blister_node_selected"; 
 		}
-		my $title = $stage->render_title();
+		my $phrase = $session->phrase( "Plugin/Screen/Workflow:" . $self->dataset->id . ":" . $stage_id ."_stage:title" );
 		my $button = $session->render_button(
 			name  => "_action_jump_$stage_id", 
-			value => $session->xhtml->to_text_dump( $title ),
+			value => $phrase,
 			class => $class );
-		$session->xml->dispose( $title );
 
 		$td->appendChild( $button );
 		$tr->appendChild( $td );
@@ -313,32 +328,4 @@ sub _render_action_aux
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

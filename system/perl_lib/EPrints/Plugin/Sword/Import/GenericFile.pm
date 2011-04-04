@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Sword::Import::GenericFile
-
-=cut
-
 package EPrints::Plugin::Sword::Import::GenericFile;
 
 use strict;
@@ -94,10 +88,6 @@ sub input_file
 	{
 		$fn = $1;
 	}
-	if( $fn =~ /^.*\\(.*)$/ )
-	{
-		$fn = $1;
-	}
 
 	my %doc_data;
 	$doc_data{_parent} = $eprint;
@@ -111,34 +101,6 @@ sub input_file
 		$doc_data{format} = $session->get_repository->call( "guess_doc_type", $session, $file );
 	}
 
-	my $mime_type = $doc_data{format};
-	
-	my $flags;
-	$flags->{metadata} = 1;
-	$flags->{media} = 1;
-	$flags->{bibliography} = 1;
-	
-	my @plugins = $session->get_plugins(
-			type => "Import",
-			can_produce => "dataobj/document",
-			can_accept => $mime_type );
-	
-	if (@plugins) 
-	{
-		my $import_plugin = $plugins[0];
-		my $list = $import_plugin->input_file(
-			dataobj => $eprint,
-			filename => $file,
-			flags => $flags,
-			);
-		my $doc_id = $list->ids->[0];
-		$eprint->generate_static();
-		$plugin->set_deposited_file_docid( $doc_id );
-		$plugin->add_verbose( "[OK] Import plugin created the resource." );
-		return $eprint;	
-		
-	}
-	
 	local $session->get_repository->{config}->{enable_file_imports} = 1;
 
 	$doc_data{main} = $fn;
@@ -168,6 +130,16 @@ sub input_file
 		$document->make_thumbnails();
 	}
 
+	if( $fn =~ /\.docx|pptx$/ )
+	{
+		my $conv_plugin = $session->plugin( "Convert::OpenXML" );
+		if( $conv_plugin )
+		{
+			my @new_docs = $conv_plugin->convert( $eprint, $document, 'both' );
+			print STDERR "\nnew docs: ".join(",",@new_docs);
+		}
+	}
+
 	$eprint->generate_static();
 
 	$plugin->set_deposited_file_docid( $document->get_id );
@@ -183,31 +155,3 @@ sub keep_deposited_file
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

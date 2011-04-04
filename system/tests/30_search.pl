@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 31;
+use Test::More tests => 27;
 
 BEGIN { use_ok( "EPrints" ); }
 BEGIN { use_ok( "EPrints::Test" ); }
@@ -34,21 +34,6 @@ ok(defined($list) && $list->count > 1, "search range eprintid" );
 $searchexp = EPrints::Search->new(
 	session => $session,
 	dataset => $dataset,
-);
-
-$searchexp->add_field( $dataset->get_field( "creators_name" ), "", "SET" );
-$searchexp->add_field( $dataset->get_field( "metadata_visibility" ), "show" );
-$searchexp->add_field( $dataset->get_field( "eprint_status" ), "archive" );
-
-$list = eval { $searchexp->perform_search };
-
-#print STDERR $searchexp->get_conditions->sql( dataset => $dataset, session => $session )."\n";
-
-ok(defined($list) && $list->count > 1, "SET match" );
-
-$searchexp = EPrints::Search->new(
-	session => $session,
-	dataset => $dataset,
 	satisfy_all => 1
 );
 
@@ -64,20 +49,20 @@ $searchexp = EPrints::Search->new(
 	dataset => $dataset,
 );
 
-$searchexp->add_field( $dataset->get_field( "documents" ), "article", "IN" );
+$searchexp->add_field( $dataset->get_field( "_fulltext_" ), "article", "IN" );
 
 $list = eval { $searchexp->perform_search };
 
 ok(defined($list) && $list->count > 0, "match testdata article full text" );
 
 
-my $sample_doc = EPrints::Test::get_test_document( $session );
-my $sample_eprint = $sample_doc->get_parent;
-
 $searchexp = EPrints::Search->new(
 	session => $session,
 	dataset => $dataset,
 );
+
+my $sample_doc = EPrints::Test::get_test_document( $session );
+my $sample_eprint = $sample_doc->get_parent;
 
 $searchexp->add_field( $dataset->get_field( "eprintid" ), $sample_doc->get_value( "eprintid" ) );
 $searchexp->add_field( $sample_doc->get_dataset->get_field( "format" ), $sample_doc->get_value( "format" ) );
@@ -92,6 +77,20 @@ if( defined $list )
 }
 
 ok($is_ok, "search for eprint id + doc format: " . $searchexp->get_conditions->describe);
+
+
+$searchexp = EPrints::Search->new(
+	session => $session,
+	dataset => $sample_doc->get_dataset,
+);
+
+$searchexp->add_field(
+	$sample_doc->get_dataset->get_field( "relation_type" ),
+	EPrints::Utils::make_relation("isVolatileVersionOf")." ".EPrints::Utils::make_relation("ispreviewThumbnailVersionOf"), "EQ", "ALL" );
+
+$list = eval { $searchexp->perform_search };
+
+ok(defined($list) && $list->count > 0, "search multiple field");
 
 
 $searchexp = EPrints::Search->new(
@@ -255,7 +254,7 @@ $searchexp = EPrints::Search->new(
 	dataset => $dataset,
 	satisfy_all => 0 );
 
-$searchexp->add_field( $dataset->get_field( "documents" ), "article", "IN" );
+$searchexp->add_field( $dataset->get_field( $EPrints::Utils::FULLTEXT ), "article", "IN" );
 $searchexp->add_field( $dataset->get_field( "title" ), "article", "IN" );
 $searchexp->add_field( $dataset->get_field( "relation_type" ), "article" );
 
@@ -316,30 +315,6 @@ ok($list->count > 0, "documents.file.mime_type/satisfy_all => 0");
 };
 
 $searchexp = EPrints::Search->new(
-    session => $session,
-    dataset => $sample_doc->dataset,
-    satisfy_all => 0 );
-
-$searchexp->add_field( $sample_doc->dataset->field( "relation" ), "http%3A//eprints.org/relation/islightboxThumbnailVersionOf:/id/document/1", "EX" );
-
-#print STDERR $searchexp->get_conditions->sql( dataset => $sample_doc->dataset, session => $session );
-
-$list = $searchexp->perform_search;
-
-ok($list->count > 0, "compound type field query");
-
-$searchexp = EPrints::Search->new(
-	session => $session,
-	dataset => $dataset,
-	satisfy_all => 0 );
-
-$searchexp->add_field( $dataset->field( "title" ), "eagl*", "IN" );
-
-my $sf = $searchexp->get_searchfield( "title" );
-# any better way to check this?
-ok( $sf->get_conditions->describe =~ "index_start", "title=eagl* results in index_start" );
-
-$searchexp = EPrints::Search->new(
 	session => $session,
 	dataset => $dataset,
 	satisfy_all => 0 );
@@ -350,31 +325,5 @@ $searchexp->add_field( $dataset->field( "date" ), "2000" );
 $list = $searchexp->perform_search;
 
 ok($list->count > 0, "title OR date: ".$searchexp->get_conditions->describe);
-
-$searchexp = EPrints::Search->new(
-	session => $session,
-	dataset => $dataset,
-	satisfy_all => 0 );
-
-$searchexp->add_field( $dataset->field( "title" ), "banded geckos", "IN" );
-$searchexp->add_field( $dataset->field( "abstract" ), "demonstration data", "IN" );
-
-$list = $searchexp->perform_search;
-
-ok($list->count > 0, "title OR abstract: ".$searchexp->get_conditions->describe."\n".$searchexp->get_conditions->sql( dataset => $dataset, session => $session ));
-
-$searchexp = EPrints::Search->new(
-	session => $session,
-	dataset => $sample_doc->get_dataset,
-);
-
-$searchexp->add_field(
-	$sample_doc->get_dataset->get_field( "relation_type" ),
-	EPrints::Utils::make_relation("isVolatileVersionOf")." ".EPrints::Utils::make_relation("ispreviewThumbnailVersionOf"), "EQ", "ALL" );
-
-$list = eval { $searchexp->perform_search };
-
-ok(defined($list) && $list->count > 0, "search multiple field");
-
 
 $session->terminate;

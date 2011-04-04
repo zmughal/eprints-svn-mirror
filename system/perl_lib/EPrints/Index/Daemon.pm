@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -51,11 +56,6 @@ sub new
 {
 	my( $class, %opts ) = @_;
 
-	if( $^O eq 'MSWin32' )
-	{
-		$class = "${class}::MSWin32";
-	}
-
 #	$opts{logfile} = EPrints::Index::logfile();
 	$opts{pidfile} ||= EPrints::Index::pidfile();
 	$opts{tickfile} ||= EPrints::Index::tickfile();
@@ -67,7 +67,6 @@ sub new
 	$opts{respawn} ||= 86400; # 1 day
 	$opts{timeout} ||= 600; # 10 minutes
 	$opts{nextrespawn} = time() + $opts{respawn};
-	$opts{interupt} = 0; # break out of any loops
 
 	my $self = bless \%opts, $class;
 
@@ -200,12 +199,6 @@ sub tick
 {
 	my( $self ) = @_;
 
-	# tick at most every 30 seconds
-	return if $self->{tick} && $self->{tick} > time();
-	$self->{tick} = time() + 30;
-
-	$self->log( 4, "* tick: $$" );
-
 	open( TICK, ">", $self->{tickfile} ) or die "Error opening tick file $self->{tickfile}: $!";
 	print TICK <<END;
 # This file is by the indexer to indicate
@@ -245,11 +238,9 @@ sub get_last_tick
 }
 
 # true if we've been asked to exit
-sub interupted
+sub suicidal
 {
-	my( $self ) = @_;
-
-	return $self->{interupt} ||= -e $_[0]->{suicidefile};
+	return -e $_[0]->{suicidefile};
 }
 
 # roll the log files then reopen the main log file
@@ -272,10 +263,8 @@ sub roll_logs
 			return;
 		}
 	}
-	close( STDOUT ) or die "Error closing STDOUT: $!";
-	close( STDERR ) or die "Error closing STDERR: $!";
+	close( STDERR ) or die; # oh dear
 	rename($self->{logfile}, $self->{logfile}.'.1');
-	open( STDOUT, ">>", $self->{logfile} ); # If this fails we're stuffed
 	open( STDERR, ">>", $self->{logfile} ); # If this fails we're stuffed
 }
 
@@ -524,7 +513,7 @@ sub start_daemon
 			delete $self->{child};
 			$self->log( 2, "*** Indexer sub-process stopped" );
 
-			if( $self->interupted )
+			if( $self->suicidal )
 			{
 				$self->log( 1, "** Indexer process stopping" );
 				last;
@@ -611,22 +600,15 @@ sub run_index
 		$self->log( 3, "** Worker process terminated: $$" );
 		$self->real_exit;
 	};
-	$SIG{INT} = sub {
-		$self->log( 3, "** Worker process interupted: $$" );
-		$self->{interupt} = 1;
-	};
 
-	MAINLOOP: while( 1 )
+	my $suicidal = $self->suicidal;
+
+	while( !$suicidal )
 	{
 		my $seen_action = 0;
 
 		foreach my $repo ( @repos )
 		{
-			last MAINLOOP if $self->interupted;
-
-			# reload the config if requested to
-			$repo->check_last_changed;
-
 			# give the next code $timeout secs to complete
 			eval {
 				local $SIG{ALRM} = sub { die "alarm\n" };
@@ -644,37 +626,43 @@ sub run_index
 			}
 		}
 
-		last MAINLOOP if $self->{once} && !$seen_action;
-
+		$self->log( 4, "* tick: $$" );
 		$self->tick;
 
 		# is it time to respawn yet?
-		last MAINLOOP if $self->should_respawn;
+		if( $self->should_respawn )
+		{
+			last;
+		}
 
-		next MAINLOOP if $seen_action;
+		if( $self->suicidal )
+		{
+			$suicidal = 1;
+			last;
+		}
 
-		# wait interval seconds. Check interupt requests every 5 seconds.
+		next if( $seen_action );
+
+		last if( $self->{once} );
+
+		# wait interval seconds. Check suicide requests every 5 seconds.
 		my $stime = time();
 		while( ($stime + $self->{interval}) > time() )
 		{
-			last MAINLOOP if $self->interupted;
+			if( $self->suicidal )
+			{
+				$suicidal = 1;
+				last;
+			}
 			sleep 5;
-		}
-
-		# re-connect the databases
-		# if we lose connection while sleeping we can lose any connection
-		# settings on an auto-reconnect
-		foreach my $repo (@repos)
-		{
-			$repo->database->connect();
 		}
 	}
 
-	if( $self->interupted )
+	if( $suicidal )
 	{
 		$self->log( 3, "** Worker process stopping: $$" );
 	}
-	elsif( !$self->{once} )
+	else
 	{
 		$self->log( 3, "** Worker process restarting: $$" );
 	}
@@ -686,15 +674,8 @@ sub _run_index
 
 	my $seen_action = 0;
 	my @events = $session->get_database->dequeue_events( 10 );
-	EVENT: foreach my $event (@events)
+	foreach my $event (@events)
 	{
-		# reset events on interuption
-		if( $self->interupted )
-		{
-			$event->set_value( "status", "waiting" );
-			$event->commit;
-			next EVENT;
-		}
 		if( $self->{loglevel} >= 5 )
 		{
 			my $pluginid = $event->value( "pluginid" );
@@ -716,8 +697,6 @@ sub _run_index
 		{
 			$seen_action = 1;
 		}
-
-		$self->tick;
 	}
 
 	return $seen_action; # seen action, even if it is to fail
@@ -748,32 +727,4 @@ sub should_respawn
 L<EPrints::Index>
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

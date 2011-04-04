@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -35,15 +40,6 @@ sub paginate_list
 
 	my %newopts = %opts;
 	
-	if( EPrints::Utils::is_set( $basename ) )
-	{
-		$basename .= '_';
-	}
-	else
-	{
-		$basename = '';
-	}
-
 	# Build base URL
 	my $url = $session->get_uri . "?";
 	my @param_list;
@@ -53,21 +49,17 @@ sub paginate_list
 		foreach my $key ( keys %$params )
 		{
 			my $value = $params->{$key};
-			push @param_list, "$key=$value" if defined $value;
+			push @param_list, "$key=$value";
 		}
 	}
 	$url .= join "&", @param_list;
 
-	my $offset = defined $opts{offset} ? $opts{offset} : ($session->param( $basename."offset" ) || 0);
+	my $offset = defined $opts{offset} ? $opts{offset} : ($session->param( "$basename\_offset" ) || 0);
 	$offset += 0;
-	$url .= "&".$basename."offset=$offset"; # $basename\_offset used by paginate_list
+	$url .= "&$basename\_offset=$offset"; # $basename\_offset used by paginate_list
 
 	# Sort param
-	my $sort_order = $opts{custom_order};
-	if( !defined $sort_order )
-	{
-		$sort_order = $session->param( $basename."order" );
-	}
+	my $sort_order = $session->param( $basename."_order" );
 	if( !defined $sort_order ) 
 	{
 		foreach my $sort_col (@{$opts{columns}})
@@ -87,13 +79,11 @@ sub paginate_list
 			last;
 		}
 	}	
-	if( EPrints::Utils::is_set( $sort_order ) )
+
+	if( defined $sort_order && $sort_order ne "" )
 	{
-		$newopts{params}{ $basename."order" } = $sort_order;
-		if( !$opts{custom_order} )
-		{
-			$list = $list->reorder( $sort_order );
-		}
+		$newopts{params}{ $basename."_order" } = $sort_order;
+		$list = $list->reorder( $sort_order );
 	}
 	
 	# URL for images
@@ -115,18 +105,18 @@ sub paginate_list
 		$tr->appendChild( $th );
 		next if !defined $col;
 	
-		my $linkurl = "$url&${basename}order=$col";
+		my $linkurl = "$url&$basename\_order=$col";
 		if( $col eq $sort_order )
 		{
-			$linkurl = "$url&${basename}order=-$col";
+			$linkurl = "$url&$basename\_order=-$col";
 		}
 		my $field = $list->get_dataset->get_field( $col );
 		if( $field->should_reverse_order )
 		{
-			$linkurl = "$url&${basename}order=-$col";
+			$linkurl = "$url&$basename\_order=-$col";
 			if( "-$col" eq $sort_order )
 			{
-				$linkurl = "$url&${basename}order=$col";
+				$linkurl = "$url&$basename\_order=$col";
 			}
 		}
 		my $itable = $session->make_element( "table", cellpadding=>0, border=>0, cellspacing=>0, width=>"100%" );
@@ -210,32 +200,4 @@ sub paginate_list
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -31,6 +36,18 @@ use EPrints::MetaField;
 
 use strict;
 
+sub get_search_conditions_not_ex
+{
+	my( $self, $session, $dataset, $search_value, $match, $merge,
+	$search_mode ) = @_;
+
+	return EPrints::Search::Condition->new(
+		'=',
+		$dataset,
+		$self,
+		$search_value );
+}
+
 ######################################################################
 =pod
 
@@ -45,7 +62,7 @@ sub value_from_sql_row
 {
 	my( $self, $session, $row ) = @_;
 
-	if( ref($session->{database}) eq "EPrints::Database::mysql" )
+	if( $session->{database}->isa( "EPrints::Database::mysql" ) )
 	{
 		utf8::decode( $row->[0] );
 	}
@@ -76,51 +93,5 @@ sub sql_row_from_value
 	return( $value );
 }
 
-sub get_property_defaults
-{
-	my( $self ) = @_;
-	return(
-		$self->SUPER::get_property_defaults,
-		match => "EX",
-		merge => "ALL",
-	);
-}
-
-# id fields are searched whole, whether against the main table or in the index
-sub get_index_codes_basic
-{
-       my( $self, $session, $value ) = @_;
-
-       return( [ $value ], [], [] );
-}
-
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

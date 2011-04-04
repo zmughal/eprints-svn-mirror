@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2009 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -14,13 +19,6 @@
 =head1 NAME
 
 B<EPrints::RepositoryConfig> - Repository Configuration
-
-=head1 SYNOPSIS
-
-	$c->add_dataset_field( "eprint", {
-		name => "title",
-		type => "longtext",
-	}, reuse => 1 );
 
 =head1 DESCRIPTION
 
@@ -93,47 +91,6 @@ sub add_trigger
 	push @{$self->{triggers}->{$type}->{$priority}}, $f;
 }
 
-=item $c->add_dataset_field( $datasetid, $fielddata, %opts )
-
-Add a field spec $fielddata to dataset $datasetid.
-
-This method will abort if the field already exists and 'reuse' is unspecified.
-
-Options:
-	reuse - re-use an existing field if it exists (must be same type)
-
-=cut
-
-sub add_dataset_field
-{
-	my( $c, $datasetid, $fielddata, %opts ) = @_;
-
-	$c->{fields}->{$datasetid} = [] if !exists $c->{fields}->{$datasetid};
-
-	my $reuse = $opts{reuse};
-
-	for(@{$c->{fields}->{$datasetid}})
-	{
-		if( $_->{name} eq $fielddata->{name} )
-		{
-			if( !$reuse )
-			{
-				EPrints->abort( "Duplicate field name encountered in configuration: $datasetid.$_->{name}" );
-			}
-			elsif( $_->{type} ne $fielddata->{type} )
-			{
-				EPrints->abort( "Attempt to reuse field $datasetid.$_->{name} but it is a different type: $_->{type} != $fielddata->{type}" );
-			}
-			else
-			{
-				return;
-			}
-		}
-	}
-
-	push @{$c->{fields}->{$datasetid}}, $fielddata;
-}
-
 =pod
 
 =back
@@ -162,31 +119,3 @@ sub read_only
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -1,4 +1,4 @@
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 BEGIN { use_ok( "EPrints" ); }
 BEGIN { use_ok( "EPrints::Test" ); }
@@ -56,7 +56,12 @@ our @ISA = qw( EPrints::Repository );
 
 my $repository = EPrints::Test::Repository->new( EPrints::Test::get_test_id() );
 
+my $session = EPrints::Test::get_test_session();
+
 ok(defined $repository, "test repository creation");
+ok(defined $session, "test session creation");
+
+$session->terminate;
 
 my %usage = %_PLUGIN_MEM_USAGE;
 

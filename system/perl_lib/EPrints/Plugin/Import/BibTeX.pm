@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Import::BibTeX
-
-=cut
-
 =pod
 
 =head1 FILE FORMAT
@@ -328,10 +322,10 @@ sub convert_input
 	$epdata->{type} = "article" if $type eq "ARTICLE";
 	$epdata->{type} = "book" if $type eq "BOOK";
 	$epdata->{type} = "book" if $type eq "PROCEEDINGS";
-	$epdata->{type} = "book\\_section" if $type eq "INBOOK";
-	$epdata->{type} = "book\\_section" if $type eq "INCOLLECTION";
-	$epdata->{type} = "conference\\_item" if $type eq "INPROCEEDINGS";
-	$epdata->{type} = "conference\\_item" if $type eq "CONFERENCE";
+	$epdata->{type} = "book_section" if $type eq "INBOOK";
+	$epdata->{type} = "book_section" if $type eq "INCOLLECTION";
+	$epdata->{type} = "conference_item" if $type eq "INPROCEEDINGS";
+	$epdata->{type} = "conference_item" if $type eq "CONFERENCE";
 	$epdata->{type} = "other" if $type eq "MISC";
 	if( $type eq "MANUAL" )
 	{
@@ -341,7 +335,7 @@ sub convert_input
 	if( $type eq "TECHREPORT" )
 	{
 		$epdata->{type} = "monograph";
-		$epdata->{monograph_type} = "technical\\_report";
+		$epdata->{monograph_type} = "technical_report";
 	}
 	if( $type eq "MASTERSTHESIS" )
 	{
@@ -505,12 +499,10 @@ sub convert_input
 	$epdata->{abstract} = $entry->field( "abstract" );
 	# keywords
 	$epdata->{keywords} = $entry->field( "keywords" );
+	# url
+	$epdata->{official_url} = $entry->field( "url" );
 
 	_decode_bibtex( $epdata );
-
-	# url (don't decode TeX)
-	$epdata->{official_url} = $entry->field( "url" );
-	$epdata->{official_url} =~ s/\\\%/%/g;
 
 	return $epdata;
 }
@@ -544,32 +536,4 @@ sub _decode_bibtex
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

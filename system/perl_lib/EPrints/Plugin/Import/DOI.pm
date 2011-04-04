@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Import::DOI
-
-=cut
-
 package EPrints::Plugin::Import::DOI;
 
 # 10.1002/asi.20373
@@ -70,17 +64,18 @@ sub input_text_fh
 
 		my $dom_query_result = ($dom_top->getElementsByTagName( "query_result" ))[0];
 
-		if( $@ || !defined $dom_query_result)
-		{
-			$plugin->handler->message( "warning", $plugin->html_phrase( "invalid_doi",
-				doi => $plugin->{session}->make_text( $doi ),
-				msg => $plugin->{session}->make_text( "No or unrecognised response" )
-			));
-			next;
-		}
+                if( $@ || !defined $dom_query_result)
+                {
+                        $plugin->handler->message( "warning", $plugin->html_phrase( "invalid_doi",
+                                doi => $plugin->{session}->make_text( $doi ),
+                                msg => $plugin->{session}->make_text( "No or unrecognised response" )
+                        ));
+                        next;
+                }
 
 		my $dom_body = ($dom_query_result->getElementsByTagName( "body" ))[0];
 		my $dom_query = ($dom_body->getElementsByTagName( "query" ))[0];
+
 		my $status = $dom_query->getAttribute( "status" );
 
 		if( defined($status) && ($status eq "unresolved" || $status eq "malformed") )
@@ -265,31 +260,3 @@ sub url_encode
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

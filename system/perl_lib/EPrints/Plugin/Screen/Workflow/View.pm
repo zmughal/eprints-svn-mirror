@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Workflow::View
-
-=cut
-
 package EPrints::Plugin::Screen::Workflow::View;
 
 @ISA = ( 'EPrints::Plugin::Screen::Workflow' );
@@ -43,28 +37,18 @@ sub render_title
 
 	my $session = $self->{session};
 
-	my $screen = $self->view_screen();
+	my $screen = $self->get_view_screen();
 
 	my $dataset = $self->{processor}->{dataset};
 	my $dataobj = $self->{processor}->{dataobj};
 
-	my $url = URI->new( $session->current_url );
-	$url->query_form(
-		screen => $self->listing_screen,
-		dataset => $dataset->id
-	);
-	my $listing = $session->render_link( $url );
+	my $listing = $session->render_link( "?screen=Listing&dataset=".$dataset->id );
 	$listing->appendChild( $dataset->render_name( $session ) );
 
 	my $desc = $dataobj->render_description();
 	if( $self->{id} ne "Screen::$screen" )
 	{
-		$url->query_form(
-			screen => $screen,
-			dataset => $dataset->id,
-			dataobj => $dataobj->id
-		);
-		my $link = $session->render_link( $url );
+		my $link = $session->render_link( "?screen=$screen&dataset=".$dataset->id."&dataobj=".$dataobj->id );
 		$link->appendChild( $desc );
 	}
 
@@ -82,14 +66,12 @@ sub render
 
 	my $chunk = $self->{session}->make_doc_fragment;
 
-	$chunk->appendChild( $self->render_status );
-
+#	$chunk->appendChild( $self->render_status );
 	my $buttons = $self->render_common_action_buttons;
 	$chunk->appendChild( $buttons );
 
 	# if in archive and can request delete then do that here TODO
 
-	# current view to show
 	my $view = $self->{session}->param( "view" );
 	if( defined $view )
 	{
@@ -186,61 +168,14 @@ sub render
 	return $chunk;
 }
 
-sub render_status
-{
-	my( $self ) = @_;
-
-	my $dataobj = $self->{processor}->{dataobj};
-
-	my $url = $dataobj->uri;
-
-	my $div = $self->{session}->make_element( "div", class=>"ep_block" );
-
-	my $link = $self->{session}->render_link( $url );
-	$div->appendChild( $link );
-	$link->appendChild( $self->{session}->make_text( $url ) );
-
-	return $div;
-}
-
 sub render_common_action_buttons
 {
 	my( $self ) = @_;
 
-	my $datasetid = $self->{processor}->{dataset}->id;
-
-	return $self->render_action_list_bar( ["${datasetid}_view_actions", "dataobj_view_actions"], {
-					dataset => $datasetid,
+	return $self->render_action_list_bar( "dataobj_view_actions", {
+					dataset => $self->{processor}->{dataset}->id,
 					dataobj => $self->{processor}->{dataobj}->id,
 				} );
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

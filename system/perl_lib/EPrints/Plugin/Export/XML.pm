@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::XML
-
-=cut
-
 package EPrints::Plugin::Export::XML;
 
 use EPrints::Plugin::Export::XMLFile;
@@ -21,127 +15,89 @@ sub new
 	$self->{name} = "EP3 XML";
 	$self->{accept} = [ 'list/*', 'dataobj/*' ];
 	$self->{visible} = "all";
-	$self->{xmlns} = EPrints::Const::EP_NS_DATA;
+	$self->{xmlns} = "http://eprints.org/ep2/data/2.0";
 	$self->{qs} = 0.8;
 	$self->{arguments}->{hide_volatile} = 1;
 
 	return $self;
 }
 
+
+
+
+
 sub output_list
 {
-	my( $self, %opts ) = @_;
+	my( $plugin, %opts ) = @_;
 
 	my $type = $opts{list}->get_dataset->confid;
 	my $toplevel = $type."s";
+	my $namespace = EPrints::XML::namespace( "data", "2" );
 	
-	my $output = "";
+	my $r = [];
 
-	my $wr = EPrints::XML::SAX::PrettyPrint->new(
-		Handler => EPrints::XML::SAX::Writer->new(
-			Output => defined $opts{fh} ? $opts{fh} : \$output
-	));
+	my $part;
+	$part = '<?xml version="1.0" encoding="utf-8" ?>'."\n<$toplevel xmlns=\"$namespace\">\n";
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} $part;
+	}
+	else
+	{
+		push @{$r}, $part;
+	}
 
-	$wr->start_document({});
-	$wr->xml_decl({
-		Version => '1.0',
-		Encoding => 'utf-8',
-	});
-	$wr->start_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-
-	$wr->start_element({
-		Prefix => '',
-		LocalName => $toplevel,
-		Name => $toplevel,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-		Attributes => {},
-	});
 	$opts{list}->map( sub {
-		my( undef, undef, $item ) = @_;
+		my( $session, $dataset, $item ) = @_;
 
-		$self->output_dataobj( $item, %opts, Handler => $wr );
-	});
+		my $part = $plugin->output_dataobj( $item, %opts );
+		if( defined $opts{fh} )
+		{
+			print {$opts{fh}} $part;
+		}
+		else
+		{
+			push @{$r}, $part;
+		}
+	} );
 
-	$wr->end_element({
-		Prefix => '',
-		LocalName => $toplevel,
-		Name => $toplevel,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$wr->end_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$wr->end_document({});
+	$part= "</$toplevel>\n";
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} $part;
+	}
+	else
+	{
+		push @{$r}, $part;
+	}
 
-	return $output;
+
+	if( defined $opts{fh} )
+	{
+		return;
+	}
+
+	return join( '', @{$r} );
 }
 
 sub output_dataobj
 {
-	my( $self, $dataobj, %opts ) = @_;
+	my( $plugin, $dataobj, %opts ) = @_;
 
-	if( $opts{Handler} )
-	{
-		return $dataobj->to_sax( %opts );
-	}
+	my $itemtype = $dataobj->get_dataset->confid;
 
-	my $output = "";
+	my $xml = $plugin->xml_dataobj( $dataobj, %opts );
 
-	my $wr = EPrints::XML::SAX::PrettyPrint->new(
-		Handler => EPrints::XML::SAX::Writer->new(
-			Output => defined $opts{fh} ? $opts{fh} : \$output
-	));
+	EPrints::XML::tidy( $xml, {}, 1 );
 
+	return "  " . EPrints::XML::to_string( $xml ) . "\n";
+}
 
-	$wr->start_document({});
-	$wr->xml_decl({
-		Version => '1.0',
-		Encoding => 'utf-8',
-	});
-	$wr->start_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$dataobj->to_sax( %opts, Handler => $wr );
-	$wr->end_prefix_mapping({
-		Prefix => '',
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
-	$wr->end_document({});
+sub xml_dataobj
+{
+	my( $plugin, $dataobj, %opts ) = @_;
 
-	return $output;
+	return $dataobj->to_xml( %opts );
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

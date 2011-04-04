@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -123,10 +128,16 @@ sub render_input_field_actual
 {
 	my( $self, $session, $value, $dataset, $staff, $hidden_fields, $obj, $basename ) = @_;
 
+	my $table = $session->make_element( "table", border=>0, cellpadding=>0, cellspacing=>0, class=>"ep_form_input_grid" );
+	my $tr = $session->make_element( "tr" );
+	my $td = $session->make_element( "td" );
+	$table->appendChild( $tr );
+	$tr->appendChild( $td );
 	if( $self->get_property( "input_ordered" ) )
 	{
-		return $self->SUPER::render_input_field_actual( 
-			$session, $value, $dataset, $staff, $hidden_fields, $obj, $basename );
+		$td->appendChild(  $self->SUPER::render_input_field_actual( 
+			$session, $value, $dataset, $staff, $hidden_fields, $obj, $basename ) );
+		return $table;
 	}
 
 	my $required = $self->get_property( "required" );
@@ -138,7 +149,8 @@ sub render_input_field_actual
 
 	# called as a seperate function because subject does this
 	# bit differently, and overrides render_set_input.
-	return $self->render_set_input( $session, $default, $required, $obj, $basename );
+	$td->appendChild( $self->render_set_input( $session, $default, $required, $obj, $basename ) );
+	return $table;
 }
 
 sub input_tags_and_labels
@@ -349,13 +361,15 @@ sub render_search_input
 				default=>$searchfield->get_merge,
 				labels=>\%set_labels ) );
 	}
-	if( $searchfield->get_match ne $self->property( "match" ) )
+
+	# IN does not make sense but EX does.
+	my $match = $searchfield->get_match;
+	if( defined $match && $match ne $self->default_web_search_match_code )
 	{
 		$frag->appendChild(
-			$session->render_hidden_field(
-				$searchfield->get_form_prefix . "_match",
-				$searchfield->get_match
-			) );
+			$session->xhtml->input_field( 
+				$searchfield->get_form_prefix."_match",
+				$match ) );
 	}
 
 	return $frag;
@@ -411,6 +425,9 @@ sub render_search_set_input
 		height => $height );
 }	
 
+sub default_web_search_match_code { return "EQ"; }
+sub default_web_search_merge_code { return "ANY"; }
+
 sub from_search_form
 {
 	my( $self, $session, $prefix ) = @_;
@@ -424,15 +441,24 @@ sub from_search_form
 		push @vals,$_;
 	}
 		
+	return if( scalar @vals == 0 );
+
+#	foreach (@vals)
+#	{
+#		return if( $_ eq "NONE" );
+#	}
+
 	# We have some values. Join them together.
 	my $val = join ' ', @vals;
-	$val = undef if $val eq '';
 
-	return(
-		$val,
-		scalar($session->param( $prefix."_match" )),
-		scalar($session->param( $prefix."_merge" ))
-	);
+	# ANY or ALL?
+	my $merge = $session->param( $prefix."_merge" );
+	$merge = "ANY" unless( defined $merge );
+
+        my $match = $session->param( $prefix."_match" );
+        $match = "EQ" unless defined( $match );
+	
+	return( $val, $merge, $match );
 }
 
 	
@@ -509,8 +535,6 @@ sub get_property_defaults
 	$defaults{render_max_search_values} = 5;
 	$defaults{text_index} = 0;
 	$defaults{sql_index} = 1;
-	$defaults{match} = "EQ";
-	$defaults{merge} = "ANY";
 	return %defaults;
 }
 
@@ -550,31 +574,3 @@ sub render_xml_schema_type
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

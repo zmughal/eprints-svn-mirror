@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -29,38 +34,22 @@ use XML::Parser;
 # valid...
 $XML::DOM::SafeMode = 0;
 
-XML::DOM::setTagCompression( \&_xmldom_tag_compression );
-
 $EPrints::XML::CLASS = "EPrints::XML::DOM";
 
 $EPrints::XML::LIB_LEN = length("XML::DOM::");
 
 # DOM spec fixes
 *XML::DOM::Document::documentElement = \&XML::DOM::Document::getDocumentElement;
-*XML::DOM::Document::setDocumentElement = sub {
-		my( $self, $node ) = @_;
-		$self->removeChild( $self->documentElement ) if $self->documentElement;
-		$self->appendChild( $node );
-	};
 *XML::DOM::Node::ownerDocument = \&XML::DOM::Node::getOwnerDocument;
-*XML::DOM::Node::attributes = sub {
-	my $attrs = shift->getAttributes(@_);
-	return wantarray ? (map { $attrs->item( $_ ) } 0..($attrs->getLength-1) ) : $attrs;
-};
+*XML::DOM::Node::attributes = sub { shift->getAttributes(@_) };
 *XML::DOM::Node::nodeName = sub { shift->getNodeName(@_) };
 *XML::DOM::Node::nodeValue = sub { shift->getNodeValue(@_) };
 *XML::DOM::Node::nodeType = sub { shift->getNodeType(@_) };
-*XML::DOM::Node::prefix = sub {
-		my $name = shift->getNodeName(@_);
-		$name =~ s/^(.*)://;
-		return $1 || '';
-	};
 *XML::DOM::Node::localName = sub {
 		my $name = shift->getNodeName(@_);
 		$name =~ s/^.*://;
 		return $name;
 	};
-*XML::DOM::Node::parentNode = sub { shift->getParentNode(@_) };
 *XML::DOM::Attr::name = \&XML::DOM::Attr::getName;
 *XML::DOM::Attr::nodeName = \&XML::DOM::Attr::getName;
 *XML::DOM::Attr::value = \&XML::DOM::Attr::getValue;
@@ -79,28 +68,6 @@ $EPrints::XML::LIB_LEN = length("XML::DOM::");
 
 		return $node;
 	};
-
-######################################################################
-# 
-# EPrints::XML::_xmldom_tag_compression( $tag, $elem )
-#
-# Only used by the DOM module.
-#
-######################################################################
-
-sub _xmldom_tag_compression
-{
-	my ($tag, $elem) = @_;
-	
-	# Print empty br, hr and img tags like this: <br />
-	foreach my $ctag ( @EPrints::XML::COMPRESS_TAGS )
-	{
-		return 2 if( $ctag eq $tag );
-	}
-
-	# Print other empty tags like this: <empty></empty>
-	return 1;
-}
 
 sub parse_xml_string
 {
@@ -198,34 +165,25 @@ sub event_parse
 {
 	my( $fh, $handler ) = @_;	
 	
-	my $parser = new XML::Parser(
-		Style => "Subs",
-		ErrorContext => 5,
-		Handlers => {
-		Start => sub { 
-			my( $p, $v, %a ) = @_; 
-			my $attr = {};
-			foreach my $k ( keys %a )
-			{
-				my( $prefix, $localname ) = split /:/, $k;
-				($prefix,$localname) = ('',$prefix) if !$localname;
-				$attr->{'{}'.$k} = { Prefix=>$prefix, LocalName=>$localname, Name=>$k, Value=>$a{$k} };
-			}
-			my( $prefix, $localname ) = split /:/, $v;
-			($prefix,$localname) = ('',$prefix) if !$localname;
-			$handler->start_element( { Prefix=>$prefix, LocalName=>$localname, Name=>$v, Attributes=>$attr } );
-		},
-		End => sub { 
-			my( $p, $v ) = @_; 
-			my( $prefix, $localname ) = split /:/, $v;
-			($prefix,$localname) = ('',$prefix) if !$localname;
-			$handler->end_element( { Prefix=>$prefix, LocalName=>$localname, Name=>$v } );
-		},
-		Char => sub { 
-			my( $p, $data ) = @_; 
-			$handler->characters( { Data=>$data } );
-		},
-	} );
+        my $parser = new XML::Parser(
+                Style => "Subs",
+                ErrorContext => 5,
+                Handlers => {
+                        Start => sub { 
+				my( $p, $v, %a ) = @_; 
+				my $attr = {};
+				foreach my $k ( keys %a ) { $attr->{$k} = { Name=>$k, Value=>$a{$k} }; }
+				$handler->start_element( { Name=>$v, Attributes=>$attr } );
+			},
+                        End => sub { 
+				my( $p, $v ) = @_; 
+				$handler->end_element( { Name=>$v } );
+			},
+                        Char => sub { 
+				my( $p, $data ) = @_; 
+				$handler->characters( { Data=>$data } );
+			},
+                } );
 
 	$parser->parse( $fh );
 }
@@ -290,31 +248,3 @@ our @ISA = qw( EPrints::XML );
 use strict;
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -51,9 +51,8 @@ our $PRODUCT_MANUFACTURER = "University of Southampton";
 our $CYEAR = (gmtime())[5] + 1900;
 our $MEDIA_CAB = "eprints.cab";
 our $BASE_PATH = "C:/eprints";
-our $PERL_PATH = $^X;
 
-if( $package_version =~ /\-r(\d+)/ )
+if( $PRODUCT_VERSION =~ /\-r(\d+)/ )
 {
 	$PRODUCT_VERSION = "1.0.$1";
 }
@@ -86,6 +85,7 @@ for(qw( bin ))
 
 {
 my $SystemSettings = {
+	base_path => $BASE_PATH,
 	version => $PRODUCT_NAME,
 };
 
@@ -157,12 +157,6 @@ $Product->appendChild( $Property );
 $Property->setAttribute( Id => 'DiskPrompt' );
 $Property->setAttribute( Value => "$PRODUCT_NAME Installer [1]" );
 }
-{
-my $Property = $doc->createElement( 'Property' );
-$Product->appendChild( $Property );
-$Property->setAttribute( Id => 'WIXUI_INSTALLDIR' );
-$Property->setAttribute( Value => "INSTALLDIR" );
-}
 
 my $TARGETDIR = $doc->createElement( 'Directory' );
 $Product->appendChild( $TARGETDIR );
@@ -185,7 +179,7 @@ $Feature->setAttribute( Display => 'expand' );
 {
 my $UIRef = $doc->createElement( 'UIRef' );
 $Product->appendChild( $UIRef );
-$UIRef->setAttribute( Id => 'WixUI_InstallDir' );
+$UIRef->setAttribute( Id => 'WixUI_Minimal' );
 }
 
 {
@@ -218,11 +212,11 @@ $Environment->setAttribute( Name => 'PERL5LIB' );
 $Environment->setAttribute( Action => 'set' );
 $Environment->setAttribute( System => 'yes' );
 $Environment->setAttribute( Part => 'last' );
-$Environment->setAttribute( Separator => ';' );
-$Environment->setAttribute( Value => '[INSTALLDIR]perl_lib' );
+$Environment->setAttribute( Separator => ':' );
+$Environment->setAttribute( Value => '[INSTALLDIR]\\perl_lib' );
 }
 
-if( 0 ) {
+{
 my $Component = $doc->createElement( 'Component' );
 $INSTALLDIR->appendChild( $Component );
 $Component->setAttribute( Id => 'IndexerComponent' );
@@ -261,7 +255,6 @@ $ServiceControl->setAttribute( Name => 'EPrintsIndexer' );
 #$ServiceControl->setAttribute( Start => 'install' );
 $ServiceControl->setAttribute( Stop => 'uninstall' );
 $ServiceControl->setAttribute( Remove => 'uninstall' );
-
 my $RegistryKey = $doc->createElement( 'RegistryKey' );
 $Component->appendChild( $RegistryKey );
 $RegistryKey->setAttribute( Action => 'createAndRemoveOnUninstall' );
@@ -279,14 +272,14 @@ my $RegistryValue = $doc->createElement( 'RegistryValue' );
 $RegistryKey->appendChild( $RegistryValue );
 $RegistryValue->setAttribute( Name => 'Application' );
 $RegistryValue->setAttribute( Type => 'string' );
-$RegistryValue->setAttribute( Value => $PERL_PATH );
+$RegistryValue->setAttribute( Value => 'C:\Perl\bin\perl.exe' );
 }
 {
 my $RegistryValue = $doc->createElement( 'RegistryValue' );
 $RegistryKey->appendChild( $RegistryValue );
 $RegistryValue->setAttribute( Name => 'AppParameters' );
 $RegistryValue->setAttribute( Type => 'string' );
-$RegistryValue->setAttribute( Value => '[INSTALLDIR]bin\\indexer --master start' );
+$RegistryValue->setAttribute( Value => '[INSTALLDIR]bin\indexer --notdaemon start' );
 }
 }
 
@@ -302,7 +295,7 @@ close($fh);
 open(my $fh, ">", "$build_path/BUILD.txt") or die "$build_path/BUILD.txt: $!";
 binmode($fh, ":crlf");
 print $fh <<EOB;
-Do:
+Copy srvany.exe to build directory then:
 
 > candle eprints.wsx
 > light -ext WixUIExtension eprints.wixobj

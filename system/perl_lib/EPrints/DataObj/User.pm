@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -156,15 +161,12 @@ sub get_system_field_info
 			fromform=>\&EPrints::Utils::crypt_password },
 
 		{ name=>"usertype", type=>"namedset", required=>1, 
-			set_name=>"user", input_style=>"medium", default_value=>"user" },
+			set_name=>"user", input_style=>"medium" },
 	
 		{ name=>"newemail", type=>"email", show_in_html=>0 },
 	
 		{ name=>"newpassword", type=>"secret", show_in_html=>0, 
 			fromform=>\&EPrints::Utils::crypt_password },
-
-		{ name=>"openid_identifier", type=>"text", virtual=>1,
-			show_in_html=>0, export_as_xml=>0, },
 
 		{ name=>"pin", type=>"text", show_in_html=>0 },
 
@@ -556,7 +558,7 @@ Returns a L<EPrints::List> of all the L<EPrints::DataObj::EPrint>s owned by this
 sub owned_eprints_list
 {
 	my( $self, %opts ) = @_;
-		
+
 	my $dataset = $self->{session}->get_repository->get_dataset( "eprint" );
 
 	my $searchexp = EPrints::Search->new(
@@ -578,7 +580,7 @@ sub owned_eprints_list
 	}
 	
 	my $list = &$fn( $self->{session}, $self, $dataset );
-	if (!$searchexp->is_blank()) { $list = $list->intersect( $searchexp->perform_search ); }
+	$list = $list->intersect( $searchexp->perform_search );
 
 	return $list;
 }
@@ -931,6 +933,13 @@ and modify this record.
 =cut
 ######################################################################
 
+sub get_url
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/users/home?screen=User::View&userid=".$self->get_value( "userid" );
+}
+
 sub get_control_url
 {
 	my( $self ) = @_;
@@ -1263,7 +1272,8 @@ my $PRIVMAP =
 		"config/remove_field",
 		"config/regen_abstracts",
 		"config/regen_views",
-		"config/edit/perl",
+		"metafield/view",
+		"metafield/edit",
 		"import/view",
 		"import/edit",
 		"storage/manager",
@@ -1272,7 +1282,6 @@ my $PRIVMAP =
 		"event_queue/view",
 		"event_queue/destroy",
 		"eprint/archive/edit", # BatchEdit
-		"repository/epm", #EPrints Package Manager
 	],
 
 	"toolbox" => 
@@ -1300,8 +1309,9 @@ my $PRIVMAP =
 		"saved_search",
 		"create_saved_search",
 		"saved_search/view:owner",
+		"saved_search/perform:owner",
 		"saved_search/edit:owner",
-		"saved_search/destroy:owner",
+		"saved_search/remove:owner",
 	],
 
 	deposit => 
@@ -1612,32 +1622,4 @@ sub has_role
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Admin::Phrases
-
-=cut
-
 package EPrints::Plugin::Screen::Admin::Phrases;
 
 @ISA = ( 'EPrints::Plugin::Screen' );
@@ -290,9 +284,6 @@ sub render_style
 	border: solid 1px #66c;
 	padding: 3px;
 }
-.ep_phraseedit_ref {
-	border: dashed 1px #c66;
-}
 .ep_phraseedit_null {
 	background-color: #ccf;
 }
@@ -465,19 +456,8 @@ sub render_row
 	my $phraseid = $phrase->{phraseid};
 	my $src = $phrase->{src};
 
-	my $xml = $phrase->{xml};
-	my %seen = ($phrase->{phraseid} => 1);
-	while($xml->can( "hasAttribute" ) && $xml->hasAttribute( "ref" ))
-	{
-		my $info = $session->get_lang->get_phrase_info( $xml->getAttribute( "ref" ), $session );
-		last if !defined $info;
-		last if $seen{$info->{phraseid}};
-		$seen{$info->{phraseid}} = 1;
-		$xml = $info->{xml};
-	}
-
 	my $string = "";
-	foreach my $node ($xml->childNodes)
+	foreach my $node ($phrase->{xml}->childNodes)
 	{
 		$string .= EPrints::XML::to_string( $node );
 	}
@@ -502,10 +482,6 @@ sub render_row
 
 	# phrase editing widget
 	$div = $session->make_element( "div", id => "ep_phraseedit_$phraseid", class => "ep_phraseedit_widget", onclick => "ep_phraseedit_edit(this, ep_phraseedit_phrases);" );
-	if( $xml ne $phrase->{xml} )
-	{
-		$div->setAttribute( class => "ep_phraseedit_widget ep_phraseedit_ref" );
-	}
 	$td->appendChild( $div );
 	$div->appendChild( $session->make_text( $string ) );
 
@@ -554,32 +530,4 @@ sub render_new_phrase
 
 ######################################################################
 =pod
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

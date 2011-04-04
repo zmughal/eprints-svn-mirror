@@ -1,15 +1,14 @@
-=head1 NAME
-
-EPrints::ScreenProcessor
-
-=cut
-
 ######################################################################
 #
 # EPrints::Script
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -43,12 +42,9 @@ sub new
 		$self{screenid} = "FirstTool";
 	}
 
-	my $user = $self{session}->current_user;
-	if( defined $user )
-	{
-		$self{user} = $user;
-		$self{userid} = $user->id;
-	}
+	# This loads the properties of what the screen is about,
+	# Rather than parameters for the action, if any.
+	$self->screen->properties_from;
 
 	return $self;
 }
@@ -159,8 +155,6 @@ sub cache_list_items
 
 Returns a list of screens that appear in list $list_id ordered by their position.
 
-If $list_id is an array ref returns all matching entries for each individual list.
-
 Each screen opt is a hash ref of:
 
 	screen - screen plugin
@@ -183,16 +177,10 @@ sub list_items
 
 	my $screen_lists = $self->{session}->{screen_lists};
 
-	my @opts;
-	for(ref($list_id) eq "ARRAY" ? @$list_id : $list_id)
-	{
-		push @opts, @{$screen_lists->{$_} || []};
-	}
-
 	my @list;
-	foreach my $opt (@opts)
+	foreach my $opt (@{$screen_lists->{$list_id} || []})
 	{
-		my $screen = $self->{session}->plugin( $opt->{screen_id}, processor=>$self, %{$opts{params}||{}} );
+		my $screen = $self->{session}->plugin( $opt->{screen_id}, processor=>$self );
 		if( $filter )
 		{
 			next if !$screen->can_be_viewed;
@@ -280,10 +268,6 @@ sub process
 
 	my $self = $class->new( %opts );
 
-	# This loads the properties of what the screen is about,
-	# Rather than parameters for the action, if any.
-	$self->screen->properties_from;
-
 	$self->{action} = $self->{session}->get_action_button;
 	$self->{internal} = $self->{session}->get_internal_button;
 	delete $self->{action} if( $self->{action} eq "" );
@@ -362,6 +346,7 @@ sub process
 
 	my $content = $self->screen->render;
 	my $links = $self->screen->render_links;
+#	my $toolbar = $self->{session}->render_toolbar;
 	my $title = $self->screen->render_title;
 
 	my $page = $self->{session}->make_doc_fragment;
@@ -389,8 +374,6 @@ sub process
 		template => $self->{template},
  	);
 	$self->{session}->send_page();
-
-	return $self; # useful for unit-tests
 }
 
 
@@ -483,31 +466,3 @@ sub action_not_allowed
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

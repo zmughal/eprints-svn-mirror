@@ -23,6 +23,14 @@ Action buttons (Previous/Save/Next) can be shown "top", "bottom" or "both":
 
   <stage name="files">
     <component type="Upload" show_help="always" />
+<!--
+      <upload-methods>
+        <method>file</method>
+        <method>zip</method>
+        <method>targz</method>
+        <method>fromurl</method>
+      </upload-methods>
+-->
     <component type="Documents">
       <field ref="content" />
       <field ref="format" />
@@ -38,7 +46,7 @@ Action buttons (Previous/Save/Next) can be shown "top", "bottom" or "both":
 
   <stage name="core">
 
-    <component><field ref="title" required="yes" input_lookup_url="{$config{rel_cgipath}}/users/lookup/title_duplicates" input_lookup_params="id={eprintid}&amp;dataset=eprint&amp;field=title" /></component>
+    <component><field ref="title" required="yes" input_lookup_url="{$config{rel_cgipath}}/users/lookup/title_duplicates" input_lookup_params="eprintid={eprintid}" /></component>
     <component><field ref="abstract"/></component>
 
     <epc:if test="type = 'monograph'">

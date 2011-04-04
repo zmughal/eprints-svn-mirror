@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::RSS2
-
-=cut
-
 package EPrints::Plugin::Export::RSS2;
 
 use EPrints::Plugin::Export::Feed;
@@ -26,6 +20,8 @@ sub new
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "application/rss+xml";
 
+	$self->{number_to_show} = 10;
+
 	return $self;
 }
 
@@ -33,29 +29,18 @@ sub output_list
 {
 	my( $plugin, %opts ) = @_;
 
-	my $list = $opts{list};
+	my $list = $opts{list}->reorder( "-datestamp" );
 
 	my $session = $plugin->{session};
 
-	my $f;
-	my $r = [];
+	my $response = $session->make_element( "rss",
+		"version" => "2.0",
+		"xmlns:content" => "http://purl.org/rss/1.0/modules/content/",
+		"xmlns:dc" => "http://purl.org/dc/elements/1.1/",
+		"xmlns:media" => "http://search.yahoo.com/mrss/" );
 
-	if( defined $opts{fh} )
-	{
-		$f = sub { print {$opts{fh}} $_[0] };
-	}
-	else
-	{
-		$f = sub { push @$r, $_[0] };
-	}
-
-	&$f( <<EOX );
-<?xml version="1.0" encoding="utf-8" ?>
-<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
-    <channel>
-EOX
-
-	my $channel = $session->make_doc_fragment;
+	my $channel = $session->make_element( "channel" );
+	$response->appendChild( $channel );
 
 	my $title = $session->phrase( "archive_name" );
 
@@ -88,36 +73,15 @@ EOX
 		"description", 
 		$session->get_repository->get_conf( "oai","content","text" ) ) );
 
-	{
-		my $image = $session->make_element( "image" );
-		$channel->appendChild( $image );
-
-		$image->appendChild( $session->render_data_element(
-			8,
-			"url",
-			$session->config( "http_url" ) . $session->config( "site_logo" )
-		) );
-
-		$image->appendChild( $session->render_data_element(
-			8,
-			"title",
-			$title ) );
-
-		$image->appendChild( $session->render_data_element(
-			8,
-			"link",
-			$session->get_repository->get_conf( "frontpage" ) ) );
-	}
-
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"pubDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"lastBuildDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
@@ -130,12 +94,8 @@ EOX
 		"" ) );
 
 
-	&$f( $session->xml->to_string( $channel ) );
-	$session->xml->dispose( $channel );
-
-	$list->map(sub {
-		my( undef, undef, $eprint ) = @_;
-
+	foreach my $eprint ( $list->get_records( 0, $plugin->{number_to_show} ) )
+	{
 		my $item = $session->make_element( "item" );
 		
 		my $datestamp = $eprint->get_value( "datestamp" );
@@ -145,7 +105,7 @@ EOX
 			$item->appendChild( $session->render_data_element(
 				2,
 				"pubDate",
-				EPrints::Time::rfc822_datetime( $time ) ) );	
+				RFC822_time( $time ) ) );	
 			
 		}
 
@@ -170,18 +130,30 @@ EOX
 
 		$item->appendChild( $plugin->render_media_content( $eprint ) );
 		
-		&$f( "\n" );
-		&$f( $session->xml->to_string( $item ) );
-		$session->xml->dispose( $item );
-	});	
+		$channel->appendChild( $item );		
+	}	
 
-&$f(<<EOX);
+	my $rssfeed = <<END;
+<?xml version="1.0" encoding="utf-8" ?>
+END
+	$rssfeed.= EPrints::XML::to_string( $response );
+	EPrints::XML::dispose( $response );
 
-    </channel>
-</rss>
-EOX
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} $rssfeed;
+		return undef;
+	} 
 
-	return join '', @$r;
+	return $rssfeed;
+}
+
+use POSIX qw(strftime);
+sub RFC822_time
+{
+	my( $time ) = @_;
+	$time = time if( !defined $time );
+	return( strftime( "%a, %d %b %Y %H:%M:%S %z", localtime( $time ) ) );
 }
 
 sub render_media_content
@@ -266,32 +238,4 @@ sub render_doc_media_content
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

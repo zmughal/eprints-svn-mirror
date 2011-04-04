@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -61,7 +66,7 @@ use URI;
 
 use strict;
 
-$EPrints::Utils::FULLTEXT = "documents";
+$EPrints::Utils::FULLTEXT = "_fulltext_";
 
 BEGIN {
 	eval "use Term::ReadKey";
@@ -1069,6 +1074,85 @@ END
 	exit;
 }
 
+# This code is for debugging memory leaks in objects.
+# It is not used by EPrints except when developing. 
+#
+# 
+# my %OBJARRAY = ();
+# my %OBJSCORE = ();
+# my %OBJPOS = ();
+# my %OBJPOSR = ();
+# my $c = 0;
+
+
+######################################################################
+#
+# EPrints::Utils::destroy( $ref )
+#
+######################################################################
+
+sub destroy
+{
+	my( $ref ) = @_;
+#
+#	my $class = delete $OBJARRAY{"$ref"};
+#	my $n = delete $OBJPOS{"$ref"};
+#	delete $OBJPOSR{$n};
+#	
+#	$OBJSCORE{$class}--;
+#	print "Kill: $ref ($class) [$OBJSCORE{$class}]\n";
+
+}
+
+#my %OBJOLDSCORE = ();
+#use Data::Dumper;
+#sub debug
+#{
+#	my @k = sort {$b<=>$a} keys %OBJPOSR;
+#	for(0..9)
+#	{
+#		print "=========================================\n";
+#		print $OBJPOSR{$k[$_]}."\n";
+#	}
+#	foreach( keys %OBJSCORE ) { 
+#		my $diff = $OBJSCORE{$_}-$OBJOLDSCORE{$_};
+#		if( $diff > 0 ) { $diff ="+$diff"; }
+#		print "$_ $OBJSCORE{$_}   $diff\n"; 
+#		$OBJOLDSCORE{$_} = $OBJSCORE{$_};
+#	}
+#}
+#
+#sub bless
+#{
+#	my( $ref, $class ) = @_;
+#
+#	CORE::bless $ref, $class;
+#
+#	$OBJSCORE{$class}++;
+#	print "Make: $ref ($class) [$OBJSCORE{$class}]\n";
+#	$OBJARRAY{"$ref"}=$class;
+#	$OBJPOS{"$ref"} = $c;
+#	#my $x = $ref;
+#	$OBJPOSR{$c} = "$c - $ref\n";
+#	my $i=1;
+#	my @info;
+#	while( @info = caller($i++) )
+#	{
+#		$OBJPOSR{$c}.="$info[3] $info[2]\n";
+#	}
+#
+#
+#	if( ref( $ref ) =~ /XML::DOM/  )
+#	{// to_string
+#		#$OBJPOSR{$c}.= $ref->toString."\n";
+#	}
+#	++$c;
+#
+#	return $ref;
+#}
+
+
+
 ######################################################################
 
 =pod
@@ -1201,7 +1285,6 @@ sub require_if_exists
 	# perl doesn't have to build the eval environment
 	if( !exists $REQUIRED_CACHE{$module} )
 	{
-		local $SIG{__DIE__};
 		$REQUIRED_CACHE{$module} = eval "require $module";
 	}
 
@@ -1245,27 +1328,13 @@ sub mtime
 
 # return a quoted string safe to go in javascript
 
-my %JSON_ESC = (
-	"\b" => "\\b",
-	"\f" => "\\f",
-	"\n" => "\\n",
-	"\r" => "\\r",
-	"\t" => "\\t",
-	"\"" => "\\\"",
-	"\'" => "\\'",
-	"\\" => "\\\\",
-	"\/" => "\\\/",
-);
 sub js_string
 {
 	my( $string ) = @_;
 
-	return 'null' if !defined $string || $string eq '';
-
-	$string =~ s/([\x2f\x22\x5c\n\r\t\f\b])/$JSON_ESC{$1}/g;
-	$string =~ s/([\x00-\x08\x0b\x0e-\x1f])/'\\u00' . unpack('H2', $1)/eg;
-
-	return "\"$string\"";
+	$string =~ s/([^a-z0-9])/sprintf( "%%%02x", ord( $1 ) )/egi;
+	
+	return "unescape('$string')";
 }
 
 # EPrints::Utils::process_parameters( $params, $defaults );
@@ -1311,31 +1380,3 @@ sub make_relation
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-
