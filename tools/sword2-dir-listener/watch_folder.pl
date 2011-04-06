@@ -191,9 +191,11 @@ sub process_directory {
 			if (defined $server_file_md5) {
 				if (!($local_file_md5 eq $server_file_md5) and ($last_md5 == $local_file_md5)) {
 					get_file_from_uri($file,$edit_uri,"application/atom+xml");
+					($local_file_modified, $local_file_md5) = local_info($file);
 					$metadata_files->{$file} = $local_file_md5;
 				} elsif ($last_md5 != $local_file_md5) {
 					put_file_to_uri($file,"METADATA.xml",$edit_uri,"application/atom+xml");
+					($local_file_modified, $local_file_md5) = local_info($file);
 					$metadata_files->{$file} = $local_file_md5;
 				}
 			}
