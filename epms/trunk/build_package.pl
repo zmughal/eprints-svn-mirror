@@ -19,6 +19,7 @@ if (!defined $config->{package} or !defined $config->{version})
 	print "Usage build_package.pl package_name version\n";
 	print "    package_name: Unique key to package\n";
 	print "    version: x.x.x style version\n\n";
+	print "Example: perl build_package.pl ORE_Tools 1.0.0\n\n";
 	exit(1);
 }
 
