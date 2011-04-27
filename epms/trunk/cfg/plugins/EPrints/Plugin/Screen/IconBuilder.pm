@@ -1,4 +1,4 @@
-package EPrints::Plugin::Screen::LogoBuilder;
+package EPrints::Plugin::Screen::IconBuilder;
 
 @ISA = ( 'EPrints::Plugin::Screen' );
 
@@ -178,20 +178,9 @@ sub render
 	my $ret = $repository->make_doc_fragment();
 	my $br = $repository->make_element("br");
 
-	my $lang_phrase = $self->html_phrase("eprints_test_phrase");
-
-	my $text_from_config = $repository->make_text($repository->{config}->{eprints_test_package}->{phrase});
-
-	$ret->appendChild($lang_phrase);
-	$ret->appendChild($br);
-	$ret->appendChild($text_from_config);
-
 	if (!defined $fh) {
-		my $p = $repository->make_element(
-				"p",
-				style => "font-weight: bold;"
-				);
-		$p->appendChild($self->html_phrase("upload_pres_plan"));
+		my $p = $repository->make_element( "p" );
+		$p->appendChild($self->html_phrase("upload"));
 		$ret->appendChild($p);
 
 		my $upload_form = $repository->render_form("POST");
@@ -215,9 +204,8 @@ sub render
 				name => "_action_handle_upload",
 				onclick => $onclick );
 		$f->appendChild( $file_button );
-		$f->appendChild( $repository->make_element( "br" ));
 		$f->appendChild( $add_format_button );
-
+		
 		my $progress_bar = $repository->make_element( "div", id => "progress" );
 		$f->appendChild( $progress_bar );
 
@@ -230,9 +218,21 @@ sub render
 		$upload_form->appendChild($upload_div);
 
 		$ret->appendChild($upload_form);
+		
+		$p = $repository->make_element( "p" );
+		$p->appendChild( $repository->make_element( "br" ));
+		$p->appendChild($self->html_phrase("upload2"));
+		$p->appendChild( $repository->make_element( "br" ));
+		$ret->appendChild($p);
 	} 
 	else 
 	{
+		my $p = $repository->make_element( "p" );
+		$p->appendChild( $repository->make_element( "br" ));
+		$p->appendChild($self->html_phrase("processing_description"));
+		$p->appendChild( $repository->make_element( "br" ));
+		$ret->appendChild($p);
+		
 		my $image_path;
 		if ($color && $fh) {
 			$image_path = $self->generate_image($color);
@@ -241,13 +241,20 @@ sub render
 		my $upload_form = $repository->render_form("POST");
 		my $table = $repository->make_element("table", style=>"width: 100%;", align=>"center");
 		my $tr = $repository->make_element( "tr" );
-		my $td = $repository->make_element( "td", style=>"width: 50%;", align=>"center" );
+		my $td = $repository->make_element( "td", style=>"width: 50%;" );
+		$td->appendChild($self->html_phrase("uploaded_image"));
+			
+		$td->appendChild($repository->make_element("br"));
+		$td->appendChild($repository->make_element("br"));
+
+		my $div = $repository->make_element( "div", align=>"center" );
+		$td->appendChild($div);
 		
-		my $img = $repository->make_element( "img", src => "/images/temp_logos/$fh" );
+		my $img = $repository->make_element( "img", src => "/images/temp_logos/$fh", width=> "290px" );
 
 		my $color_value = $color;
 
-		$td->appendChild($img);
+		$div->appendChild($img);
 		$tr->appendChild($td);
 		$table->appendChild($tr);
 		$upload_form->appendChild($table);
@@ -263,7 +270,7 @@ sub render
 					);
 		$td->appendChild($file_handle);
 
-		$td->appendChild($repository->html_phrase("color_chooser"));
+		$td->appendChild($self->html_phrase("color_chooser"));
 		$td->appendChild($repository->make_element("br"));
 		my $color_chooser = $repository->make_element(
 					"input",
@@ -284,15 +291,24 @@ sub render
 				} );
 		$td->appendChild($submit_button);
 		if ($image_path) {
-			$img = $repository->make_element( "img", src => "/images/temp_logos/".$fh."_$color.png" );
-			$td->appendChild($img);
+			$td->appendChild($repository->make_element("br"));
+			$td->appendChild($repository->make_element("br"));
+			
+			my $div = $repository->make_element("div", align=>"center");
+			$td->appendChild($div);
+			$img = $repository->make_element( "img", src => "/images/temp_logos/".$fh."_$color.png", width=>"240px" );
+			$div->appendChild($img);
 		}
 
 		$upload_form->appendChild($repository->make_element("br"));
 		$upload_form->appendChild($repository->make_element("br"));
 		
-		my $table2 = $repository->make_element( "table" );
+		$upload_form->appendChild($self->html_phrase("generated_icons"));
+		$upload_form->appendChild($repository->make_element("br"));
+		
+		my $table2 = $repository->make_element( "table", width=>"100%" );
 		$upload_form->appendChild($table2);
+
 		my $tr2 = $repository->make_element( "tr" );
 		$table2->appendChild($tr2);
 		
@@ -301,7 +317,7 @@ sub render
 		foreach my $color2 (@colors) {
 			my $td = $repository->make_element( "td", width=>"10%" );
 			$image_path = $self->generate_image($color2);
-			$img = $repository->make_element( "img", src => "/images/temp_logos/".$fh."_$color2.png", width=>"60px" );
+			$img = $repository->make_element( "img", src => "/images/temp_logos/".$fh."_$color2.png", width=>"68px" );
 			$td->appendChild($img);
 			$tr2->appendChild($td);	
 		}
