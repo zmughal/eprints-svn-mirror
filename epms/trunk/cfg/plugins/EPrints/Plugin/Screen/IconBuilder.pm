@@ -7,6 +7,7 @@ use strict;
 
 our $fh;
 our $color;
+our $folder; 
 
 sub new
 {
@@ -45,25 +46,29 @@ sub action_handle_upload
 {
 	my ( $self ) = @_;
 	
-	my $session = $self->{session};
+	my $repository = $self->{repository};
 
 	my $fname = $self->{prefix}."_first_file";
 	
-	$fh = $session->get_query->upload( $fname );
+	$fh = $repository->get_query->upload( $fname );
 
-	my $doc_path = $session->get_conf( "arc_path" ) . "/" . $session->get_id . "/cfg/static/images/temp_logos/";
+	my $doc_path = $repository->get_conf( "arc_path" ) . "/" . $repository->get_id . "/cfg/static/images/temp_logos/";
 	mkdir($doc_path);
 
 	if( defined( $fh ) )
 	{
 		binmode($fh);
-		my $tmpfile = File::Temp->new( SUFFIX => ".xml" );
+		my $tmpfile = File::Temp->new( SUFFIX => ".png" );
 		use bytes;
-
+		
+		$folder = substr($fh,0,rindex($fh,".")) . "_" . time();
+		
 		while(sysread($fh,my $buffer, 4096)) {
 			syswrite($tmpfile,$buffer);
 		}
-		my $output = $doc_path . $fh;
+
+		mkdir($doc_path . $folder);
+		my $output = $doc_path . $folder . "/" . $fh;
 		rename($tmpfile,$output);
 	}
 
@@ -76,6 +81,7 @@ sub action_process_input
 	my $repository = $self->{repository};
 
 	$fh = $repository->param( "file_handle" );
+	$folder = $repository->param( "folder_handle" );
 	
 	$color = $repository->param( "color_chooser" );
 
@@ -89,8 +95,12 @@ sub generate_image
 
 	my $convert = $repository->get_conf( 'executables','convert' );
 	
-	my $doc_path = $repository->get_conf( "arc_path" ) . "/" . $repository->get_id . "/cfg/static/images/temp_logos/";
+	my $doc_path = $repository->get_conf( "arc_path" ) . "/" . $repository->get_id . "/cfg/static/images/temp_logos/" . $folder . "/";
 	my $local_fh = $doc_path . $fh;
+	
+	my $final_path = $doc_path . $fh . "_$color.png";
+
+	return $final_path if ( -e $final_path );
 
 	# Stage 1 - Generate the Canvas
 	my $canvas = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -99,7 +109,7 @@ sub generate_image
 
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 1\n\n" unless (-e $canvas);
+print STDERR "\n\n[IconBuilder] Failed Stage 1\n\n" unless (-e $canvas);
 
 	# Stage 2 - Resize the Input Image
 	my $resize = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -108,7 +118,7 @@ print STDERR "\n\nFailed Stage 1\n\n" unless (-e $canvas);
 
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 2\n\n" unless (-e $resize);
+print STDERR "\n\n[IconBuilder] Failed Stage 2\n\n" unless (-e $resize);
 
 	# Stage 3 - Overlay the imput image on the canvas
 	my $canvas2 = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -117,7 +127,7 @@ print STDERR "\n\nFailed Stage 2\n\n" unless (-e $resize);
 
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 3\n\n" unless (-e $canvas2);
+print STDERR "\n\n[IconBuilder] Failed Stage 3\n\n" unless (-e $canvas2);
 	
 	# Stage 4 - Create the Mask
 	my $mask = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -126,7 +136,7 @@ print STDERR "\n\nFailed Stage 3\n\n" unless (-e $canvas2);
 	
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 4\n\n" unless (-e $mask);
+print STDERR "\n\n[IconBuilder] Failed Stage 4\n\n" unless (-e $mask);
 	
 	# Stage 5 - Create the Lighting Effect Mask
 	my $lighting = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -135,7 +145,7 @@ print STDERR "\n\nFailed Stage 4\n\n" unless (-e $mask);
 	
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 5\n\n" unless (-e $lighting);
+print STDERR "\n\n[IconBuilder] Failed Stage 5\n\n" unless (-e $lighting);
 	
 	# Stage 6 - Combine the Images to Make Glass Bubble Image
 	my $glass_bubble = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -144,18 +154,16 @@ print STDERR "\n\nFailed Stage 5\n\n" unless (-e $lighting);
 
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 6\n\n" unless (-e $glass_bubble);
+print STDERR "\n\n[IconBuilder] Failed Stage 6\n\n" unless (-e $glass_bubble);
 	
 	# Stage 7 - Round off the corners
-	my $final_path = $doc_path . $fh . "_$color.png";
-	
 	my $mvg = File::Temp->new(UNLINK => 1, SUFFIX=>'.mvg');
 
 	$cmd = "$convert $glass_bubble -format 'roundrectangle 1,1 %[fx:w],%[fx:h] 20,20' -write info:$mvg -matte -bordercolor none -border 3 \\( +clone -alpha transparent -background none -fill white -stroke none -strokewidth 0 -draw \@$mvg \\) -compose DstIn -composite \\( +clone -alpha transparent -background none -fill none -stroke none -strokewidth 3 -draw \@$mvg -fill none -stroke none -strokewidth 1 -draw \@$mvg \\) -compose Over -composite $final_path";
 
 	system( $cmd );
 
-print STDERR "\n\nFailed Stage 7\n\n" unless (-e $final_path);
+print STDERR "\n\n[IconBuilder] Failed Stage 7\n\n" unless (-e $final_path);
 	unlink($canvas);
 	unlink($canvas2);
 	unlink($resize);
@@ -168,10 +176,42 @@ print STDERR "\n\nFailed Stage 7\n\n" unless (-e $final_path);
 
 }
 
+
+sub delete_old_files 
+{
+	use File::stat;
+	use Time::localtime;
+	use File::Path qw(rmtree);
+
+	my ( $self ) = @_;
+	
+	my $repository = $self->{repository};
+
+	my $doc_path = $repository->get_conf( "arc_path" ) . "/" . $repository->get_id . "/cfg/static/images/temp_logos/";
+
+	my @files = <$doc_path/*>;
+	foreach my $file (@files) 
+	{
+		next unless (-d $file);
+
+		my $date_string = substr($file,rindex($file,"_")+1,length($file));
+
+		my $ten_minutes_ago = time() - 600;
+
+		if ($date_string < $ten_minutes_ago) {
+			rmtree($file);
+		}
+
+	}
+	
+}
+
 # What to display
 sub render
 {
 	my( $self ) = @_;
+
+	$self->delete_old_files();
 
 	my $repository = $self->{repository};
 
@@ -250,7 +290,7 @@ sub render
 		my $div = $repository->make_element( "div", align=>"center" );
 		$td->appendChild($div);
 		
-		my $img = $repository->make_element( "img", src => "/images/temp_logos/$fh", width=> "290px" );
+		my $img = $repository->make_element( "img", src => "/images/temp_logos/$folder/$fh", width=> "290px" );
 
 		my $color_value = $color;
 
@@ -269,6 +309,14 @@ sub render
 					type => "hidden"
 					);
 		$td->appendChild($file_handle);
+		
+		my $folder_handle = $repository->make_element(
+					"input",
+					name => "folder_handle",
+					value => $folder,
+					type => "hidden"
+					);
+		$td->appendChild($folder_handle);
 
 		$td->appendChild($self->html_phrase("color_chooser"));
 		$td->appendChild($repository->make_element("br"));
@@ -296,7 +344,7 @@ sub render
 			
 			my $div = $repository->make_element("div", align=>"center");
 			$td->appendChild($div);
-			$img = $repository->make_element( "img", src => "/images/temp_logos/".$fh."_$color.png", width=>"240px" );
+			$img = $repository->make_element( "img", src => "/images/temp_logos/$folder/".$fh."_$color.png", width=>"240px" );
 			$div->appendChild($img);
 		}
 
@@ -317,7 +365,7 @@ sub render
 		foreach my $color2 (@colors) {
 			my $td = $repository->make_element( "td", width=>"10%" );
 			$image_path = $self->generate_image($color2);
-			$img = $repository->make_element( "img", src => "/images/temp_logos/".$fh."_$color2.png", width=>"68px" );
+			$img = $repository->make_element( "img", src => "/images/temp_logos/$folder/".$fh."_$color2.png", width=>"68px" );
 			$td->appendChild($img);
 			$tr2->appendChild($td);	
 		}
