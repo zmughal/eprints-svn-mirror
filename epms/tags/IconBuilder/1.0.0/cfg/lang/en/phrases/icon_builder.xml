@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+	<epp:phrase id="Plugin/Screen/IconBuilder:title">EPM Icon Builder</epp:phrase>
+	<epp:phrase id="Plugin/Screen/IconBuilder:upload">Welcome to the EPM Icon Builder<br/><br/>This utility allows the creation of EPrints Bazaar Store icons which conform to the recommended format.<br/><br/>In order to build an icon a foreground image/icon is required, this can be uploaded below. It is recommended that this image be a simple symbol which represents your package.<br/>Further, this image should contain the image on an alpha channeled transparent background.<br/><br/>Please upload this file below:<br/><br/></epp:phrase>
+	<epp:phrase id="Plugin/Screen/IconBuilder:upload2">Note that processing example icons may take some time to complete once the image is uploaded.</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/IconBuilder:processing_description">On the left is shown the icon you uploaded with same icons shown at the bottom of this page. <br/>If you are happy with one of the sample icons please save it to your disk and then include it in your package. <br/>To choose a different background color, please use the tool below.</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/IconBuilder:uploaded_image">Uploaded Image:</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/IconBuilder:color_chooser">HTML color code (e.g. ffff00):</epp:phrase>
+	<epp:phrase id="Plugin/Screen/IconBuilder:action:process_input:title">Generate Custom Icon</epp:phrase>
+	
+	<epp:phrase id="Plugin/Screen/IconBuilder:generated_icons">Generated Icons:</epp:phrase>
+
+</epp:phrases>
