@@ -101,33 +101,46 @@ sub generate_image
 	my $final_path = $doc_path . $fh . "_$color.png";
 
 	return $final_path if ( -e $final_path );
-
-	# Stage 1 - Generate the Canvas
-	my $canvas = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
-
-	my $cmd = "$convert -size 300x300 xc:#$color $canvas";
-
-	system( $cmd );
-
-print STDERR "\n\n[IconBuilder] Failed Stage 1\n\n" unless (-e $canvas);
-
-	# Stage 2 - Resize the Input Image
-	my $resize = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
-
-	$cmd = "$convert $local_fh -resize 290x290 $resize";
-
-	system( $cmd );
-
-print STDERR "\n\n[IconBuilder] Failed Stage 2\n\n" unless (-e $resize);
-
-	# Stage 3 - Overlay the imput image on the canvas
+		
+	# Stage 1 - Resize the Input Image
 	my $canvas2 = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
 
-	$cmd = "$convert $canvas $resize -gravity center -composite $canvas2";
+	my $cmd = "$convert $local_fh -resize 300x300\\! $canvas2";
 
 	system( $cmd );
 
-print STDERR "\n\n[IconBuilder] Failed Stage 3\n\n" unless (-e $canvas2);
+	print STDERR "\n\n[IconBuilder] Failed Stage 1\n\n" unless (-e $canvas2);
+	
+	if (defined $color) 
+	{
+		# Stage 2 - Generate the Canvas
+		my $canvas = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
+
+		$cmd = "$convert -size 300x300 xc:#$color $canvas";
+
+		system( $cmd );
+
+		print STDERR "\n\n[IconBuilder] Failed Stage 2\n\n" unless (-e $canvas);
+
+		# Stage 1(b) - Resize the Input Image
+		my $resize = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
+
+		$cmd = "$convert $local_fh -resize 290x290 $resize";
+
+		system( $cmd );
+
+		print STDERR "\n\n[IconBuilder] Failed Stage 1(b)\n\n" unless (-e $resize);
+
+		# Stage 3 - Overlay the imput image on the canvas
+		$canvas2 = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
+
+		$cmd = "$convert $canvas $resize -gravity center -composite $canvas2";
+
+		system( $cmd );
+
+		unlink($canvas);
+		unlink($resize);
+	}
 	
 	# Stage 4 - Create the Mask
 	my $mask = File::Temp->new(UNLINK => 1, SUFFIX=>'.png');
@@ -164,9 +177,7 @@ print STDERR "\n\n[IconBuilder] Failed Stage 6\n\n" unless (-e $glass_bubble);
 	system( $cmd );
 
 print STDERR "\n\n[IconBuilder] Failed Stage 7\n\n" unless (-e $final_path);
-	unlink($canvas);
 	unlink($canvas2);
-	unlink($resize);
 	unlink($mask);
 	unlink($lighting);
 	unlink($glass_bubble);
@@ -276,6 +287,8 @@ sub render
 		my $image_path;
 		if ($color && $fh) {
 			$image_path = $self->generate_image($color);
+		} else {
+			$image_path = $self->generate_image(undef);
 		}
 		
 		my $upload_form = $repository->render_form("POST");
