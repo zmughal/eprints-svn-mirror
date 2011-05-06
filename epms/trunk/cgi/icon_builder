@@ -1,0 +1,27 @@
+######################################################################
+#
+#  IconBuilder cgi to allow access to Screen Plug-In
+#
+######################################################################
+#
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
+#
+######################################################################
+
+use EPrints;
+use strict;
+
+my $eprints = EPrints->new;
+my $repository = $eprints->current_repository();
+exit( 0 ) unless( defined $repository );
+
+EPrints::ScreenProcessor->process( 
+	session => $repository, 
+	screenid => "IconBuilder",
+);
+
+exit( 0 );

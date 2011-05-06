@@ -8,3 +8,4 @@ category: bazaar_tools
 =FILES=
 cfg/plugins/EPrints/Plugin/Screen/IconBuilder.pm
 cfg/lang/en/phrases/icon_builder.xml
+cgi/icon_builder
