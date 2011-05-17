@@ -100,16 +100,12 @@ sub action_prerm
 
         my $output_file = $session->get_repository->get_conf( "htdocs_path" ) . "/en/droid_classification_ajax.xml";
 
-        my $rc = 0;
+        my $rc = 1;
         my $message;
 
 	if ( -e $output_file ) {
-	        unlink($output_file) or $rc = 1;
+	        unlink($output_file) or $rc = 0;
 	}
-
-        if ($rc > 0) {
-                $message = "Could not remove status log";
-        }
 
         return ($rc,$message);
 
@@ -126,7 +122,7 @@ sub java_droid_check
 	
 	my $droid = $session->get_repository->get_conf( 'executables', 'droid' );
 
-	my $rc = 0;
+	my $rc = 1;
 	my $message;
 
 	if (!defined $java) {
