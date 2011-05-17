@@ -11,7 +11,7 @@ our $debug = 1;
 $config->{package} = $ARGV[0];
 $config->{version} = $ARGV[1];
 
-my $svn_root = "https://svn.eprints.org/eprints/tools/preservation_toolkit";
+my $svn_root = "https://svn.eprints.org/eprints/tools/preservation_toolkit/";
 
 if (!defined $config->{package} or !defined $config->{version})
 {
