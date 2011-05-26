@@ -285,21 +285,22 @@ sub process_directory {
 						$parent_uri = $key;
 					}
 				}
-				deposit_file($file,$file_name,$parent_uri);
+				$edit_media_uri = $resources->{$parent_uri}->{"Edit-Media-URI"};
+				deposit_file($file,$file_name,$edit_media_uri);
 			}
 		}
 	}
-
-	foreach my $remainder(keys %$repo_docs) {
-		if (defined $repo_docs->{$remainder}) {
-			print "[MESSAGE] " . $remainder . " is only in repo, attempting to download\n";
-			my $filename = $repo_docs->{$remainder}->{"filename"};
-			my $file = $dir . $filename;
-			get_file_from_uri($file,$remainder,undef);
-			write_uris_to_file($filename,$file,$remainder,$parent_uri,undef);
-		}
-	}
-
+#
+#	foreach my $remainder(keys %$repo_docs) {
+#		if (defined $repo_docs->{$remainder}) {
+#			print "[MESSAGE] " . $remainder . " is only in repo, attempting to download\n";
+#			my $filename = $repo_docs->{$remainder}->{"filename"};
+#			my $file = $dir . $filename;
+#			get_file_from_uri($file,$remainder,undef);
+#			write_uris_to_file($filename,$file,$remainder,$parent_uri,undef);
+#		}
+#	}
+#
 	closedir(DIR);
 }
 
@@ -606,6 +607,7 @@ sub put_file_to_uri {
 	#$req->header( 'X-Packaging' => 'http://eprints.org/ep2/data/2.0' );
 	$req->header( 'Content-Disposition' => 'form-data; name="'.$filename.'"; filename="'.$filename.'"');
 	$req->header( 'X-Extract-Media' => 'true' );
+	$req->header( 'In-Progress' => 'true' );
 	$req->header( 'X-Override-Metadata' => 'true' );
 	$req->header( 'X-Extract-Archive' => 'true' );
 
@@ -665,7 +667,7 @@ sub create_container {
 <title>' . $title . '</title>
 </entry>
 ';
-	
+		
 	my $url = $config->{sword_url};
 
 	if ($no_op) {
@@ -683,7 +685,7 @@ sub create_container {
 	{
 		$req->header( 'X-No-Op' => 'true' );
 	}
-#	$req->header( 'X-Packaging' => 'http://www.w3.org/2005/Atom' );
+	$req->header( 'In-Progress' => 'true' );
 	
 	$req->content( $content );
 	
@@ -738,8 +740,12 @@ sub deposit_file {
 
 	# Need to create a container to deposit into
 	if (!defined $url) {
+		print "[MESSAGE] Creating the conatiner\n";
 		$url = create_container($filename,$filepath);
+		print "[MESSAGE] Got url of $url\n"
 	}
+	
+	print "[MESSAGE] Attempting to post $filepath to $url\n";
 
 	return undef if (!defined $url);
 
@@ -754,6 +760,7 @@ sub deposit_file {
 	# Tell SWORD to process the XML file as EPrints XML
 	#$req->header( 'X-Packaging' => 'http://eprints.org/ep2/data/2.0' );
 	$req->header( 'Content-Disposition' => 'form-data; name="'.$filename.'"; filename="'.$filename.'"');
+	$req->header( 'In-Progress' => 'true' );
 	$req->header( 'X-Extract-Media' => 'true' );
 	$req->header( 'X-Override-Metadata' => 'true' );
 	#$req->header( 'X-Extract-Archive' => 'true' );
@@ -793,6 +800,7 @@ sub deposit_file {
 	}
 		
 	my $location_url = $res->header("Location");
+	print "[MESSAGE] GOT File location of $location_url\n\n";
 	my $content = $res->content;
 	my ($location_uri,$media_uri,$edit_uri) = get_uris_from_atom($content);
 	if (defined $location_url) {
@@ -850,8 +858,8 @@ sub write_uris_to_file {
 
 	my $filename = shift;
 	my $full_path = shift;
-	my $location_uri = shift;
 	my $media_uri = shift;
+	my $location_uri = shift;
 
 #	print $filename . " : " . $full_path . " : " . $media_uri . " : " . $parent_uri . "\n\n"; 
 
@@ -880,7 +888,7 @@ sub trim($)
 
 sub get_resource_list {
 	
-	my $uri = "http://" . $config->{host} . "/id/records";
+	my $uri = "http://" . $config->{host} . "/id/contents";
 
 	print "[MESSAGE] Starting sync of resources\n";
 
