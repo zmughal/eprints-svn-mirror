@@ -6,7 +6,7 @@ use LWP::UserAgent;
 # CONF
 
 # collection end point:
-my $sword_url = "http://bazaar.eprints.org/sword-app/deposit/archive";
+my $sword_url = "http://bazaar.eprints.org/id/contents";
 
 # file to send via POST:
 my $filename = $ARGV[0];
@@ -48,7 +48,7 @@ my $req = HTTP::Request->new( POST => $sword_url );
 my $filebit = substr($filename,rindex($filename,"/")+1,length($filename));
 $req->header( 'Content-Disposition' => 'form-data; name="'.$filebit.'"; filename="'.$filebit.'"');
 #$req->header( 'X-Extract-Media' => 'true' );
-#$req->header( 'X-Override-Metadata' => 'true' );
+$req->header( 'Metadata-Relevant' => 'true' );
 #$req->header( 'X-Extract-Archive' => 'true' );
 $req->content_type( 'archive/zip+eprints_package' );
 
