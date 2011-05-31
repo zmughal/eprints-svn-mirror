@@ -120,12 +120,16 @@ sub output_list
 
 	foreach my $key (sort keys %offsets)
 	{
+		my $uri = URI->new( $session->current_url( host => 1, query => 1 ) );
+		my %q = $uri->query_form;
+		delete $q{indexOffset};
+		$uri->query_form( %q, indexOffset => $offsets{$key} );
 		$response->appendChild( $session->render_data_element(
 			4,
 			"link", 
 			'',
 			rel => $key,
-			href => $session->current_url( host => 1, query => 1 )."&indexOffset=".$offsets{$key},
+			href => "$uri",
 			type => $plugin->param( "mimetype" ) ) );
 	}
 
