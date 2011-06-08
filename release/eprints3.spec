@@ -33,7 +33,7 @@ Requires: perl >= 2:5.8.0
 Requires: perl(DBI)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
-Requires: perl(MIME::Lite)
+Requires: perl(MIME::Lite) perl(Archive::Zip)
 # Requires: perl(Readonly) # Not found???
 Requires: perl(XML::LibXML) >= 1.63
 Requires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
