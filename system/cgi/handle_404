@@ -16,6 +16,7 @@
 #cjg Not fully finnished. Should detect missing items.
 
 use EPrints;
+use Apache2::SubRequest;
 
 use strict;
 
@@ -46,7 +47,15 @@ if( defined $fn )
 my $urlpath = $session->get_repository->get_conf( "rel_path" );
 if( defined $newurl )
 {
-	$session->redirect( $newurl );
+	# if its a relative URL use an internal redirect (more efficient)
+	if( $newurl =~ /^https?:/ )
+	{
+		$r->redirect( $newurl );
+	}
+	else
+	{
+		$r->internal_redirect( $newurl );
+	}
 }
 else
 {
