@@ -79,7 +79,7 @@ use Scalar::Util;
 
 use strict;
 
-our $VERSION = v3.2.7;
+our $VERSION = v3.2.8;
 
 BEGIN {
 	use Carp;
