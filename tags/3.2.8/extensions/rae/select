@@ -1,0 +1,521 @@
+######################################################################
+#
+# Select items for RAE return (possibly on behalf of someone else)
+#
+######################################################################
+#
+# This file is part of the EPrints RAE module developed by the 
+# Institutional Repositories and Research Assessment (IRRA) project,
+# funded by JISC within the Digital Repositories programme.
+#
+# http://irra.eprints.org/
+#
+# The EPrints RAE module is free software; you can redistributet 
+# and/or modify it under the terms of the GNU General Public License 
+# as published by the Free Software Foundation; either version 2 of 
+# the License, or (at your option) any later version.
+
+# The EPrints RAE module is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+######################################################################
+
+use EPrints::EPrint;
+use EPrints::SearchExpression;
+use EPrints::Session;
+use EPrints::User;
+use EPrints::Utils;
+use EPrints::XML;
+use strict;
+
+use EPrints::SystemSettings;
+if( $EPrints::SystemSettings::conf->{version_id} =~ m/^(eprints-)?3\./ ) { &backcomp; }
+
+# Enclosing the main part in {..} prevents accidental
+# (and *dangerous*) use of 'global' vars inside subroutines
+{
+
+# Create session
+my $session = new EPrints::Session;
+exit( 0 ) unless( defined $session );
+my $archive = $session->get_archive;
+
+# Check user has appropriate privs
+if( !$session->auth_check( "deposit" ) )
+{
+    $session->terminate;
+    Apache::exit( 0 );
+}
+my $user = $session->current_user;
+
+# Check selected role
+my $role = $user;
+if( defined( $session->param( "role" ) ) )
+{
+	my $selected_role = EPrints::User->new( $session, $session->param( "role" ) );
+	if( defined $selected_role )
+	{
+		if( $archive->call( "rae_can_user_assume_role", $session, $user, $selected_role ) ) {
+			$role = $selected_role;	
+		}
+	}
+	# Remove parameters so that we
+	# can detect "internal" button presses
+	$session->{query}->delete( "role" );
+	$session->{query}->delete( "_action_submit" );
+}
+
+# Show available roles
+my $roles_frag = $session->make_doc_fragment;
+my @roles = $archive->call( "rae_roles_for_user", $session, $user );
+if( scalar @roles )
+{
+	my $form = $session->render_form( "post" );
+	$form->appendChild( $session->render_option_list(name => 'role', pairs => \@roles) );
+	$form->appendChild( $session->render_action_buttons(submit => $session->phrase( "rae:change_role" ) ) );
+	
+	$roles_frag = $session->html_phrase( "rae:roles", 
+		change_role => $form,
+		current_user => $user->render_description,
+	);
+}
+
+# Build the Search Expression
+my $search_conf = $archive->get_conf( "search", $archive->get_conf( "rae", "selection_search" ) );
+my $searchexp = new EPrints::SearchExpression(
+	keep_cache => 1,
+	session => $session,
+	dataset => $archive->get_dataset("archive"),
+	%$search_conf,
+	allow_blank => 0,
+);
+
+# Switch on user input
+# NB: based on process_webpage() in EPrints/SearchExpression.pm
+my $action_button = $session->get_action_button();
+my $search_frag;
+
+if( defined $action_button && $action_button eq "add" )
+{
+	my $id = $session->param( "_action_add" );
+	my $item = EPrints::EPrint->new( $session, $id );
+	if( defined $item )
+	{
+		my $sql = "INSERT INTO rae_selections (userid, eprintid, userid_actual) VALUES (" . $role->get_id . ", $id," . $user->get_id . ")";
+		$session->get_db->do( $sql );
+	}
+}
+
+if( defined $action_button && $action_button eq "remove")
+{
+	my $id = $session->param( "_action_remove" );
+	my $sql = "DELETE FROM rae_selections WHERE eprintid=$id AND userid=" . $role->get_id;
+	$session->get_db->do( $sql );
+}
+
+if( defined $action_button && $action_button eq "update" )
+{
+	$searchexp->from_form;
+	$search_frag = $searchexp->render_search_form;
+}
+
+if( defined $action_button && $action_button eq "newsearch" )
+{
+	$search_frag = $searchexp->render_search_form;
+}
+
+# Build + Send Page
+if( !defined $search_frag )
+{
+	$archive->call( "rae_default_selection_search", $session, $searchexp, $role );
+	$search_frag = dopage_results( $session, $searchexp, $role );
+}
+$search_frag->appendChild( $session->render_hidden_field( "role", $role->get_id ) ) if $user->get_id != $role->get_id;
+
+my $title = $session->html_phrase( "rae/select:page_title", user => $role->render_description );
+my $page = $session->html_phrase( "rae/select:page",
+	search => $search_frag,
+	selected => dopage_selected( $session, $searchexp, $role ),
+	roles => $roles_frag,
+);
+$session->build_page( $title, $page );
+$session->send_page();
+$session->terminate();
+exit;
+
+}
+
+sub dopage_selected
+{
+	my ( $session, $searchexp, $role ) = @_;	
+	my %users_for_eprint;
+
+	# Get the eprints selected by the user, and also the other users who have selected these eprints
+	my $sql = "SELECT rae_selections.eprintid, rae_selections.userid FROM rae_selections, rae_selections as tmp WHERE rae_selections.eprintid=tmp.eprintid AND tmp.userid=".$role->get_id;
+	my $sth = $session->get_db->prepare( $sql ); 
+	if($session->get_db->execute( $sth, $sql ) )
+	{	
+		while ( my @row = $sth->fetchrow() )
+		{
+			push @{ $users_for_eprint{$row[0]} }, $row[1];
+		}
+	}
+	$sth->finish;
+	
+	# Check for selected items
+	if( scalar keys %users_for_eprint == 0 )
+	{
+		return $session->html_phrase( "rae/select:none_selected" );
+	}
+	
+	my $table = $session->make_element( "table", class=>"bordered" );
+	
+	foreach my $eprintid ( keys %users_for_eprint )
+	{
+		my $item = EPrints::EPrint->new( $session, $eprintid );
+		my $url = $session->get_uri();
+		
+		my $escexp = $searchexp->serialise();
+		$escexp =~ s/ /+/g;
+		my $offset = 0;
+		$offset += $session->param( "_offset" ) if defined( $session->param( "_offset" ) );
+
+		my $action_url;
+		$action_url = $url . "?_exp=$escexp&_offset=" . $offset;
+		$action_url .= "_cache=" . $searchexp->get_cache_id if defined( $searchexp->get_cache_id );
+		$action_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
+		
+		my $others = $users_for_eprint{$eprintid};
+		$table->appendChild( render_item_row( $session, $searchexp, $item, $eprintid, $action_url, 'remove', $others, "rae/select:also_selected_by", $role ) );
+	}
+	return $table;
+}
+
+# Render the search results part of the page
+# NB: based on _dopage_results() in EPrints/SearchExpression.pm
+sub dopage_results
+{
+	my ( $session, $searchexp, $role ) = @_;
+	my $page = $session->render_form( "post" );
+
+	my $problems = $searchexp->from_form if $session->have_parameters;
+	if( defined $problems && scalar( @$problems ) > 0 )
+	{
+		return dopage_problems( $session, $searchexp, @$problems );
+	}
+
+	$searchexp->perform_search();
+	if( defined $searchexp->{error} ) 
+	{	
+		return dopage_problems( $session, $searchexp, $searchexp->{error} );
+	}
+
+	my $n_results = $searchexp->count();
+	my $offset = 0;
+	$offset += $session->param("_offset") if $session->param( "_offset" );
+	#my $pagesize = $searchexp->{page_size};
+	my $pagesize = $session->get_archive->get_conf( "search", $session->get_archive->get_conf( "rae", "selection_search" ) )->{page_size};
+
+	# Get results slice
+	my @results = $searchexp->get_records( $offset , $pagesize );
+
+	$searchexp->dispose();
+
+	my $plast = $offset + $pagesize;
+	$plast = $n_results if $n_results< $plast;
+
+	if( scalar $n_results > 0 )
+	{
+		$page->appendChild(
+			$session->html_phrase( 
+				"lib/searchexpression:results",
+				from => $session->make_text( $offset+1 ),
+				to => $session->make_text( $plast ),
+				n => $session->make_text( $n_results )  
+			) );
+	}
+	else
+	{
+		$page->appendChild(
+			$session->html_phrase( 
+				"lib/searchexpression:noresults" ) );
+	}
+
+	$page->appendChild( $session->make_text( " " ) );
+	$page->appendChild( $searchexp->render_description );
+	
+	my $controls = $session->make_element( "p", class=>"searchcontrols" );
+	$page->appendChild( $controls );
+
+	my $url = $session->get_uri() . "?";
+	$url .= "role=" . $role->get_id . "&" if $session->current_user->get_id != $role->get_id;
+	
+	my $escexp = $searchexp->serialise();	
+	$escexp =~ s/ /+/g; # not great way...
+	my $a;
+	my $cspan;
+	if( $offset > 0 ) 
+	{
+		my $bk = $offset-$pagesize;
+		my $fullurl = $url."_cache=".$searchexp->{cache_id}."&_exp=$escexp&_offset=".($bk<0?0:$bk);
+		$a = $session->render_link( $fullurl );
+		my $pn = $pagesize>$offset?$offset:$pagesize;
+		$a->appendChild( 
+			$session->html_phrase( 
+				"lib/searchexpression:prev",
+				n=>$session->make_text( $pn ) ) );
+		$cspan = $session->make_element( 'span', class=>"searchcontrol" );
+		$cspan->appendChild( $a );
+		$controls->appendChild( $cspan );
+		$controls->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
+	}
+
+	$a = $session->render_link( $url."_cache=".$searchexp->{cache_id}."&_exp=$escexp&_action_update=1" );
+	$a->appendChild( $session->html_phrase( "lib/searchexpression:refine" ) );
+	$cspan = $session->make_element( 'span', class=>"searchcontrol" );
+	$cspan->appendChild( $a );
+	
+	$controls->appendChild( $cspan );
+	$controls->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
+	$a = $session->render_link( $url . "_action_newsearch&" );
+	
+	$a->appendChild( $session->html_phrase( "lib/searchexpression:new" ) );
+	$cspan = $session->make_element( 'span', class=>"searchcontrol" );
+	$cspan->appendChild( $a );
+
+	$controls->appendChild( $cspan );
+
+	if( $offset + $pagesize < $n_results )
+	{
+		my $fullurl=$url."_cache=".$searchexp->{cache_id}."&_exp=$escexp&_offset=".($offset+$pagesize);
+		$a = $session->render_link( $fullurl );
+		my $nn = $n_results - $offset - $pagesize;
+		$nn = $pagesize if( $pagesize < $nn);
+		$a->appendChild( $session->html_phrase( "lib/searchexpression:next",
+					n=>$session->make_text( $nn ) ) );
+		$controls->appendChild( $session->html_phrase( "lib/searchexpression:seperator" ) );
+		$cspan = $session->make_element( 'span', class=>"searchcontrol" );
+		$cspan->appendChild( $a );
+		$controls->appendChild( $cspan );
+	}
+	
+	# Render results
+	my $table = $session->make_element( "table" );
+	$page->appendChild($table);
+ 	
+	my %users_for_eprint;
+	my $cacheid = $searchexp->get_cache_id;
+	my $sql = "SELECT rae_selections.eprintid, userid FROM rae_selections, cache$cacheid WHERE rae_selections.eprintid=cache$cacheid.eprintid";
+	my $sth = $session->get_db->prepare( $sql );
+	if( $session->get_db->execute( $sth, $sql ) )
+	{
+		while( my @row = $sth->fetchrow ) {
+			push @{ $users_for_eprint{$row[0]} }, $row[1];
+		}
+	}
+	$sth->finish;
+	
+	my $i = 0;
+	foreach my $result ( @results )
+	{
+		my $action_url = $url . "_cache=" . $searchexp->get_cache_id . "&_exp=$escexp&_offset=$offset";
+		my $others = $users_for_eprint{$result->get_id};
+		$table->appendChild( render_item_row( $session, $searchexp, $result, $result->get_id, $action_url, 'add', $others, "rae/select:selected_by", $role ) );
+	}
+
+	if( $n_results > 0 )
+	{
+		# Only print a second set of controls if there are matches.
+		$page->appendChild(EPrints::XML::clone_node( $controls, 1 ) );
+	}
+	
+	return $page;
+}
+
+# Based on _dopage_problems in EPrints/SearchExpression.pm
+sub dopage_problems
+{
+	my( $session, $searchexp, @problems ) = @_;
+	my $page = $session->make_doc_fragment;	
+	my $problem_box = $session->make_element( 
+				"div",
+				class=>"problems" );
+	$problem_box->appendChild( $session->html_phrase( "lib/searchexpression:form_problem" ) );
+
+	# List the problem(s)
+	my $ul = $session->make_element( "ul" );
+	my $problem;
+	foreach $problem (@problems)
+	{
+		my $li = $session->make_element( 
+			"li",
+			class=>"problem" );
+		$ul->appendChild( $li );
+		$li->appendChild( $session->make_text( $problem ) );
+	}
+	$problem_box->appendChild( $ul );
+	$page->appendChild( $problem_box );
+	$page->appendChild( $searchexp->render_search_form(1) );
+	
+	return $page;
+}
+
+sub render_item_row {
+	my ( $session, $searchexp, $item, $itemid, $url, $action, $others, $phraseid, $role )  = @_;
+	
+	my $tr = $session->make_element( "tr" );
+
+	# Each row contains a citation...
+	my $td_cite = $session->make_element( "td" );
+	$tr->appendChild( $td_cite );
+	if( defined $item ) {
+		# Use citation style defined by search configuration
+		$td_cite->appendChild( $item->render_citation_link( $searchexp->{citation} ) );
+	} else {
+		$td_cite->appendChild( $session->html_phrase( "rae:unknown_item",
+			id => $session->make_text( $itemid ) ) );
+	}
+
+	# ... a list of other users related to that item ...
+	my $td_users = $session->make_element( "td" );
+	my $already_selected = 0;
+	my @names;
+	foreach my $otherid ( @$others )
+	{
+		if( $otherid == $role->get_id ) 
+		{
+			$already_selected = 1;
+			next;
+		}
+		my $other = EPrints::User->new( $session, $otherid );
+		if( defined $other )
+		{
+			push @names, EPrints::Utils::tree_to_utf8( $other->render_description );
+		} else {
+			push @names, $session->phrase( "rae:unknown_user", id => $otherid );
+		}
+	
+	}
+	if( scalar( @names ) > 0 )
+	{
+		$td_users->appendChild( $session->html_phrase( $phraseid, 
+			names => $session->make_text( join(", ", @names) ) ) );
+	}
+	$tr->appendChild( $td_users );
+	
+	# ... and an action button
+	my $td_act = $session->make_element( "td" );
+	
+	if( !$already_selected || $action eq "remove" ) {
+		if($action eq "remove")
+		{
+			my $remove = $session->render_link( "$url&_action_$action=" . $itemid );
+			$remove->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
+
+			my $qualify_url = $session->get_archive->get_conf("perl_url") . "/users/rae/qualify?eprintid=" . $itemid;
+			$qualify_url .= "&role=" . $role->get_id if $session->current_user->get_id != $role->get_id;
+			my $qualify = $session->render_link( $qualify_url);
+			$qualify->appendChild( $session->html_phrase( "rae/select:qualify_button" ) );
+
+			$td_act->appendChild( $qualify );
+			$td_act->appendChild( $session->make_element( "br" ) );
+			$td_act->appendChild( $remove );
+			
+		}
+		else
+		{
+			my $button = $session->render_link( "$url&_action_$action=" . $itemid );
+			$button->appendChild( $session->html_phrase( "rae/select:" . $action . "_button" ) );
+			$td_act->appendChild( $button );	
+		}
+		
+	} else {
+		$td_act->appendChild( $session->html_phrase( "rae/select:already_selected" ) );	
+	}
+
+	$tr->appendChild( $td_act );
+
+	return $tr;
+}
+
+# Backcompatibility for EPrints 3
+sub backcomp
+{
+	eval '
+		package EPrints::SearchExpression;
+
+		sub render_search_form
+		{
+			my( $self ) = @_;
+
+			my $session = $self->{session};	
+			my $form = $session->render_form( "get" );
+		
+			foreach my $sf ( $self->get_non_filter_searchfields )
+			{
+				my $sfdiv = $session->make_element( 
+						"div" , 
+						class => "ep_search_field_name" );
+				$sfdiv->appendChild( $sf->render_name );
+				$form->appendChild( $sfdiv );
+				$form->appendChild( $sf->render() );
+			}
+			$form->appendChild( $session->render_action_buttons(search => "Search" ) );
+		
+			return $form;
+		}
+		
+		sub from_form
+		{
+			my( $self ) = @_;
+		
+			my $exp = $self->{session}->param( "_exp" );
+			if( defined $exp )
+			{
+				$self->from_string( $exp );
+				return;
+			}
+			my $problems = [];
+			foreach my $sf ( $self->get_non_filter_searchfields )
+			{
+				my $problem = $sf->from_form;
+				push @{$problems},$problem if defined $problem;
+			}
+			
+			return $problems;
+		}
+		
+		1;
+
+		package EPrints::Session;
+
+		sub auth_check
+		{
+			my( $self , $resource ) = @_;
+
+			my $user = $self->current_user;
+
+			if( !defined $user )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_login" ) );
+				return 0;
+			}
+
+			if( !defined $resource )
+			{
+				return 1;
+			}
+
+			unless( $user->has_role( $resource ) )
+			{
+				$self->render_error( $self->html_phrase( "lib/session:no_priv" ) );
+				return 0;
+			}
+			return 1;
+		}
+
+		1;
+	';
+}
