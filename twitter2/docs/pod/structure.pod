@@ -1,0 +1,124 @@
+=head1 Terms
+
+This is a definition of some terms used in the eprints documentation and comments. Many of these are "objects" within the code and the perl module which handle them is listed. 
+
+=over 8
+
+=item B<archive>
+ 
+ EPrints::Archive
+
+An archive is a eprints archive with it's own website configuration and data. One install of the eprints software can run serveral seperate archives. Sharing code but with totally different configurations.
+
+=item B<session>
+ 
+ EPrints::Session
+
+A session is created every time a cgi script or a bin script is executed, and terminated afterwards. 
+
+=item B<eprint>
+ 
+ EPrints::EPrint
+
+An eprint is a record in the system which has one or more I<documents> and some I<metadata>. Usually, more than one I<document> is to provide the same information in multiple formats, although this is not compulsary.
+
+=item B<document>
+
+ EPrints::Document
+
+A document is a single format of an I<eprint>, eg. HTML, PDF, PS etc. It can contain more than one file, for example HTML may contain more than one html page + image files. The actual files are stored in the filesystem.
+
+=item B<user>
+
+ EPrints::User
+
+A user registered with the system. (NOT necesarily the author of the I<eprints> they deposit).
+
+=item B<subject>
+
+ EPrints::Subject
+
+A I<subject> has an id and a list of who it's parents are. There is a build in I<subject> with the id "ROOT" to act as the top level. A subject can have more than one parent to allow you to create a rich lattice, rather than just a tree, but loops are not allowed.
+
+=item B<type> or B<usertype> or B<eprinttype>
+
+I<users>, I<eprints> and I<documents> all have a "type". This controls how they are "cited" and also for I<users> and I<eprints> it controls what I<fields> may be edited, and which are required.
+
+=item B<dataobj> or B<item>
+
+ EPrints::DataObj
+
+The "super class" of I<subjects>, I<users>, I<eprints> and I<documents>. In the very core of the system these are all treated identically and much of the configuration and methods of these classes of "thing" are identical. We use the term I<item> to speak about the general case.
+
+=item B<dataset>
+
+ EPrints::DataSet
+
+A dataset is a collection of I<items> of the same type. It can be searched.
+
+Some datasets all have the same "config id". The "config id" is used to get
+information about the dataset from the archive config - inbox, buffer, archive
+and deletion all have the same metadata fields and types.
+
+Core datasets are:
+   
+   DATASET ID | CONFIG ID    | COMMENT
+              |              |
+   inbox      | eprint       | Eprints which users are still working on.
+   buffer     | eprint       | Eprints submitted for editorial approval.
+   archive    | eprint       | Eprints live in the archive.
+   deletion   | eprint       | Eprints which have been deleted from the archive.
+   user       | user         | Users registered.
+   subject    | subject      | The subject tree or lattice.
+   document   | document     | The documents belonging to ALL 
+              |              | eprints in the system.
+ subscription | subscription | The subscriptions which users have requested.
+
+=item B<database>
+
+ EPrints::Database
+
+The connection to the MySQL back end. I<datasets> are stored in the MySQL system, but you do not have to address it directly.
+
+=item B<fields> or B<metadata fields>
+
+ EPrints::MetaField
+
+A single field in a dataset. Each dataset has a few "system" fields which eprints uses to manage the system and then any number of I<archive> specific fields which you may configure.
+
+=item B<subscriptions> (sometimes called alerts in other archives)
+
+ EPrints::Subscription
+
+A stored search which is performed every day/week/month and any new results are the mailed to the user who owns the subscription. 
+
+=back
+
+=begin latex
+
+\clearpage
+\begin{figure}
+\centering
+\includegraphics[width=6in]{../lateximages/eprintsuml.eps}
+\caption{EPrints 2 Relational Diagram}
+\end{figure}
+\clearpage
+
+=end latex
+
+=begin html 
+
+=head1 EPrints 2 Relational Diagram
+
+=end html
+
+=for html <p align="center"><img src="eprintsuml.png" width="1092" height="641" /></p>
+
+
+=for text The UML Relational Diagram appears here in the HTML, PDF & Postscript versions.
+
+=for texinfo The UML Relational Diagram appears here in the HTML, PDF & Postscript versions.
+
+This diagram does not show "Subscription". Subscription is a subclass of DataObj (like EPrint, User etc.). A Subscription is associated with one User. A User is associated with 0..n Subscription's.
+
+
