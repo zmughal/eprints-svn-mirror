@@ -228,6 +228,10 @@ use EPrints::Workflow;
 use EPrints::Workflow::Stage;
 use EPrints::XML::EPC;
 
+use EPrints::DataObj::Tweet;
+use EPrints::DataObj::TweetStream;
+use EPrints::Update::TweetStream;
+
 our $__loaded;
 our $__cloned;
 
