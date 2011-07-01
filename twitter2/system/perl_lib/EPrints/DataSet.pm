@@ -261,6 +261,18 @@ my $INFO = {
 		index => 1,
 		datestamp => "datestamp",
 	},
+	tweet => {
+		sqlname => "tweet",	
+		class => "EPrints::DataObj::Tweet",
+		import => 1,
+		index => 1,
+	},
+	tweetstream => {
+		sqlname => "tweetstream",	
+		class => "EPrints::DataObj::TweetStream",
+		import => 1,
+		index => 1,
+	},
 };
 
 ######################################################################
