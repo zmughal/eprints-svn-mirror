@@ -1,0 +1,44 @@
+<?xml version='1.0'?>
+<epm xmlns="http://eprints.org/ep2/data/2.0" id="http://yomiko.ecs.soton.ac.uk:8080/id/epm/google_docs">
+  <epmid>google_docs</epmid>
+  <documents>
+    <document id="">
+      <files>
+        <file id="">
+          <filename>epm/google_docs/cfg/cfg.d/google_docs.pl</filename>
+          <mime_type>text/x-c++</mime_type>
+          <hash>234943afaf920cbf5aae61ef151c49a1</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>236</filesize>
+        </file>
+        <file id="">
+          <filename>plugins/EPrints/DataObj/OAuth.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>aa50165a91f60b96eb79799544947819</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>2047</filesize>
+        </file>
+        <file id="">
+          <filename>plugins/EPrints/Plugin/Screen/EPrint/UploadMethod/Google.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>06e9e89c015a63261e5974afee1f8e22</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>12104</filesize>
+        </file>
+      </files>
+      <format>other</format>
+      <main>plugins/EPrints/Plugin/Screen/EPrint/UploadMethod/Google.pm</main>
+      <content>install</content>
+    </document>
+  </documents>
+  <version>1.0.0</version>
+  <creators>
+    <item>
+      <name>
+        <family>Brody</family>
+        <given>Tim</given>
+      </name>
+    </item>
+  </creators>
+  <title>Upload Documents from Google Documents</title>
+</epm>
