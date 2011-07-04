@@ -867,7 +867,7 @@ sub trim_whitespace
 			$text .= $child->nodeValue;
 			next;
 		}
-		if( EPrints::XML::is_dom( $child, "Element" ) )
+		if( EPrints::XML::is_dom( $child, "Element", "CDATASection" ) )
 		{
 			if( $text ne "" )
 			{
