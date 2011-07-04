@@ -1,0 +1,46 @@
+<?xml version='1.0'?>
+<epm xmlns="http://eprints.org/ep2/data/2.0" id="http://yomiko.ecs.soton.ac.uk:8080/id/epm/amazon_s3">
+  <epmid>amazon_s3</epmid>
+  <documents>
+    <document id="">
+      <files>
+        <file id="">
+          <filename>epm/amazon_s3/cfg/cfg.d/amazon_s3.pl</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>a0d6f8a4728a1eff5b1a92aa66329052</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>531</filesize>
+        </file>
+        <file id="">
+          <filename>plugins/EPrints/Plugin/Storage/AmazonS3.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>f6981d567670ec42e4d7225f11fbcbac</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>4802</filesize>
+        </file>
+        <file id="">
+          <filename>plugins/LWP/UserAgent/AmazonS3.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>25d6211fe59dd9433706c04317910de9</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>5102</filesize>
+        </file>
+      </files>
+      <format>other</format>
+      <main>plugins/LWP/UserAgent/AmazonS3.pm</main>
+      <content>install</content>
+    </document>
+  </documents>
+  <version>1.0.0</version>
+  <controller>EPMC::Cfgd</controller>
+  <creators>
+    <item>
+      <name>
+        <family>Brody</family>
+        <given>Tim</given>
+      </name>
+      <id>tdb2@ecs.soton.ac.uk</id>
+    </item>
+  </creators>
+  <title>Amazon S3 Storage Backend</title>
+</epm>
