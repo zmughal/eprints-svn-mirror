@@ -44,6 +44,20 @@ sub new
 	return $self;
 }
 
+sub workflow
+{
+	my( $self ) = @_;
+
+	my $repo = $self->{repository};
+	my $processor = $self->{processor};
+
+	return EPrints::Workflow->new( $repo, "openid",
+		processor => $processor,
+		item => $processor->{item},
+		method => [ $self->get_subtype, "STRING" ],
+	);
+}
+
 sub allow_return { return shift->allow_register() }
 
 # fill in missing item values from OpenID extended attributes

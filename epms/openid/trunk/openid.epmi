@@ -28,17 +28,24 @@
         <file id="">
           <filename>plugins/EPrints/Plugin/Screen/Register/OpenID.pm</filename>
           <mime_type>application/x-not-regular-file</mime_type>
-          <hash>497a0353756349f44afd5096a7ab9a68</hash>
+          <hash>b9731927930359c97937d9bad9c79f3f</hash>
           <hash_type>MD5</hash_type>
-          <filesize>6918</filesize>
+          <filesize>7183</filesize>
+        </file>
+        <file id="">
+          <filename>workflows/user/openid.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>7fbaba0e0f39f7245c46df4af51be5e0</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>619</filesize>
         </file>
       </files>
       <format>other</format>
-      <main>plugins/EPrints/Plugin/Screen/Register/OpenID.pm</main>
+      <main>workflows/user/openid.xml</main>
       <content>install</content>
     </document>
   </documents>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <creators>
     <item>
       <name>
