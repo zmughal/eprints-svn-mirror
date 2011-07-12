@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+
+<!-- 
+	Citation Styles for user records.
+-->
+
+<cite:citation xmlns="http://www.w3.org/1999/xhtml" xmlns:cite="http://eprints.org/ep3/citation" xmlns:epc="http://eprints.org/ep3/control">
+
+<div><p><epc:print expr="description" /></p></div>
+
+<div>
+<table>
+<tr><th><epc:phrase ref="project_fieldname_projectid" /></th><td><epc:print expr="projectid" /></td></tr>
+<epc:if test="is_set(uri)">
+<tr><th><epc:phrase ref="project_fieldname_uri" /></th><td><epc:print expr="uri" /></td></tr>
+<tr><th><epc:phrase ref="project_fieldname_value" /></th><td><epc:print expr="value" /></td></tr>
+</epc:if>
+<tr><th><epc:phrase ref="project_fieldname_org_units" /></th><td>
+<epc:print expr="org_units" />
+</td></tr>
+<tr><th><epc:phrase ref="project_fieldname_eprints" /></th><td>
+<epc:print expr="eprints" />
+</td></tr>
+</table>
+</div>
+
+<h3>Actions (login required)</h3> <table class="ep_summary_page_actions"><tr><td> <img class="ep_form_action_icon" src="/style/images/action_view.png" title="View Item" alt="View Item" value="View Item" /></td> <td><a href="{$config{http_cgiurl}}/users/home?screen=Workflow::View&amp;dataset=project&amp;dataobj={as_string(projectid)}">View Item</a></td></tr></table>
+
+
+
+
+</cite:citation>

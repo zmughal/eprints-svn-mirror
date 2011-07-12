@@ -20,7 +20,7 @@ my $accept = $c->{plugins}->{"Export::SummaryPage"}->{params}->{accept} ||= [];
 
 push @$accept, qw( dataobj/project dataobj/org_unit );
 
-push @{$c->{user_roles}->{admin}}, qw(
+push @{$c->{user_roles}->{editor}}, qw(
 	+project/create
 	+project/edit
 	+project/destroy
@@ -300,7 +300,9 @@ unshift @{$c->{fields}->{org_unit}}, (
 	},
 );
 
-push @{$c->{fields}->{eprint}}, (
+# strip out the native projects
+
+push @{$c->{fields}->{eprint}},
 	{
 		name => 'org_units',
 		type => 'dataobjref',
@@ -309,18 +311,21 @@ push @{$c->{fields}->{eprint}}, (
 		fields => [
 			{ sub_name=>"title", type=>"text", },
 		],
-	},
+	};
 
-	{
-		name => 'projects',
-		type => 'dataobjref',
-		multiple => 1,
-		datasetid => 'project',
-		fields => [
-			{ sub_name=>"title", type=>"text", },
-		],
-	},
-);
+if( !grep { $_->{name} eq "projects" } @{$c->{fields}->{eprint}} )
+{
+	push @{$c->{fields}->{eprint}},
+		{
+			name => 'projects',
+			type => 'dataobjref',
+			multiple => 1,
+			datasetid => 'project',
+			fields => [
+				{ sub_name=>"title", type=>"text", },
+			],
+		};
+}
 
 $c->{search}->{project} = 
 {

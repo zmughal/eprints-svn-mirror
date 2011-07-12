@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+
+<!-- 
+	Citation Styles for user records.
+-->
+
+<cite:citation xmlns="http://www.w3.org/1999/xhtml" xmlns:cite="http://eprints.org/ep3/citation" xmlns:epc="http://eprints.org/ep3/control">
+
+<div><p><epc:print expr="res_act" /></p></div>
+
+<div>
+<table>
+<tr><th><epc:phrase ref="org_unit_fieldname_org_unitid" /></th><td><epc:print expr="org_unitid" /></td></tr>
+<tr><th><epc:phrase ref="org_unit_fieldname_projects" /></th><td><epc:print expr="projects" /></td></tr>
+</table>
+</div>
+
+<div><a href="{$config{http_cgiurl}}/users/home?screen=Workflow::View&amp;dataset=org_unit&amp;dataobj={as_string(org_unitid)}">View</a></div>
+
+</cite:citation>
