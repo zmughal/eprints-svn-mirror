@@ -358,6 +358,43 @@ sub search
 	return $doc;
 }
 
+sub retrieve
+{
+	my( $self, $ut, %opts ) = @_;
+
+	my $database = exists $opts{database} ? $opts{database} : "WOS";
+	my $fields = exists $opts{fields} ? $opts{fields} : [qw( times_cited )];
+	my $sort = exists $opts{sort} ? $opts{sort} : "Relevance";
+
+	my $soap = $self->_soap();
+
+	# ISI requires every argument be included, even if it's blank
+	my $som = $soap->call("retrieve",
+			SOAP::Data->name("databaseID")->value($database),
+			# The value of the primaryKey element in a record.  This value
+			# uniquely identifies the parent record.  For WOS this value is in
+			# the <ut> element.
+			SOAP::Data->name("primaryKeys")->value($ut),
+			# sort by descending relevance
+			SOAP::Data->name("sort")->value($sort),
+			# NOTE: if no fields are specified all are returned, times_cited is
+			# an option
+			SOAP::Data->name("fields")->value(join(" ", @$fields)),
+		);
+	# something went wrong
+	if( $som->fault )
+	{
+		Carp::croak "ISI responded with error: " . $som->fault->{ faultstring };
+	}
+
+	my $result = $som->result;
+
+	my $doc = XML::LibXML->new->parse_string( $result );
+	my $records = $doc->documentElement;
+
+	return $doc;
+}
+
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!

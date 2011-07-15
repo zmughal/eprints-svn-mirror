@@ -10,11 +10,13 @@ use strict;
 
 our $VERSION = '1.02';
 
-our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
-our $ISI_NS = "http://esti.isinet.com/soap/search";
+use constant {
+	ISI_ENDPOINT => "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve",
+	ISI_NS => "http://esti.isinet.com/soap/search",
 
-our $SOAP_SCHEMA = 'http://schemas.xmlsoap.org/soap/envelope/';
-our $ISI_SCHEMA = 'http://esti.isinet.com/soap/search';
+	SOAP_SCHEMA => 'http://schemas.xmlsoap.org/soap/envelope/',
+	ISI_SCHEMA => 'http://esti.isinet.com/soap/search',
+};
 
 sub new
 {
@@ -27,12 +29,12 @@ sub new
 	return $self;
 }
 
-sub _search_xml
+sub _soap_xml
 {
-	my( $self, @args ) = @_;
+	my( $self, $operation, @args ) = @_;
 
 	my $doc = XML::LibXML::Document->new( '1.0', 'UTF-8' );
-	my $Envelope = $doc->createElementNS($SOAP_SCHEMA, 'soap:Envelope');
+	my $Envelope = $doc->createElementNS(SOAP_SCHEMA, 'soap:Envelope');
 	$doc->setDocumentElement( $Envelope );
 	$Envelope->setAttribute(
 		'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance'
@@ -46,15 +48,15 @@ sub _search_xml
 	$Envelope->setAttribute(
 		'soap:encodingStyle' => 'http://schemas.xmlsoap.org/soap/encoding/'
 	);
-	my $Body = $doc->createElementNS($SOAP_SCHEMA, 'soap:Body');
+	my $Body = $doc->createElementNS(SOAP_SCHEMA, 'soap:Body');
 	$Envelope->appendChild( $Body );
-	my $searchRetrieve = $doc->createElementNS($ISI_SCHEMA, 'searchRetrieve');
-	$Body->appendChild( $searchRetrieve );
+	my $op = $doc->createElementNS(ISI_SCHEMA, $operation);
+	$Body->appendChild( $op );
 
 	for(my $i = 0; $i < $#args; $i+=2)
 	{
-		my $node = $doc->createElementNS($ISI_SCHEMA, $args[$i]);
-		$searchRetrieve->appendChild( $node );
+		my $node = $doc->createElementNS(ISI_SCHEMA, $args[$i]);
+		$op->appendChild( $node );
 		$node->appendText( $args[$i+1] );
 	}
 
@@ -71,7 +73,8 @@ sub search
 	my $fields = exists $opts{fields} ? $opts{fields} : [qw( times_cited )];
 	my $sort = exists $opts{sort} ? $opts{sort} : "Relevance";
 
-	my $doc = $self->_search_xml(
+	my $doc = $self->_soap_xml(
+		"searchRetrieve",
 		databaseID => $database,
 		query => $query,
 		depth => "",
@@ -82,7 +85,7 @@ sub search
 		fields => "@$fields",
 	);
 
-	my $req = HTTP::Request->new( "POST", $ISI_ENDPOINT, HTTP::Headers->new(
+	my $req = HTTP::Request->new( "POST", ISI_ENDPOINT, HTTP::Headers->new(
 			SOAPAction => '"searchRetrieve"'
 		), $doc->toString( 1 ) );
 
@@ -96,8 +99,8 @@ sub search
 
 	my $response = XML::LibXML->new->parse_string( $r->content );
 	my $xpc = XML::LibXML::XPathContext->new( $response->documentElement );
-	$xpc->registerNs( soap => $SOAP_SCHEMA );
-	$xpc->registerNs( isi => $ISI_SCHEMA );
+	$xpc->registerNs( soap => SOAP_SCHEMA );
+	$xpc->registerNs( isi => ISI_SCHEMA );
 
 	foreach my $node ($xpc->findnodes('/soap:Envelope/soap:Body/isi:searchRetrieveResponse/searchRetrieveReturn/*'))
 	{
@@ -120,6 +123,51 @@ sub search
 	return $rdoc;
 }
 
+sub retrieve
+{
+	my( $self, $ut, %opts ) = @_;
+
+	my $database = exists $opts{database} ? $opts{database} : "WOS";
+	my $fields = exists $opts{fields} ? $opts{fields} : [qw( times_cited )];
+	my $sort = exists $opts{sort} ? $opts{sort} : "Relevance";
+
+	my $doc = $self->_soap_xml(
+		"retrieve",
+		databaseID => $database,
+		primaryKeys => $ut,
+		'sort' => $sort,
+		fields => "@$fields",
+	);
+
+	my $req = HTTP::Request->new( "POST", ISI_ENDPOINT, HTTP::Headers->new(
+			SOAPAction => '"retrieve"'
+		), $doc->toString( 1 ) );
+
+	my $r = $self->{ua}->request( $req );
+	if( !$r->is_success )
+	{
+		Carp::croak( soap_error( $r ) );
+	}
+
+	my %response;
+
+	my $response = XML::LibXML->new->parse_string( $r->content );
+	my $xpc = XML::LibXML::XPathContext->new( $response->documentElement );
+	$xpc->registerNs( soap => SOAP_SCHEMA );
+	$xpc->registerNs( isi => ISI_SCHEMA );
+
+	my( $retrieveReturn ) = $xpc->findnodes('/soap:Envelope/soap:Body/isi:retrieveResponse/retrieveReturn');
+
+	if( !defined $retrieveReturn )
+	{
+		Carp::croak( $r->content );
+	}
+
+	my $rdoc = XML::LibXML->new->parse_string( $retrieveReturn->textContent );
+
+	return $rdoc;
+}
+
 sub soap_error
 {
 	my( $r ) = @_;
@@ -132,8 +180,8 @@ sub soap_error
 
 	my $response = XML::LibXML->new->parse_string( $r->content );
 	my $xpc = XML::LibXML::XPathContext->new( $response->documentElement );
-	$xpc->registerNs( soap => $SOAP_SCHEMA );
-	$xpc->registerNs( isi => $ISI_SCHEMA );
+	$xpc->registerNs( soap => SOAP_SCHEMA );
+	$xpc->registerNs( isi => ISI_SCHEMA );
 
 	my( $faultcode ) = $xpc->findnodes('/soap:Envelope/soap:Body/soap:Fault/faultcode');
 	my( $faultstring ) = $xpc->findnodes('/soap:Envelope/soap:Body/soap:Fault/faultstring');

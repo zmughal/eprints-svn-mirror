@@ -5,7 +5,6 @@ use lib "$FindBin::Bin/../lib";
 
 use Pod::Usage;
 use Getopt::Long;
-use SOAP::ISIWoK::Lite;
 
 use strict;
 use warnings;
@@ -62,6 +61,18 @@ A comma-separated list of extra fields to return, defaults to 'times_cited'.
 
 The index to sort by, defaults to 'Relevance'.
 
+=item retrieve
+
+Perform a retrieve query where C<query> is a UT primary key.
+
+=item heavy
+
+Use the full SOAP::Lite module instead of Lite (developer option).
+
+=item trace
+
+Trace SOAP calls.
+
 =back
 
 =head1 EXAMPLES
@@ -85,7 +96,7 @@ at your option, any later version of Perl 5 you may have available.
 
 =cut
 
-my( $opt_help, $opt_man );
+my( $opt_help, $opt_man, $opt_retrieve, $opt_heavy, $opt_trace );
 my $opt_offset = 0;
 my $opt_max = 10;
 my $opt_database = "WOS";
@@ -100,6 +111,9 @@ GetOptions(
 	'database=s' => \$opt_database,
 	'fields=s' => \$opt_fields,
 	'sort=s' => \$opt_sort,
+	'retrieve' => \$opt_retrieve,
+	'heavy' => \$opt_heavy,
+	'trace' => \$opt_trace,
 ) or pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -110,15 +124,43 @@ $opt_offset += 1; # WoS is 1-indexed
 my @fields = split /\s*,\s*/, $opt_fields;
 my $query = shift @ARGV;
 
-my $wok = SOAP::ISIWoK::Lite->new;
+my $wok;
+
+if( $opt_heavy )
+{
+	eval "use SOAP::ISIWoK; 1" or die $@;
+	$wok = SOAP::ISIWoK->new;
+	if( $opt_trace )
+	{
+		SOAP::Lite->import(+trace => "all");
+	}
+}
+else
+{
+	eval "use SOAP::ISIWoK::Lite; 1" or die $@;
+	$wok = SOAP::ISIWoK::Lite->new;
+}
 
 # search will croak on error
-my $results = $wok->search( $query,
+my $results;
+
+if( $opt_retrieve )
+{
+	$results = $wok->retrieve( $query,
+		database => $opt_database,
+		fields => \@fields,
+		sort => $opt_sort,
+	);
+}
+else
+{
+	$results = $wok->search( $query,
 		offset => $opt_offset,
 		max => $opt_max,
 		database => $opt_database,
 		fields => \@fields,
 		sort => $opt_sort,
 	);
+}
 
 print $results->toString;
