@@ -1,5 +1,7 @@
 package SOAP::ISIWoK;
 
+our $VERSION = '1.05';
+
 use Carp;
 use SOAP::Lite
 #	+trace => "all"
@@ -276,8 +278,6 @@ use Exporter;
 use 5.008;
 use strict;
 
-our $VERSION = '1.04';
-
 our $ISI_ENDPOINT = "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve";
 our $ISI_NS = "http://esti.isinet.com/soap/search";
 
@@ -411,6 +411,7 @@ SOAP::ISIWoK - search and query the ISI Web of Knowledge
 
   my $results = $wok->search( "AU = (Brody)" );
   my $results = $wok->search( "AU = (Brody)", offset => 10, max => 20 );
+  my $results = $wok->retrieve( "A1975AV59800009" );
 
   print $results->toString;
 

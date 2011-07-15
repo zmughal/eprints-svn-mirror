@@ -1,5 +1,7 @@
 package SOAP::ISIWoK::Lite;
 
+our $VERSION = '1.05';
+
 use 5.008;
 
 use LWP::UserAgent;
@@ -7,8 +9,6 @@ use XML::LibXML;
 use XML::LibXML::XPathContext;
 
 use strict;
-
-our $VERSION = '1.02';
 
 use constant {
 	ISI_ENDPOINT => "http://wok-ws.isiknowledge.com/esti/soap/SearchRetrieve",
