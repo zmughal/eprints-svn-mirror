@@ -5,6 +5,55 @@
     <document>
       <files>
         <file>
+          <filename>citations/org_unit/default.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>7fa8db24994646e02c8cf5dbdfd79c16</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>360</filesize>
+        </file>
+        <file>
+          <filename>citations/org_unit/summary_page.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>ae7c5250f8c4423d2ccc9d949d1b280d</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>666</filesize>
+        </file>
+        <file>
+          <filename>citations/org_unit/summary_title.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>9af4b2da086563f8c212c8092dde304b</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>257</filesize>
+        </file>
+        <file>
+          <filename>citations/project/default.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>be527039d437102598fda007b610fb91</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>439</filesize>
+        </file>
+        <file>
+          <filename>citations/project/result.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>a767b50c366dc18d8cb41bdd5765cc1a</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>455</filesize>
+        </file>
+        <file>
+          <filename>citations/project/summary_page.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>d7efed1fb5b8bad939afee2c32388040</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>1232</filesize>
+        </file>
+        <file>
+          <filename>citations/project/summary_title.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>9af4b2da086563f8c212c8092dde304b</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>257</filesize>
+        </file>
+        <file>
           <filename>epm/cris/cfg/cfg.d/zz_cerif2008.pl</filename>
           <mime_type>text/plain</mime_type>
           <hash>41cd381d7c6e8cd23c15e9581926c95c</hash>
@@ -12,75 +61,40 @@
           <filesize>5414</filesize>
         </file>
         <file>
-          <filename>epm/cris/lib/citations/org_unit/default.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>7fa8db24994646e02c8cf5dbdfd79c16</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>360</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/citations/org_unit/summary_page.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>ae7c5250f8c4423d2ccc9d949d1b280d</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>666</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/citations/org_unit/summary_title.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>9af4b2da086563f8c212c8092dde304b</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>257</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/citations/project/default.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>be527039d437102598fda007b610fb91</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>439</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/citations/project/result.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>a767b50c366dc18d8cb41bdd5765cc1a</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>455</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/citations/project/summary_page.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>d7efed1fb5b8bad939afee2c32388040</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>1232</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/citations/project/summary_title.xml</filename>
-          <mime_type>text/xml</mime_type>
-          <hash>9af4b2da086563f8c212c8092dde304b</hash>
-          <hash_type>MD5</hash_type>
-          <filesize>257</filesize>
-        </file>
-        <file>
-          <filename>epm/cris/lib/lang/en/phrases/cris.xml</filename>
+          <filename>lang/en/phrases/cris.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>1a0df01b77d59d393447cdfa8f0a0539</hash>
           <hash_type>MD5</hash_type>
           <filesize>2729</filesize>
         </file>
         <file>
-          <filename>epm/cris/lib/plugins/EPrints/Plugin/Screen/EPMC/Cris.pm</filename>
-          <mime_type>text/plain</mime_type>
-          <hash>c86525b329897688c2c439e9cc9f960e</hash>
+          <filename>static/images/epm/cris.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>30268e14f3c2c2d1bee1ab50c9460eb8</hash>
           <hash_type>MD5</hash_type>
-          <filesize>1455</filesize>
+          <filesize>120659</filesize>
         </file>
       </files>
       <format>other</format>
-      <main>epm/cris/lib/plugins/EPrints/Plugin/Screen/EPMC/Cris.pm</main>
+      <main>static/images/epm/cris.png</main>
       <content>install</content>
     </document>
+    <document>
+      <files>
+        <file>
+          <filename>static/images/epm/cris.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>30268e14f3c2c2d1bee1ab50c9460eb8</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>120659</filesize>
+        </file>
+      </files>
+      <format>image/png</format>
+      <main>static/images/epm/cris.png</main>
+      <content>coverimage</content>
+    </document>
   </documents>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <controller>EPMC::Cris</controller>
   <creators>
     <item>
@@ -93,4 +107,5 @@
   </creators>
   <title>Current Research Information System for EPrints</title>
   <description>This extension adds CRIS-like features to EPrints based on the CERIF 2008 model.</description>
+  <icon>images/epm/cris.png</icon>
 </epm>
