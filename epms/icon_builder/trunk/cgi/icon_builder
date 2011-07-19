@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+use EPrints;
+
+my $repo = EPrints->new->current_repository;
+exit(0) if !defined $repo;
+
+EPrints::ScreenProcessor->process(
+	repository => $repo,
+	screenid => "IconBuilder",
+);
