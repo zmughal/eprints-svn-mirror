@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='utf-8'?>
+<epm xmlns='http://eprints.org/ep2/data/2.0' id='http://yomiko.ecs.soton.ac.uk:8080/id/epm/multiline_excel'>
+  <epmid>multiline_excel</epmid>
+  <uri>http://yomiko.ecs.soton.ac.uk:8080/id/epm/multiline_excel</uri>
+  <documents>
+    <document>
+      <files>
+        <file>
+          <filename>epm/multiline_excel/cfg/cfg.d/multiline_excel.pl</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>fe02e87a3e6bb691f72eec07554961b5</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>124</filesize>
+        </file>
+        <file>
+          <filename>plugins/EPrints/Plugin/Export/MultilineExcel.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>f32dadcd47fc82e058ab444a51f7bf9b</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>2602</filesize>
+        </file>
+        <file>
+          <filename>plugins/EPrints/Plugin/Import/MultilineExcel.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>243005c0b0075219422b5cd29a7342b2</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>4151</filesize>
+        </file>
+        <file>
+          <filename>static/images/epm/multiline_excel.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>9e6923f5ccc8e3b5017a494721fe5ae1</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>161413</filesize>
+        </file>
+      </files>
+      <format>other</format>
+      <main>static/images/epm/multiline_excel.png</main>
+      <content>install</content>
+    </document>
+    <document>
+      <files>
+        <file>
+          <filename>static/images/epm/multiline_excel.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>9e6923f5ccc8e3b5017a494721fe5ae1</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>161413</filesize>
+        </file>
+      </files>
+      <format>image/png</format>
+      <main>static/images/epm/multiline_excel.png</main>
+      <content>coverimage</content>
+    </document>
+  </documents>
+  <version>1.0.0</version>
+  <creators>
+    <item>
+      <name>
+        <family>Gutteridge</family>
+        <given>Chris</given>
+      </name>
+      <id>cjg@ecs.soton.ac.uk</id>
+    </item>
+  </creators>
+  <title>Batch-edit eprints via Excel Export/Import</title>
+  <description>This package provides Microsoft Excel-compatible export and import plugins that allow the user to make bulk changes to eprint records on their desktop using a special spreadsheet layout.</description>
+  <requirements>Spreadsheet::ParseExcel
+Spreedsheet::WriteExcel</requirements>
+  <icon>images/epm/multiline_excel.png</icon>
+</epm>
