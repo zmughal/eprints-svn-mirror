@@ -4,15 +4,6 @@ package EPrints::Plugin::Event::AutoSubjects;
 
 use strict;
 
-sub new
-{
-	my( $self, %params ) = @_;
-
-	$params{disable} = 0;
-
-	return $self->SUPER::new( %params );
-}
-
 sub update
 {
 	my( $self, $datasetid, $fieldid ) = @_;

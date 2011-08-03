@@ -8,17 +8,45 @@
         <file>
           <filename>epm/subjects_tagcloud/cfg/cfg.d/zz_subjects_tagcloud.pl</filename>
           <mime_type>text/plain</mime_type>
-          <hash>f917074e2963339f7b1af297185db8a4</hash>
+          <hash>ff1f2478276edfab2d48af0e8d894fa7</hash>
           <hash_type>MD5</hash_type>
-          <filesize>1000</filesize>
+          <filesize>2268</filesize>
+        </file>
+        <file>
+          <filename>plugins/EPrints/Plugin/Event/AutoSubjects.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>83ddb6848aa40d5e42c7f723511b9b60</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>2440</filesize>
+        </file>
+        <file>
+          <filename>static/images/epm/subjects_tagcloud.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>1f642773cc3103b78c1ec572e9f360fe</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>106837</filesize>
         </file>
       </files>
       <format>other</format>
-      <main>epm/subjects_tagcloud/cfg/cfg.d/zz_subjects_tagcloud.pl</main>
+      <main>static/images/epm/subjects_tagcloud.png</main>
       <content>install</content>
     </document>
+    <document>
+      <files>
+        <file>
+          <filename>static/images/epm/subjects_tagcloud.png</filename>
+          <mime_type>image/png</mime_type>
+          <hash>1f642773cc3103b78c1ec572e9f360fe</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>106837</filesize>
+        </file>
+      </files>
+      <format>image/png</format>
+      <main>static/images/epm/subjects_tagcloud.png</main>
+      <content>coverimage</content>
+    </document>
   </documents>
-  <version>1.0.0</version>
+  <version>1.0.2</version>
   <controller>EPMC::Cfgd</controller>
   <creators>
     <item>
@@ -31,4 +59,5 @@
   </creators>
   <title>Auto-generated Subjects from Tags</title>
   <description>Users can enter semi-colon separated hierarchical tags which are then used to build a subjects tree.</description>
+  <icon>images/epm/subjects_tagcloud.png</icon>
 </epm>
