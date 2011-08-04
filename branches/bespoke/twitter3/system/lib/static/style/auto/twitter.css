@@ -1,0 +1,51 @@
+
+
+ol.tweets img.author-thumb
+{
+	border: none;
+	height: 48px;
+	width: 48px;
+}
+ol.tweets
+{
+	width: 480px;
+	list-style: none outside none;
+}
+li.tweet
+{
+	border-bottom: 1px solid #EEEEEE;
+	position: relative;
+	padding: 10px 0 8px;
+}
+
+span.meta
+{
+	display: block;
+	font-size: smaller;
+	color: #999;
+
+}
+
+span.tweet-text-part
+{
+	margin-left: 60px;
+	display: block;
+}
+
+span.tweet-body
+{
+	min-height: 48px;
+	display: block;
+
+}
+
+span.author-thumb
+{
+	height: 50px;
+	width: 50px;
+	display: block;
+	position: absolute;
+	margin: 0 10px 0 0;
+
+}
+

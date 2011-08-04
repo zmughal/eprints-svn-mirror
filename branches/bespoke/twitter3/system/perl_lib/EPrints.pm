@@ -277,6 +277,12 @@ use EPrints::XML::SAX::Generator;
 use EPrints::XML::SAX::PrettyPrint;
 use EPrints::XML::SAX::Writer;
 
+# Twitter Harvester
+use EPrints::DataObj::Tweet; 
+use EPrints::DataObj::TweetStream; 
+use EPrints::Update::TweetStream; 
+
+
 our $__loaded;
 our $__cloned;
 
