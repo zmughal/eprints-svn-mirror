@@ -4,6 +4,7 @@ package EPrints::DataObj::TweetStream;
 
 use EPrints;
 use EPrints::Search;
+use Date::Calc qw/ Week_of_Year Delta_Days Add_Delta_Days /;
 
 use strict;
 
@@ -34,10 +35,64 @@ sub get_system_field_info
 
 		{ name=>"expiry_date", type=>"date", required=>"yes" },
 
-		{ name=>"items", type=>"itemref", datasetid=>"tweet", required => 1, multiple => 1 },
+		{ name=>"items", type=>"itemref", datasetid=>"tweet", required => 1, multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_items' },
 
 		{ name=>"highest_twitterid", type=>'bigint', volatile=>1},
 
+		#digest information store anything that appears more than once.
+		{ name => "top_hashtags", type=>"compound", multiple=>1,
+			'fields' => [
+				{
+					'sub_name' => 'hashtag',
+					'type' => 'text',
+				},
+				{
+					'sub_name' => 'count',
+					'type' => 'int',
+				}
+			],
+		},
+		{ name => "top_from_users", type=>"compound", multiple=>1,
+			'fields' => [
+				{
+					'sub_name' => 'from_user',
+					'type' => 'text',
+				},
+				{
+					'sub_name' => 'profile_image_url',
+					'type' => 'url',
+				},
+				{
+					'sub_name' => 'count',
+					'type' => 'int',
+				}
+			],
+		},
+		{ name => "top_target_urls", type=>"compound", multiple=>1,
+			'fields' => [
+				{
+					'sub_name' => 'target_url',
+					'type' => 'url',
+				},
+				{
+					'sub_name' => 'count',
+					'type' => 'int',
+				}
+			],
+		},
+		{ name => "frequency_period", type => 'set', options => [ 'daily', 'weekly', 'monthly', 'yearly' ] },
+		{ name => "frequency_values", type => 'compound', multiple=>1,
+			'fields' => [
+				{
+					'sub_name' => 'label',
+					'type' => 'text',
+				},
+				{
+					'sub_name' => 'value',
+					'type' => 'int',
+				}
+			],
+		},
 	)
 };
 
@@ -172,9 +227,15 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
+print STDERR "Committing Stream\n";
+
 	$self->update_triggers();
-	
-	#set highest_twitterid
+
+	#grab the counts and anything else we need
+	my $counter = {};
+	my $extra_data = {};
+
+	#enrich twitterfeed
 	my $highest_id = 0;
 	foreach my $tweetid (@{$self->get_value('items')})
 	{
@@ -183,8 +244,81 @@ sub commit
 
 		my $twitterid = $tweet->get_value('twitterid');
 		$highest_id = $twitterid if $twitterid > $highest_id;
+
+		foreach my $top_val_name (qw/ from_users hashtags target_urls /)
+		{
+			my $val;
+			if ($top_val_name eq 'hashtags')
+			{
+				$val = $tweet->get_hashtags;
+			}
+			elsif ($top_val_name eq 'from_users')
+			{
+				$val = $tweet->get_value('from_user');
+			}
+			else
+			{
+				$val = $tweet->get_value($top_val_name);
+			}
+
+			if (ref $val eq 'ARRAY')
+			{
+				foreach my $thing (@{$val})
+				{
+					if ($top_val_name eq 'hashtags')
+					{
+						$thing = lc($thing);
+					}
+
+					$counter->{$top_val_name}->{$thing}++;
+				}
+			}
+			else
+			{
+					$counter->{$top_val_name}->{$val}++;
+			}
+
+		}
+		$extra_data->{'profile_image_url'}->{$tweet->get_value('from_user')} = $tweet->get_value('profile_image_url');
 	}
+
 	$self->set_value('highest_twitterid', $highest_id);
+
+	foreach my $top_val_name (qw/ from_user hashtag target_url /)
+	{
+		my $n = 50; #perhaps pull this from config
+		my $counts = [];
+		foreach my $thing (
+			sort
+			{$counter->{$top_val_name.'s'}->{$b} <=> $counter->{$top_val_name.'s'}->{$a}}
+			keys %{$counter->{$top_val_name.'s'}}
+		)
+		{
+			last unless $n;
+			$n--;
+			my $count = { $top_val_name => $thing, count => $counter->{$top_val_name.'s'}->{$thing} };
+			if ($top_val_name eq 'from_user')
+			{
+				$count->{'profile_image_url'} = $extra_data->{'profile_image_url'}->{$thing};
+			}
+			push @{$counts}, $count;
+		}
+
+		$self->set_value('top_' . $top_val_name . 's', $counts);
+	}
+
+	#create the time graph values
+	my $times = [];
+	foreach my $tweetid (@{$self->get_value('items')})
+	{
+		my $tweet = EPrints::DataObj::Tweet->new($self->{session}, $tweetid);
+		next unless $tweet;
+		push @{$times}, $tweet->get_value('created_at');
+	}
+	my ($period, $pairs) = $self->periodise_dates($times);
+
+	$self->set_value('frequency_period',$period);
+	$self->set_value('frequency_values',$pairs);
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -192,10 +326,117 @@ sub commit
 		return( 1 ) unless $force;
 	}
 
-
 	my $success = $self->SUPER::commit( $force );
 	
 	return( $success );
+}
+
+
+sub periodise_dates
+{
+	my ($self, $dates) = @_;
+
+	my $first = $dates->[0];
+	my $last = $dates->[$#{$dates}];
+
+	return (undef,undef) unless ($first && $last); #we won't bother generating graphs based on hours or minutes
+
+	my $delta_days = Delta_Days(parse_datestring($first),parse_datestring($last));
+
+	return (undef,undef) unless $delta_days; #we won't bother generating graphs based on hours or minutes
+
+	#maximum day delta in each period class
+	my $thresholds = {
+		daily => (30*1),
+		weekly => (52*7),
+		monthly => (48*30),
+	};
+
+	my $period = 'yearly';
+	foreach my $period_candidate (qw/ daily weekly monthly /)
+	{
+		$period = $period_candidate if $delta_days > $thresholds->{$period_candidate};
+	}
+
+	my $label_values = {};
+	my $pairs = [];
+
+	initialise_date_structures($label_values, $pairs, $first, $last, $period);
+
+	foreach my $date (@{$dates})
+	{
+		my $label = YMD_to_label(parse_datestring($date), $period);
+		$label_values->{$label}->{value}++;
+	}
+
+	return ($period, $pairs);
+}
+
+sub initialise_date_structures
+{
+	my ($label_values, $pairs, $first_date, $last_date, $period) = @_;
+
+	my $current_date = $first_date;
+	my $current_label = YMD_to_label(parse_datestring($current_date),$period);
+	my $last_label = YMD_to_label(parse_datestring($last_date),$period);
+
+	my ($year, $month, $day) = parse_datestring($first_date);
+
+	while ($current_label ne $last_label)
+	{
+		$label_values->{$current_label}->{label} = $current_label;
+		$label_values->{$current_label}->{value} = 0;
+		push @{$pairs}, $label_values->{$current_label};
+
+		($year, $month, $day, $current_label) = next_YMD_and_label($year, $month, $day, $current_label, $period);
+print STDERR "$current_label moving toward $last_label\n";
+die if $year > 2011;
+	}
+
+	$label_values->{$last_label}->{label} = $last_label;
+	$label_values->{$last_label}->{value} = 0;
+	push @{$pairs}, $label_values->{$last_label};
+}
+
+sub next_YMD_and_label
+{
+	my ($year, $month, $day, $label, $period) = @_;
+
+	my $new_label = $label;
+
+	while ($new_label eq $label)
+	{
+		($year, $month, $day) = Add_Delta_Days ($year, $month, $day, 1);
+		$new_label = YMD_to_label($year, $month, $day, $period);
+
+print STDERR '.';
+	}
+	return ($year, $month, $day, $new_label);
+}
+
+sub YMD_to_label
+{
+	my ($year, $month, $day, $period) = @_;
+
+	return $year if $period eq 'yearly';
+	return join('-',(sprintf("%04d",$year), sprintf("%02d",$month))) if $period eq 'monthly';
+	return join('-',(sprintf("%04d",$year), sprintf("%02d",$month),sprintf("%02d",$day))) if $period eq 'daily';
+
+	if ($period eq 'weekly')
+	{
+		my ($week, $wyear) = Week_of_Year($year, $month, $day);
+		return "Week $week, $wyear";
+	}
+
+	return undef;
+}
+
+sub parse_datestring
+{
+	my ($date) = @_;
+
+	my ($year,$month,$day) = split(/[- ]/,$date);
+	return ($year,$month,$day);
 }
 
 
@@ -243,6 +484,14 @@ sub highest_twitterid
 	return $self->get_value('highest_twitterid');
 }
 
+sub number_of_tweets
+{
+	my ($self) = @_;
+
+	return 0 unless $self->is_set('items');
+
+	return scalar @{$self->get_value('items')};
+}
 
 ######################################################################
 =pod
@@ -302,6 +551,80 @@ sub add_tweetids
 	$self->set_value('items', \@items);
 	$self->commit;
 }
+
+sub render
+{
+	my ($self) = @_;
+
+	my $session = $self->{session};
+
+	my $dom = $session->make_doc_fragment;
+	my $h1 = $session->make_element('h1');
+	$h1->appendChild($session->make_text('HELLO'));
+	$dom->appendChild($h1);
+
+	my $title = $session->make_doc_fragment;
+	$title->appendChild($session->make_text('Hello Title'));
+
+	return ($dom, $title);
+}
+
+
+sub render_items
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+	my $items_to_display = 10;
+
+        my $xml = $session->xml;
+	my $tweet_ds = $session->dataset('tweet');
+
+	my $ol = $xml->create_element('ol', class => 'tweets');
+
+	if ($object->number_of_tweets <= $items_to_display)
+	{
+		foreach my $tweetid (@{$value})
+		{
+			my $tweet = $tweet_ds->dataobj($tweetid);
+			$ol->appendChild($tweet->render_li);
+		}
+	}
+	else
+	{
+		my $flag = 1;
+		foreach my $range ( [0, int($items_to_display/2)], [$#{$value}-(int($items_to_display/2)),$#{$value}] )
+		{
+			foreach my $tweetid ( @{$value}[$range->[0]..$range->[1]] )
+			{
+				my $tweet = $tweet_ds->dataobj($tweetid);
+				$ol->appendChild($tweet->render_li);
+			}
+			if ($flag)
+			{
+				$flag = 0;
+				my $li = $xml->create_element('li');
+				$li->appendChild($session->html_phrase('DataObj::Tweet/unshown_items', n=>$xml->create_text_node(($object->number_of_tweets - $items_to_display))));
+				$ol->appendChild($li);
+			}
+
+		}
+	}
+
+	return $ol;
+}
+
+sub has_owner
+{
+	my( $self, $possible_owner ) = @_;
+
+	if( $possible_owner->get_value( "userid" ) == $self->get_value( "userid" ) )
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 
 
 1;
