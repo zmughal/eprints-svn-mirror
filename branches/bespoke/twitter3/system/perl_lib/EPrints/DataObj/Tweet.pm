@@ -225,8 +225,6 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-print STDERR "Committing Tweet\n";
-
 	$self->update_triggers();
 
 	if ($self->is_set('json_source'))
@@ -459,7 +457,8 @@ sub error_id
 			from_user => "EPRINTS",
 		};
 
-		$tweet = EPrints::DataObj::Tweet::new_from_data(
+		$tweet = EPrints::DataObj::Tweet->new_from_data(
+			$session,
 			$data,
 		);
 	}
