@@ -8,7 +8,6 @@ use Date::Calc qw/ Week_of_Year Delta_Days Add_Delta_Days /;
 
 use strict;
 
-
 ######################################################################
 =pod
 
@@ -51,6 +50,7 @@ sub get_system_field_info
 					'type' => 'int',
 				}
 			],
+			render_value => 'EPrints::DataObj::TweetStream::render_top_field',
 		},
 		{ name => "top_from_users", type=>"compound", multiple=>1,
 			'fields' => [
@@ -67,6 +67,7 @@ sub get_system_field_info
 					'type' => 'int',
 				}
 			],
+			render_value => 'EPrints::DataObj::TweetStream::render_top_field',
 		},
 		{ name => "top_target_urls", type=>"compound", multiple=>1,
 			'fields' => [
@@ -79,6 +80,7 @@ sub get_system_field_info
 					'type' => 'int',
 				}
 			],
+			render_value => 'EPrints::DataObj::TweetStream::render_top_field',
 		},
 		{ name => "frequency_period", type => 'set', options => [ 'daily', 'weekly', 'monthly', 'yearly' ] },
 		{ name => "frequency_values", type => 'compound', multiple=>1,
@@ -96,6 +98,151 @@ sub get_system_field_info
 	)
 };
 
+sub render_top_frequency_values
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+	#first find the highest to scale all others
+	
+
+
+
+}
+
+sub render_top_field
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+	my $rows;
+	my $fieldname = $field->name;
+
+	foreach my $single_value (@{$value})
+	{
+		my $tr = $session->make_element('tr');
+		my $td = $session->make_element('td');
+		$tr->appendChild($td);
+		$td->appendChild(render_top_lhs($session, $fieldname, $single_value));
+		$td = $session->make_element('td');
+		$td->appendChild(render_top_rhs($session, $fieldname, $single_value));
+		$tr->appendChild($td);
+
+		push @{$rows}, $tr;
+	}
+
+	return columned_table($session, $rows, $session->config('tweetstream_tops',$fieldname,'cols'));
+}
+
+
+sub render_top_lhs
+{
+	my ($session, $fieldname, $stuff) = @_;
+
+	if ($fieldname eq 'top_hashtags')
+	{
+		my $value = $stuff->{hashtag}; 
+		
+		my $max_render_len = $session->config('tweetstream_tops',$fieldname,'max_len'); 
+		
+		my $url = 'http://search.twitter.com/search?q=' . URI::Escape::uri_escape($value); 
+
+		my $a = $session->make_element('a', href=>$url, title=>$value); 
+
+		if (length $value > $max_render_len) 
+		{ 
+			my $chars = $max_render_len - 3; 
+			$value = substr($value, 0, $chars) . '...'; 
+		} 
+
+		$a->appendChild($session->make_text($value)); 
+		return $a;       
+	};
+
+	if ($fieldname eq 'top_target_urls')
+	{
+		my $value = $stuff->{target_url}; 
+		
+		my $max_render_len = $session->config('tweetstream_tops',$fieldname,'max_len'); 
+		
+		my $a = $session->make_element('a', href=>$value, title=>$value);
+
+		if (length $value > $max_render_len) 
+		{ 
+			my $chars = $max_render_len - 3; 
+			$value = substr($value, 0, $chars) . '...'; 
+		} 
+
+		$a->appendChild($session->make_text($value)); 
+		return $a;       
+	};
+
+	if ($fieldname eq 'top_from_users')
+	{
+		my $base_url = 'http://twitter.com/';
+		my $img_url = $stuff->{profile_image_url};
+		my $user = $stuff->{from_user};
+
+		my $a = $session->make_element('a', href=>$base_url . $user, title=> $user);
+		$a->appendChild($session->make_element('img', src=>$img_url));
+		return $a;
+	}
+
+	#we should never get here
+	return $session->make_text("$fieldname unhandled in render_top_lhs\n");
+}
+
+sub render_top_rhs
+{
+	my ($session, $fieldname, $stuff) = @_;
+
+	if ($fieldname eq 'top_from_users')
+	{
+		my $frag = $session->make_doc_fragment;
+
+		my $base_url = 'http://twitter.com/';
+		my $img_url = $stuff->{profile_image_url};
+		my $user = $stuff->{from_user};
+
+		my $a = $session->make_element('a', href=>$base_url . $user, title=> $user);
+		$a->appendChild($session->make_text($user));
+		$frag->appendChild($a);
+		$frag->appendChild($session->make_element('br'));
+		$frag->appendChild($session->make_text($stuff->{count} . ' tweets'));
+		return $frag;
+	}
+	else
+	{
+		return $session->make_text($stuff->{count});
+	}
+}
+
+sub columned_table
+{
+	my ($session, $rows, $ncols ) = @_;
+
+	my $nitems = scalar @{$rows};
+	my $col_len = POSIX::ceil( $nitems / $ncols );
+
+	my $table = $session->make_element('table');
+	my $tr = $session->make_element('tr');
+	$table->appendChild($tr);
+
+	my $inside_table;
+	for( my $i=0; $i < $nitems; ++$i )
+        {
+
+                if( $i % $col_len == 0 )
+		{
+			my $td = $session->make_element('td', valign => 'top');
+			$tr->appendChild($td);
+
+			$inside_table = $session->make_element('table');
+			$td->appendChild($inside_table);
+
+		}
+		$inside_table->appendChild($rows->[$i]);
+	}
+	return $table;
+}
 
 
 ######################################################################
@@ -227,8 +374,6 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-print STDERR "Committing Stream\n";
-
 	$self->update_triggers();
 
 	#grab the counts and anything else we need
@@ -286,7 +431,8 @@ print STDERR "Committing Stream\n";
 
 	foreach my $top_val_name (qw/ from_user hashtag target_url /)
 	{
-		my $n = 50; #perhaps pull this from config
+		my $n = $self->{session}->config('tweetstream_tops', 'top_'.$top_val_name.'s', 'n');
+
 		my $counts = [];
 		foreach my $thing (
 			sort
@@ -574,15 +720,17 @@ sub render_items
 {
         my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
 
-	my $items_to_display = 10;
+	my $n_oldest = $session->config('tweetstream_tweet_renderopts','n_oldest');
+	my $n_newest = $session->config('tweetstream_tweet_renderopts','n_newest');
 
         my $xml = $session->xml;
 	my $tweet_ds = $session->dataset('tweet');
 
 	my $ol = $xml->create_element('ol', class => 'tweets');
 
-	if ($object->number_of_tweets <= $items_to_display)
+	if ($object->number_of_tweets <= ($n_oldest + $n_newest))
 	{
+		
 		foreach my $tweetid (@{$value})
 		{
 			my $tweet = $tweet_ds->dataobj($tweetid);
@@ -592,7 +740,7 @@ sub render_items
 	else
 	{
 		my $flag = 1;
-		foreach my $range ( [0, int($items_to_display/2)], [$#{$value}-(int($items_to_display/2)),$#{$value}] )
+		foreach my $range ( [0, ($n_oldest-1)], [$#{$value}-($n_newest-1),$#{$value}] )
 		{
 			foreach my $tweetid ( @{$value}[$range->[0]..$range->[1]] )
 			{
@@ -602,8 +750,8 @@ sub render_items
 			if ($flag)
 			{
 				$flag = 0;
-				my $li = $xml->create_element('li');
-				$li->appendChild($session->html_phrase('DataObj::Tweet/unshown_items', n=>$xml->create_text_node(($object->number_of_tweets - $items_to_display))));
+				my $li = $xml->create_element('li', style => "margin-top: 1em; margin-bottom: 1em;");
+				$li->appendChild($session->html_phrase('DataObj::Tweet/unshown_items', n=>$xml->create_text_node(($object->number_of_tweets - ($n_oldest+$n_newest)))));
 				$ol->appendChild($li);
 			}
 

@@ -24,8 +24,7 @@ sub create_queue_item
 
 	if ($queue_items->{$key})
 	{
-		push @{$queue_items->{$key}->{tweetstreamids}}, { $tweetstream->id };
-		$queue_items->{$key}->{tweetids}->{$archiveid} = [];
+		push @{$queue_items->{$key}->{tweetstreamids}}, $tweetstream->id;
 		if ($highest_id < $queue_items->{$key}->{since_twitterid})
 		{
 			$queue_items->{$key}->{since_twitterid} = $highest_id;

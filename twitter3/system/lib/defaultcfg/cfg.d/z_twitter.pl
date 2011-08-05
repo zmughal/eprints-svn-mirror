@@ -1,4 +1,35 @@
 
+#tidier screens achieved by having n divisible by cols
+# n -> how many to store
+# cols -> how many columns to render them
+# max_len -> the maximum length of any rendered value before it gets truncated (currently doesn't apply to users)
+$c->{tweetstream_tops} = 
+{
+	top_from_users => {
+		n => 30,
+		cols => 3,
+	},
+	top_target_urls => {
+		n => 30,
+		cols => 1,
+		max_len => 150,
+	},
+	top_hashtags => {
+		n => 80,
+		cols => 4,
+		max_len => 15,
+	}
+};
+
+
+#n_ parameters define how many appear before and after the ... in the middle
+$c->{tweetstream_tweet_renderopts} = 
+{
+	n_oldest => 10,
+	n_newest => 10,
+};
+
+
 $c->{roles}->{"tweetstream-editor"} = [
 	"datasets",
 	"tweet/view",
