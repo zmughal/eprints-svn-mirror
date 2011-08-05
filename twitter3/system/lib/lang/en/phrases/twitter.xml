@@ -4,6 +4,9 @@
 
   <!-- This file is used to add phrases from the phrase editor screen -->
 
+    <epp:phrase id="TweetStream/export_menu"><p>Export the feed as: <epc:pin name="export_list"/></p></epp:phrase>
+    <epp:phrase id="DataObj::Tweet::error_text_-1">A number of unharvested tweets may have appeared in the stream at this point.</epp:phrase>
+
     <epp:phrase id="tweetstream_fieldname_highest_twitterid">Highest ID</epp:phrase>
     <epp:phrase id="tweetstream_fieldname_top_from_users">Top Tweeters</epp:phrase>
     <epp:phrase id="tweetstream_fieldname_top_from_users_count">Tweet Count</epp:phrase>

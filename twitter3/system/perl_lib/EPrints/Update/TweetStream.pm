@@ -128,15 +128,13 @@ sub update_all
 			my $tweetobj = EPrints::DataObj::Tweet::tweet_with_twitterid($current_item->{session},$tweet->{id});
 			unless (defined $tweetobj)
 			{
-print STDERR "NEW TWEET!\n";
 				$tweetobj = EPrints::DataObj::Tweet->create_from_data(
 					$current_item->{session},
 					{ twitterid => $tweet->{id},
-					json_source => $json->pretty->encode($tweet) } 
+					json_source => $tweet } 
 				);
 				$tweetobj->commit;
 			}
-else {print STDERR "no need to create\n";}
 			push @{$current_item->{tweetids}}, $tweetobj->id;
 
 			if ($tweet->{id} == $current_item->{since_twitterid})

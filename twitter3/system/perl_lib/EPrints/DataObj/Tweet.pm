@@ -33,7 +33,7 @@ sub get_system_field_info
 
 		{ name=>"twitterid", type=>"bigint", required=>1 },
 
-		{ name=>"json_source", type=>"longtext", required=>1, render_value => 'EPrints::Extras::render_preformatted_field' }, #full source kept for futureproofing
+		{ name=>"json_source", type=>"storable", required=>1, render_value => 'EPrints::DataObj::Tweet::render_json_source' }, #full source kept for futureproofing
 
 		{ name=>"text", type=>"text" },
 		{ name=>"from_user", type=>"text", render_value => 'EPrints::DataObj::Tweet::render_from_user' },
@@ -286,14 +286,7 @@ sub process_json
 
 	return 0 unless $self->is_set('json_source');
 
-	my $json = $self->get_value('json_source');
-
-	my $tweet_data = eval { decode_json($json); };
-	if ($@)
-	{
-		print STDERR "Couldn't decode json: $@\n";
-		return 0;
-	}
+	my $tweet_data = $self->get_value('json_source');
 
 	#pull the data out and stick it in metafields
 	foreach my $fieldname (qw/ text from_user profile_image_url iso_language_code source /)
@@ -446,7 +439,6 @@ sub error_id
 
 	$errorid = -1 unless $errorid;
 
-
         my $tweet = EPrints::DataObj::Tweet::tweet_with_twitterid($session, $errorid);
 
         if (not defined $tweet)
@@ -515,6 +507,16 @@ sub render_span
 	return $span;
 }
 
+sub render_json_source
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+	my $json = JSON->new->allow_nonref;
+	my $json_data = $json->pretty->encode($value);
+	return EPrints::Extras::render_preformatted_field($session, $field, $json_data, $alllangs , $nolink , $object);
+}
+
+
 sub render_profile_image_url
 {
         my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
@@ -523,7 +525,7 @@ sub render_profile_image_url
 
 	my $span = $xml->create_element('span', class=>'author-thumb');
 	my $a = $xml->create_element('a', href=>'http://twitter.com/' . $object->get_value('from_user'));
-	$a->appendChild($xml->create_element('img', class=>'author-thumb', src=>$value));
+	$a->appendChild($xml->create_element('img', height=>"48", width=>"48", class=>'author-thumb', src=>$value));
 	$span->appendChild($a);
 
 	return $span;
@@ -570,6 +572,31 @@ sub render_text_enriched
 	}
 	return $text_span;
 
+}
+
+sub data_for_export
+{
+	my ($self) = @_;
+
+	my $data;
+
+	if ($self->is_set('json_source'))
+	{
+		$data = $self->value('json_source');
+	}
+	else
+	{
+		foreach my $fieldname (qw/ from_user text created_at /)
+		{
+			$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
+		}
+	}
+	foreach my $fieldname (qw/ text_enriched target_urls url_redirects /)
+	{
+		$data->{eprints_value_added}->{$fieldname} = $self->value($fieldname) if ($self->is_set($fieldname));
+	}
+
+	return $data;
 }
 
 

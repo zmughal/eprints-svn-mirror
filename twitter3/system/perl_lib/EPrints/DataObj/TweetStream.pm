@@ -94,6 +94,7 @@ sub get_system_field_info
 					'type' => 'int',
 				}
 			],
+			render_value => 'EPrints::DataObj::TweetStream::render_top_frequency_values',
 		},
 	)
 };
@@ -103,11 +104,35 @@ sub render_top_frequency_values
         my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
 
 	#first find the highest to scale all others
-	
+	my $highest = 0;
+	foreach (@{$value})
+	{
+		$highest = $_->{value} if $_->{value} > $highest;
+	}
 
+	my $table = $session->make_element('table', class=>"tweetstream_graph");
 
+	foreach my $pair (@{$value})
+	{
+		my $tr = $session->make_element('tr');
+		$table->appendChild($tr);
+		my $th = $session->make_element('th');
+		$tr->appendChild($th);
+		$th->appendChild($session->make_text($pair->{label}));
+		my $td = $session->make_element('td', class => "tweetstream_bar");
 
+		my $width = int (($pair->{value} / $highest) * 100);
+		my $div = $session->make_element('div', style => "width: $width%");
+		$td->appendChild($div);
+		$tr->appendChild($td);
+
+		$td = $session->make_element('td');
+		$td->appendChild($session->make_text($pair->{value}));
+		$tr->appendChild($td);
+	}
+	return $table;
 }
+
 
 sub render_top_field
 {
@@ -182,7 +207,7 @@ sub render_top_lhs
 		my $user = $stuff->{from_user};
 
 		my $a = $session->make_element('a', href=>$base_url . $user, title=> $user);
-		$a->appendChild($session->make_element('img', src=>$img_url));
+		$a->appendChild($session->make_element('img', height=>"48", width=>"48",src=>$img_url));
 		return $a;
 	}
 
@@ -386,6 +411,7 @@ sub commit
 	{
 		my $tweet = EPrints::DataObj::Tweet->new($self->{session}, $tweetid);
 		next unless $tweet;
+		next if $tweet->get_value('twitterid') < 0; #it's an error tweet
 
 		my $twitterid = $tweet->get_value('twitterid');
 		$highest_id = $twitterid if $twitterid > $highest_id;
@@ -406,6 +432,8 @@ sub commit
 				$val = $tweet->get_value($top_val_name);
 			}
 
+			next unless defined $val;
+
 			if (ref $val eq 'ARRAY')
 			{
 				foreach my $thing (@{$val})
@@ -424,7 +452,7 @@ sub commit
 			}
 
 		}
-		$extra_data->{'profile_image_url'}->{$tweet->get_value('from_user')} = $tweet->get_value('profile_image_url');
+		$extra_data->{'profile_image_url'}->{$tweet->get_value('from_user')} = $tweet->get_value('profile_image_url') if $tweet->is_set('from_user');
 	}
 
 	$self->set_value('highest_twitterid', $highest_id);
@@ -459,7 +487,7 @@ sub commit
 	{
 		my $tweet = EPrints::DataObj::Tweet->new($self->{session}, $tweetid);
 		next unless $tweet;
-		push @{$times}, $tweet->get_value('created_at');
+		push @{$times}, $tweet->get_value('created_at') if $tweet->is_set('created_at');
 	}
 	my ($period, $pairs) = $self->periodise_dates($times);
 
@@ -499,9 +527,9 @@ sub periodise_dates
 	};
 
 	my $period = 'yearly';
-	foreach my $period_candidate (qw/ daily weekly monthly /)
+	foreach my $period_candidate (qw/ monthly weekly daily /)
 	{
-		$period = $period_candidate if $delta_days > $thresholds->{$period_candidate};
+		$period = $period_candidate if $delta_days <= $thresholds->{$period_candidate};
 	}
 
 	my $label_values = {};
@@ -535,8 +563,6 @@ sub initialise_date_structures
 		push @{$pairs}, $label_values->{$current_label};
 
 		($year, $month, $day, $current_label) = next_YMD_and_label($year, $month, $day, $current_label, $period);
-print STDERR "$current_label moving toward $last_label\n";
-die if $year > 2011;
 	}
 
 	$label_values->{$last_label}->{label} = $last_label;
@@ -554,8 +580,6 @@ sub next_YMD_and_label
 	{
 		($year, $month, $day) = Add_Delta_Days ($year, $month, $day, 1);
 		$new_label = YMD_to_label($year, $month, $day, $period);
-
-print STDERR '.';
 	}
 	return ($year, $month, $day, $new_label);
 }
@@ -570,6 +594,7 @@ sub YMD_to_label
 
 	if ($period eq 'weekly')
 	{
+print STDERR "Calculating week of $year, $month, $day\n";
 		my ($week, $wyear) = Week_of_Year($year, $month, $day);
 		return "Week $week, $wyear";
 	}
@@ -725,8 +750,10 @@ sub render_items
 
         my $xml = $session->xml;
 	my $tweet_ds = $session->dataset('tweet');
+	my $frag = $xml->create_document_fragment;
 
 	my $ol = $xml->create_element('ol', class => 'tweets');
+	$frag->appendChild($ol);
 
 	if ($object->number_of_tweets <= ($n_oldest + $n_newest))
 	{
@@ -758,7 +785,24 @@ sub render_items
 		}
 	}
 
-	return $ol;
+	my $export_ul = $xml->create_element('ul');
+	foreach my $pluginid (qw/ Export::TweetStream::JSON /)
+	{
+		my $plugin = $session->plugin($pluginid);
+		next unless $plugin;
+
+		my $li = $xml->create_element( "li" );
+		my $url = $plugin->dataobj_export_url( $object );
+		my $a = $session->render_link( $url );
+		$a->appendChild( $plugin->render_name );
+		$li->appendChild( $a );
+		$export_ul->appendChild( $li );
+
+	}
+	$frag->appendChild($session->html_phrase('TweetStream/export_menu', export_list => $export_ul));
+
+
+	return $frag;
 }
 
 sub has_owner
@@ -771,6 +815,20 @@ sub has_owner
 	}
 
 	return 0;
+}
+
+sub data_for_export
+{
+	my ($self) = @_;
+
+	my $data;
+
+	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_target_urls highest_twitterid /)
+	{
+		$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
+	}
+
+	return $data;
 }
 
 
