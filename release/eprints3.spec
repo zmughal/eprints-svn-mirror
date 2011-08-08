@@ -25,7 +25,7 @@ BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
 BuildRequires: perl(MIME::Lite)
 BuildRequires: perl(XML::LibXML) >= 1.63
-BuildRequires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+BuildRequires: tetex-latex wget gzip tar ImageMagick unzip elinks
 BuildRequires: /usr/bin/pdftotext
 Requires: httpd >= 2.0.52
 Requires: mod_perl >= 2.0.0
