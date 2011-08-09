@@ -58,6 +58,9 @@ Print the full manual page and then exit.
 
 =cut
 
+# Set the umask to avoid any odd happenings with chmod()
+umask( 0x022 );
+
 use Cwd;
 use Getopt::Long;
 use Pod::Usage;
@@ -237,7 +240,7 @@ sub copyfile
 	if( !$textfile )
 	{
 		cp( $from, $to );
-		chmod(0x755, $to) if -x $from;
+		chmod((stat($to))[2], $to);
 		return;
 	}	
 
@@ -254,7 +257,7 @@ sub copyfile
 	print OUT join( "", @{$data} );
 	close OUT;
 
-	chmod(0x755, $to) if -x $from;
+	chmod((stat($to))[2], $to);
 }
 
 # If __COPYRIGHT__ and __LICENSE__ exist in a file strip everything between
