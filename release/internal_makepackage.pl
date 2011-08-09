@@ -240,7 +240,7 @@ sub copyfile
 	if( !$textfile )
 	{
 		cp( $from, $to );
-		chmod((stat($to))[2], $to);
+		chmod((stat($from))[2], $to);
 		return;
 	}	
 
@@ -257,7 +257,7 @@ sub copyfile
 	print OUT join( "", @{$data} );
 	close OUT;
 
-	chmod((stat($to))[2], $to);
+	chmod((stat($from))[2], $to);
 }
 
 # If __COPYRIGHT__ and __LICENSE__ exist in a file strip everything between
