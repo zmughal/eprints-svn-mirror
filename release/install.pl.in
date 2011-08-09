@@ -22,43 +22,9 @@ $from_configure{"perl"}="@PERL_PATH@";
 $from_configure{"prefix"}="@PREFIX@";
 $from_configure{"user"}="@INSTALL_USER@";
 $from_configure{"group"}="@INSTALL_GROUP@";
-$from_configure{"disable_df"}=@DISABLE_DF@;
 $from_configure{"virtualhost"}="@VIRTUALHOST@";
 
-$from_configure{"unzip"}="@UNZIP_PATH@";
-$from_configure{"tar"}="@TAR_PATH@";
-$from_configure{"gunzip"}="@GUNZIP_PATH@";
-$from_configure{"wget"}="@WGET_PATH@";
-$from_configure{"sendmail"}="@SENDMAIL_PATH@";
-$from_configure{"smtp_server"}="@SMTP_SERVER@";
-$from_configure{"latex"}="@LATEX_PATH@";
-$from_configure{"dvips"}="@DVIPS_PATH@";
-$from_configure{"convert"}="@CONVERT_PATH@";
-$from_configure{"pdftotext"}="@PDFTOTEXT_PATH@";
-$from_configure{"antiword"}="@ANTIWORD_PATH@";
-$from_configure{"elinks"}="@ELINKS_PATH@";
-
-$from_configure{"enable_gdome"}="@ENABLE_GDOME@";
-$from_configure{"enable_libxml"}="@ENABLE_LIBXML@";
-$from_configure{"apache"}="@APACHE@";
-
-$from_configure{"platform"}="@PLATFORM@";
-
-# hard wired for now.
-$from_configure{"cp"}="/bin/cp";
-$from_configure{"rm"}="/bin/rm";
-
 ######################################################################
-
-if( 
-	$from_configure{"apache"} ne "" && 
-	$from_configure{"apache"} ne "1" && 
-	$from_configure{"apache"} ne "2" )
-{
-	print "Apache version must be '1' or '2'.\n";
-	print "re-run configure with new options.\n";
-	exit 1;
-}
 
 ######################################################################
 
@@ -124,56 +90,10 @@ $systemsettings->{"platform"} = $from_configure{"platform"};
 
 $systemsettings->{"version_history"} = [ $version_id ];
 
-#
-# Set up some default settings.
-#
-$systemsettings->{"invocation"} = {
-	zip     => '$(unzip) 1>/dev/null 2>&1 -qq -o -d $(DIR) $(ARC)',
-	targz   => '$(gunzip) -c < $(ARC) 2>/dev/null | $(tar) xf - -C $(DIR) >/dev/null 2>&1',
-	wget    => '$(wget)  -r -L -q -m -nH -np --execute="robots=off" --cut-dirs=$(CUTDIRS) $(URL)',
-	sendmail => '$(sendmail) -oi -t -odb --',
-	latex => '$(latex) $(SOURCE)',
-	dvips => '$(dvips) $(SOURCE) -o $(TARGET)',
-	convert_crop_white => '$(convert) -trim -bordercolor white -border 4x4 $(SOURCE) $(TARGET)',
-	cpall => '$(cp) -pR $(SOURCE)/* $(TARGET)',
-	rmall => '$(rm) -rf $(TARGET)/*',
-	pdftotext => '$(pdftotext) -enc UTF-8 -layout $(SOURCE) $(TARGET)',
-	antiword => '$(antiword) -t -f -m UTF-8 $(SOURCE) > $(TARGET)',
-	antiwordpdf => '$(antiword) -a a4 -m 8859-1 $(SOURCE) > $(TARGET)',
-	elinks => '$(elinks) -dump 1 -dump-charset UTF-8 $(SOURCE) > $(TARGET)',
-};
-
-$systemsettings->{"archive_extensions"} = {};
-$systemsettings->{"archive_formats"} = [];
-if( $from_configure{"unzip"} ne "" )
-{
-	$systemsettings->{"archive_extensions"}->{"zip"} = ".zip" ;
-	push @{$systemsettings->{"archive_formats"}},"zip";
-}
-if( $from_configure{"tar"} ne "" && $from_configure{"gunzip"} ne "" )
-{
-	$systemsettings->{"archive_extensions"}->{"targz"} = ".tar.gz" ;
-	push @{$systemsettings->{"archive_formats"}},"targz";
-}
-
-$systemsettings->{"executables"} = {};
-foreach( 
-	"perl", "unzip", "tar", "gunzip", "wget", 
-	"sendmail", "latex", "dvips", "convert",
-	"cp", "rm", "antiword", "pdftotext", "elinks",
-)
-{
-	next unless( defined $from_configure{$_} );
-	$systemsettings->{"executables"}->{$_} = $from_configure{$_};
-}
+$systemsettings->{executables}->{perl} = $from_configure{perl};
 
 $systemsettings->{"file_perms"} = "0664" unless defined $systemsettings->{"file_perms"};
 $systemsettings->{"dir_perms"} = "02775" unless defined $systemsettings->{"dir_perms"};
-
-$systemsettings->{"disable_df"} = $from_configure{"disable_df"};
-$systemsettings->{"virtualhost"} = $from_configure{"virtualhost"};
-
-
 
 if( $upgrade )
 {
@@ -242,11 +162,7 @@ $systemsettings->{"version_id"} = $version_id;
 $systemsettings->{"version"} = $version;
 
 set( 'smtp_server', \%from_configure, $systemsettings, '' );
-set( 'enable_gdome', \%from_configure, $systemsettings, 0 );
-set( 'enable_libxml', \%from_configure, $systemsettings, 0 );
 set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
-set( 'apache', \%from_configure, $systemsettings, "2" );
-
 
 my(undef,undef,$uid) = getpwnam($systemsettings->{"user"});
 my(undef,undef,$gid) = getgrnam($systemsettings->{"group"});
