@@ -65,7 +65,9 @@ use File::Path;
 use File::Copy qw( cp move );
 use strict;
 
-my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man );
+my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man, $opt_cleanup );
+
+$opt_cleanup = 1;
 
 GetOptions(
 	'help' => \$opt_help,
@@ -73,6 +75,7 @@ GetOptions(
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
 	'copyright-summary=s' => \$opt_copyright_summary,
+	'cleanup!' => \$opt_cleanup,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -184,8 +187,15 @@ else
 chdir($cwd);
 
 
-print "Removing: $to\n";
-erase_dir( $to ) if -d $to;
+if( $opt_cleanup )
+{
+	print "Removing: $to\n";
+	erase_dir( $to ) if -d $to;
+}
+else
+{
+	print "Leaving: $to\n";
+}
 
 exit;
 
