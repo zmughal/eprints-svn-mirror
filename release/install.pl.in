@@ -86,8 +86,6 @@ else
 
 my $systemsettings = {};
 
-$systemsettings->{"platform"} = $from_configure{"platform"};
-
 $systemsettings->{"version_history"} = [ $version_id ];
 
 $systemsettings->{executables}->{perl} = $from_configure{perl};
@@ -415,11 +413,8 @@ SPIEL
 	print FILEOUT "\n1;";
 	close(FILEOUT);
 
- 	if( $from_configure{"platform"} eq "unix" )
-	{
-		chmod( 0664, $sysfile );
-		chown($uid, $gid, $sysfile );
-	}
+	chmod( 0664, $sysfile );
+	chown($uid, $gid, $sysfile );
 }
 
 sub merge_fields
@@ -525,11 +520,8 @@ sub write_sigs
 		print SIGOUT $_." ".$sigs->{$_}."\n";
 	}
 	close(SIGOUT);
- 	if( $from_configure{"platform"} eq "unix" )
-	{
-		chown($uid, $gid, $sigfile );
-		chmod( 0664, $sigfile );
-	}
+	chown($uid, $gid, $sigfile );
+	chmod( 0664, $sigfile );
 }
 
 # Calculate the MD5 digest of a file.
@@ -634,15 +626,8 @@ sub install_file
 		system( $cmd );
 	}
 
- 	if( $from_configure{"platform"} eq "unix" )
-	{
-		unless( chmod($perms, "$dest/$relpath") )
-		{
-			print "\nUnable to chmod $dest/$relpath : $!\n";
-			exit 1;
-		}
-		chown($uid, $gid, "$dest/$relpath");
-	}
+	chmod($perms, "$dest/$relpath");
+	chown($uid, $gid, "$dest/$relpath");
 }
 
 sub install_dir
@@ -657,10 +642,7 @@ sub install_dir
 	my @dirs = ();
 	my @files = ();
 	ensure_dir("$dest/$dir", $uid, $gid, 02775);
- 	if( $from_configure{"platform"} eq "unix" )
-	{
-		chown($uid, $gid, "$dest/$dir");
-	}
+	chown($uid, $gid, "$dest/$dir");
 
 	while(my $item = readdir(INDIR))
 	{
