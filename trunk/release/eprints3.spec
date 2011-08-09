@@ -52,7 +52,7 @@ integration with other systems.
 
 %build
 pushd %{_eppackage}
-./configure --prefix=%{_epbase_path} --with-user=%{_epuser} --with-group=%{_epgroup} --with-apache=2 --with-smtp-server=localhost --disable-user-check --disable-group-check
+./configure --prefix=%{_epbase_path} --with-user=%{_epuser} --with-group=%{_epgroup} --with-smtp-server=localhost --disable-user-check --disable-group-check
 pushd perl_lib
 # We ought to use the system libraries
 mv URI/OpenURL.pm OpenURL.pm
