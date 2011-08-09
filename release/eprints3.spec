@@ -131,6 +131,8 @@ rm -rf $RPM_BUILD_ROOT
 # cfg needs to be writable by generate_apacheconf
 %dir %attr(0755,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg
 %dir %attr(0755,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg/cfg.d
+# lib needs to be writable for eprints and apache (epms)
+%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/lib
 %ghost %{_epbase_path}/cfg/apache.conf
 %ghost %{_epbase_path}/cfg/apache_ssl.conf
 %ghost %{_epbase_path}/cfg/apache
