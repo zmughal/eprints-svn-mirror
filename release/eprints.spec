@@ -119,7 +119,7 @@ touch $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}.conf
 rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}-%{version}-filelist
-%defattr(0644,root,root)
+%defattr(0664,%{_epuser},%{_epgroup},0775)
 %doc %{_eppackage}/AUTHORS %{_eppackage}/CHANGELOG %{_eppackage}/COPYING %{_eppackage}/NEWS %{_eppackage}/README %{_eppackage}/VERSION
 %attr(0644,root,root) /etc/httpd/conf.d/%{name}.conf
 %attr(0755,root,root) /etc/rc.d/init.d/%{name}
