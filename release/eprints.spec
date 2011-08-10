@@ -79,7 +79,7 @@ install -m755 $RPM_BUILD_ROOT%{_epbase_path}/bin/epindexer $RPM_BUILD_ROOT/etc/r
 
 APACHE_CONF=%{_epbase_path}/cfg/apache.conf
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
-cat > $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf << "EOF"
+cat > $RPM_BUILD_ROOT/etc/httpd/conf.d/%{name}.conf << "EOF"
 # This includes the eprints Apache configuration which enables virtual hosts on
 # port 80 and creates a virtual host for each configured archive.
 
