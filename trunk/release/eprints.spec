@@ -91,13 +91,14 @@ chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/%{name}.conf
 # file in the same directory as normal packaged files
 # We also take the opportunity to make only those directories that need
 # be writable by the eprints user
-find $RPM_BUILD_ROOT%{_epbase_path} -type f -print |
-	sed "s@^$RPM_BUILD_ROOT@@g" |
-#	grep -v "SystemSettings.pm$" |
-	grep -v "/etc/httpd/conf.d/%{name}.conf" |
-	grep -v "^%{_epbase_path}/var" |
-	grep -v "^%{_epbase_path}/cfg" |
-	grep -v "^%{_epbase_path}/archives" > %{name}-%{version}-filelist
+find $RPM_BUILD_ROOT%{_epbase_path} -type f -print
+	| sed "s@^$RPM_BUILD_ROOT@@g"
+#	| grep -v "SystemSettings.pm$"
+	| grep -v "/etc/httpd/conf.d/%{name}.conf"
+#	| grep -v "^%{_epbase_path}/var"
+#	| grep -v "^%{_epbase_path}/cfg"
+#	| grep -v "^%{_epbase_path}/archives"
+	> %{name}-%{version}-filelist
 if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
 	echo "ERROR: EMPTY FILE LIST"
 	exit -1
@@ -105,12 +106,12 @@ fi
 
 # Strip directories from the file list (otherwise they get left behind on
 # erase)
-find $RPM_BUILD_ROOT%{_epbase_path} -type d -print |
-	sed "s@^$RPM_BUILD_ROOT@@g" |
-	grep -v "^%{_epbase_path}/var" |
-	grep -v "^%{_epbase_path}/cfg" |
-	grep -v "^%{_epbase_path}/archives" |
-	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
+find $RPM_BUILD_ROOT%{_epbase_path} -type d -print
+	| sed "s@^$RPM_BUILD_ROOT@@g"
+#	| grep -v "^%{_epbase_path}/var"
+#	| grep -v "^%{_epbase_path}/cfg"
+#	| grep -v "^%{_epbase_path}/archives"
+	| sed "s/^/\%dir /" >> %{name}-%{version}-filelist
 
 mkdir $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}
 touch $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}.conf
