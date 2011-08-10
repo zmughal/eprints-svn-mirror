@@ -84,8 +84,8 @@ cat > $RPM_BUILD_ROOT/etc/httpd/conf.d/%{name}.conf << "EOF"
 # port 80 and creates a virtual host for each configured archive.
 
 EOF
-echo "Include $APACHE_CONF" >> $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf
-chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf
+echo "Include $APACHE_CONF" >> $RPM_BUILD_ROOT/etc/httpd/conf.d/%{name}.conf
+chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/%{name}.conf
 
 # We have to build a custom list of files to make SystemSettings.pm a config
 # file in the same directory as normal packaged files
