@@ -58,6 +58,9 @@ Print the full manual page and then exit.
 
 =cut
 
+# Set the umask to avoid any odd happenings with chmod()
+umask( 0022 );
+
 use Cwd;
 use Getopt::Long;
 use Pod::Usage;
@@ -65,7 +68,9 @@ use File::Path;
 use File::Copy qw( cp move );
 use strict;
 
-my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man );
+my( $opt_license, $opt_license_summary, $opt_copyright_summary, $opt_help, $opt_man, $opt_cleanup );
+
+$opt_cleanup = 1;
 
 GetOptions(
 	'help' => \$opt_help,
@@ -73,6 +78,7 @@ GetOptions(
 	'license=s' => \$opt_license,
 	'license-summary=s' => \$opt_license_summary,
 	'copyright-summary=s' => \$opt_copyright_summary,
+	'cleanup!' => \$opt_cleanup,
 ) || pod2usage( 2 );
 
 pod2usage( 1 ) if $opt_help;
@@ -114,7 +120,7 @@ cp( "$install_from/release/Makefile", "$to/eprints/Makefile");
 cp( "$install_from/release/install.pl.in", "$to/eprints/install.pl.in");
 cp( "$install_from/release/df-check.pl", "$to/eprints/df-check.pl");
 cp( "$install_from/release/cgi-check.pl", "$to/eprints/cgi-check.pl");
-copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec", \%r);
+copyfile("$install_from/release/eprints.spec","$to/eprints/eprints.spec", \%r);
 
 print "Inserting top level text files...\n";
 cp( "$install_from/system/CHANGELOG", "$to/eprints/CHANGELOG");
@@ -184,8 +190,15 @@ else
 chdir($cwd);
 
 
-print "Removing: $to\n";
-erase_dir( $to ) if -d $to;
+if( $opt_cleanup )
+{
+	print "Removing: $to\n";
+	erase_dir( $to ) if -d $to;
+}
+else
+{
+	print "Leaving: $to\n";
+}
 
 exit;
 
@@ -227,7 +240,7 @@ sub copyfile
 	if( !$textfile )
 	{
 		cp( $from, $to );
-		chmod(0x755, $to) if -x $from;
+		chmod((stat($from))[2], $to);
 		return;
 	}	
 
@@ -244,7 +257,7 @@ sub copyfile
 	print OUT join( "", @{$data} );
 	close OUT;
 
-	chmod(0x755, $to) if -x $from;
+	chmod((stat($from))[2], $to);
 }
 
 # If __COPYRIGHT__ and __LICENSE__ exist in a file strip everything between
