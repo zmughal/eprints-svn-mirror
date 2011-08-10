@@ -25,7 +25,7 @@ Requires: perl(DBI)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(Time::HiRes) perl(CGI) perl(Digest::MD5)
 Requires: perl(XML::LibXML) >= 1.63 perl(XML::LibXSLT)
-Requires: perl(XML::SAX)
+Requires: perl(XML::SAX) perl(Digest::SHA) perl(IO::Socket::SSL)
 Requires: tetex-latex wget gzip tar ImageMagick unzip elinks
 Requires: poppler-utils
 Requires: chkconfig
@@ -56,7 +56,7 @@ pushd %{_eppackage}
 pushd perl_lib
 # We ought to use the system libraries
 mv URI/OpenURL.pm OpenURL.pm
-rm -rf URI.pm URI Unicode Proc MIME/Lite.pm
+rm -rf URI.pm URI Unicode Proc MIME/Lite.pm XML/SAX/Base.pm
 mkdir URI
 mv OpenURL.pm URI/
 popd
