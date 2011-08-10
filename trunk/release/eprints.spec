@@ -93,7 +93,7 @@ chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/%{name}.conf
 # be writable by the eprints user
 find $RPM_BUILD_ROOT%{_epbase_path} -type f -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
-	grep -v "SystemSettings.pm$" |
+#	grep -v "SystemSettings.pm$" |
 	grep -v "/etc/httpd/conf.d/%{name}.conf" |
 	grep -v "^%{_epbase_path}/var" |
 	grep -v "^%{_epbase_path}/cfg" |
@@ -119,18 +119,18 @@ touch $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}.conf
 rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}-%{version}-filelist
-%defattr(0664,%{_epuser},%{_epgroup},0775)
+%defattr(-,%{_epuser},%{_epgroup})
 %doc %{_eppackage}/AUTHORS %{_eppackage}/CHANGELOG %{_eppackage}/COPYING %{_eppackage}/NEWS %{_eppackage}/README %{_eppackage}/VERSION
 %attr(0644,root,root) /etc/httpd/conf.d/%{name}.conf
 %attr(0755,root,root) /etc/rc.d/init.d/%{name}
-%config %{_epbase_path}/perl_lib/EPrints/SystemSettings.pm
+#%config %{_epbase_path}/perl_lib/EPrints/SystemSettings.pm
 # archives, needs to persist permissions to sub-directories
-%dir %attr(02775,%{_epuser},%{_epgroup}) %{_epbase_path}/archives
+#%dir %attr(02775,-,-) %{_epbase_path}/archives
 # var needs to be writable by eprints and apache
-%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/var
+#%dir %attr(0775,-,-) %{_epbase_path}/var
 # cfg needs to be writable by generate_apacheconf
-%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg
-%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg/cfg.d
+#%dir %attr(0775,-,-) %{_epbase_path}/cfg
+#%dir %attr(0775,-,-) %{_epbase_path}/cfg/cfg.d
 %ghost %{_epbase_path}/cfg/apache.conf
 %ghost %{_epbase_path}/cfg/apache_ssl.conf
 %ghost %{_epbase_path}/cfg/apache
@@ -140,7 +140,7 @@ rm -rf $RPM_BUILD_ROOT
 %pre
 /usr/sbin/groupadd %{_epgroup} 2>/dev/null || /bin/true
 /usr/sbin/useradd -d %{_epbase_path} -g %{_epgroup} -M %{_epuser} -G apache 2>/dev/null || /bin/true
-/usr/sbin/usermod -a -G eprints apache
+/usr/sbin/usermod -a -G %{_epuser} apache
 
 %post
 pushd %{_epbase_path} > /dev/null
@@ -152,10 +152,10 @@ popd > /dev/null
 /sbin/chkconfig --del %{name}
 
 %postun
-if [ "$1" = 0 ]; then
-	/usr/sbin/userdel eprints || :
-	/usr/sbin/groupdel eprints || :
-fi
+#if [ "$1" = 0 ]; then
+#	/usr/sbin/userdel eprints || :
+#	/usr/sbin/groupdel eprints || :
+#fi
 
 %changelog
 * Mon May 11 2009 Tim Brody <tdb01r@ecs.soton.ac.uk>
