@@ -75,7 +75,7 @@ make install
 popd
 
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m755 $RPM_BUILD_ROOT%{_epbase_path}/bin/epindexer $RPM_BUILD_ROOT/etc/rc.d/init.d/epindexer
+install -m755 $RPM_BUILD_ROOT%{_epbase_path}/bin/epindexer $RPM_BUILD_ROOT/etc/rc.d/init.d/%{name}
 
 APACHE_CONF=%{_epbase_path}/cfg/apache.conf
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
@@ -94,7 +94,7 @@ chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf
 find $RPM_BUILD_ROOT%{_epbase_path} -type f -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "SystemSettings.pm$" |
-	grep -v "/etc/httpd/conf.d/eprints3.conf" |
+	grep -v "/etc/httpd/conf.d/%{name}.conf" |
 	grep -v "^%{_epbase_path}/var" |
 	grep -v "^%{_epbase_path}/cfg" |
 	grep -v "^%{_epbase_path}/archives" > %{name}-%{version}-filelist
@@ -119,20 +119,18 @@ touch $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}.conf
 rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}-%{version}-filelist
-%defattr(-,root,root)
+%defattr(0644,root,root)
 %doc %{_eppackage}/AUTHORS %{_eppackage}/CHANGELOG %{_eppackage}/COPYING %{_eppackage}/NEWS %{_eppackage}/README %{_eppackage}/VERSION
-%attr(0644,root,root) /etc/httpd/conf.d/eprints3.conf
-%attr(0755,root,root) /etc/rc.d/init.d/epindexer
+%attr(0644,root,root) /etc/httpd/conf.d/%{name}.conf
+%attr(0755,root,root) /etc/rc.d/init.d/%{name}
 %config %{_epbase_path}/perl_lib/EPrints/SystemSettings.pm
 # archives, needs to persist permissions to sub-directories
 %dir %attr(02775,%{_epuser},%{_epgroup}) %{_epbase_path}/archives
 # var needs to be writable by eprints and apache
 %dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/var
 # cfg needs to be writable by generate_apacheconf
-%dir %attr(0755,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg
-%dir %attr(0755,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg/cfg.d
-# lib needs to be writable for eprints and apache (epms)
-%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/lib
+%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg
+%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg/cfg.d
 %ghost %{_epbase_path}/cfg/apache.conf
 %ghost %{_epbase_path}/cfg/apache_ssl.conf
 %ghost %{_epbase_path}/cfg/apache
@@ -148,10 +146,10 @@ rm -rf $RPM_BUILD_ROOT
 pushd %{_epbase_path} > /dev/null
 /bin/su -c ./bin/generate_apacheconf %{_epuser}
 popd > /dev/null
-/sbin/chkconfig --add epindexer
+/sbin/chkconfig --add %{name}
 
 %preun
-/sbin/chkconfig --del epindexer
+/sbin/chkconfig --del %{name}
 
 %postun
 if [ "$1" = 0 ]; then
