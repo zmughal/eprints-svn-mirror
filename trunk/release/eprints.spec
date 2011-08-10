@@ -140,7 +140,7 @@ pushd %{_epbase_path} > /dev/null
 /bin/su -c ./bin/generate_apacheconf %{_epuser}
 popd > /dev/null
 /sbin/chkconfig --add %{name}
-(selinuxenabled && chcon -R -u unconfined_u -t httpd_sys_content_t archives/ lib/ var/) || /bin/true
+(selinuxenabled && chcon -R -u unconfined_u -t httpd_sys_content_t %{_epbase_path}archives/ %{_epbase_path}lib/ %{_epbase_path}var/) || /bin/true
 
 %preun
 /sbin/chkconfig --del %{name}
