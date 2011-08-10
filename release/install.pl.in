@@ -222,21 +222,21 @@ if( $upgrade )
 # Actual install starts here.
 #
 ensure_dir( $to_path, $uid, $gid, 0755 );
-ensure_dir( "$to_path/archives", $uid, $gid, 0755 );
+ensure_dir( "$to_path/archives", $uid, $gid, 02775 );
 ensure_dir( "$to_path/testdata", $uid, $gid, 0755 );
 
 my $newsighash = {};
 
 my @dirs = (
-	bin => [0755, $uid, $gid, 0775],
+	bin => [0755, $uid, $gid, 0755],
 	cgi => [0644, $uid, $gid, 0755],
 	cfg => [0644, $uid, $gid, 0755],
-	lib => [0664, $uid, $gid, 02775],
+	lib => [0664, $uid, $gid, 02775], # epms installed as 'apache'
 	perl_lib => [0644, $uid, $gid, 0755],
 	"testdata/bin" => [0755, $uid, $gid, 0755],
 	"testdata/data" => [0644, $uid, $gid, 0755],
 	tests => [0644, $uid, $gid, 0755],
-	var => [0664, $uid, $gid, 02775],
+	var => [0664, $uid, $gid, 02775], # indexer may run as 'apache'
 );
 
 my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
