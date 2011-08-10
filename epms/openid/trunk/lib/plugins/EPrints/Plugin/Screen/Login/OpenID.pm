@@ -262,16 +262,16 @@ sub resolve_openid_identifier
 		length($r->content) > 10000
 	  )
 	{
-		$processor->{problems} = $self->html_phrase( "bad_response",
-			error => $repo->xml->create_text_node( $r->content ) );
+		$processor->add_message( "error", $self->html_phrase( "bad_response",
+			error => $repo->xml->create_text_node( $r->content ) ) );
 		return;
 	}
 
 	my $doc = eval { $repo->xml->parse_string( $r->content ) };
 	if( $@ )
 	{
-		$processor->{problems} = $self->html_phrase( "bad_response",
-			error => $@ );
+		$processor->add_message( "error", $self->html_phrase( "bad_response",
+			error => $@ ) );
 		return;
 	}
 
@@ -310,8 +310,8 @@ sub resolve_openid_identifier
 
 	if( !@services )
 	{
-		$processor->{problems} = $self->html_phrase( "bad_response",
-			error => $repo->xml->create_text_node( "Requires OpenID 2.0 endpoint" ) );
+		$processor->add_message( "error",  $self->html_phrase( "bad_response",
+			error => $repo->xml->create_text_node( "Requires OpenID 2.0 endpoint" ) ) );
 		return;
 	}
 

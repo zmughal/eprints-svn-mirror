@@ -1,6 +1,7 @@
-<?xml version='1.0'?>
-<epm xmlns="http://eprints.org/ep2/data/2.0" id="http://yomiko.ecs.soton.ac.uk:8080/id/epm/openid">
+<?xml version='1.0' encoding='utf-8'?>
+<epm xmlns='http://eprints.org/ep2/data/2.0' id='http://yomiko.ecs.soton.ac.uk:8080/id/epm/openid'>
   <epmid>openid</epmid>
+  <uri>http://yomiko.ecs.soton.ac.uk:8080/id/epm/openid</uri>
   <documents>
     <document>
       <files>
@@ -13,21 +14,21 @@
         </file>
         <file>
           <filename>plugins/EPrints/DataObj/OpenID.pm</filename>
-          <mime_type>application/x-not-regular-file</mime_type>
+          <mime_type>text/plain</mime_type>
           <hash>96ce7da9c16f43514d653b4e2f8d62fa</hash>
           <hash_type>MD5</hash_type>
           <filesize>5579</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Screen/Login/OpenID.pm</filename>
-          <mime_type>application/x-not-regular-file</mime_type>
+          <mime_type>text/plain</mime_type>
           <hash>60c0213bf39a0af45628332921cbb543</hash>
           <hash_type>MD5</hash_type>
           <filesize>9842</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Screen/Register/OpenID.pm</filename>
-          <mime_type>application/x-not-regular-file</mime_type>
+          <mime_type>text/plain</mime_type>
           <hash>b9731927930359c97937d9bad9c79f3f</hash>
           <hash_type>MD5</hash_type>
           <filesize>7183</filesize>
@@ -66,7 +67,7 @@
       <content>coverimage</content>
     </document>
   </documents>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <creators>
     <item>
       <name>
@@ -77,6 +78,6 @@
     </item>
   </creators>
   <title>OpenID Registration and Authentication</title>
-  <description>Allows users to register and login using the OpenID protocol. OpenID authentication is supported by a variety of services and buttons are included for "Google" and "Yahoo".</description>
+  <description>Allows users to register and login using the OpenID protocol. OpenID authentication is supported by a variety of services and buttons are included for &quot;Google&quot; and &quot;Yahoo&quot;.</description>
   <icon>images/epm/openid.png</icon>
 </epm>
