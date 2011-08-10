@@ -59,7 +59,7 @@ Print the full manual page and then exit.
 =cut
 
 # Set the umask to avoid any odd happenings with chmod()
-umask( 0x022 );
+umask( 0022 );
 
 use Cwd;
 use Getopt::Long;
@@ -240,7 +240,7 @@ sub copyfile
 	if( !$textfile )
 	{
 		cp( $from, $to );
-#		chmod((stat($from))[2], $to);
+		chmod((stat($from))[2], $to);
 		return;
 	}	
 
@@ -257,7 +257,7 @@ sub copyfile
 	print OUT join( "", @{$data} );
 	close OUT;
 
-#	chmod((stat($from))[2], $to);
+	chmod((stat($from))[2], $to);
 }
 
 # If __COPYRIGHT__ and __LICENSE__ exist in a file strip everything between
