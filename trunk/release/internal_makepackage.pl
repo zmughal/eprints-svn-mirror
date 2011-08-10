@@ -120,7 +120,7 @@ cp( "$install_from/release/Makefile", "$to/eprints/Makefile");
 cp( "$install_from/release/install.pl.in", "$to/eprints/install.pl.in");
 cp( "$install_from/release/df-check.pl", "$to/eprints/df-check.pl");
 cp( "$install_from/release/cgi-check.pl", "$to/eprints/cgi-check.pl");
-copyfile("$install_from/release/eprints3.spec","$to/eprints/eprints3.spec", \%r);
+copyfile("$install_from/release/eprints.spec","$to/eprints/eprints.spec", \%r);
 
 print "Inserting top level text files...\n";
 cp( "$install_from/system/CHANGELOG", "$to/eprints/CHANGELOG");
