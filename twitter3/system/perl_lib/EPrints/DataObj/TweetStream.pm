@@ -34,7 +34,8 @@ sub get_system_field_info
 
 		{ name=>"expiry_date", type=>"date", required=>"yes" },
 
-		{ name=>"items", type=>"itemref", datasetid=>"tweet", required => 1, multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_items' },
+		{ name=>"items", type=>"itemref", datasetid=> 'tweet', required => 1, multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_items' },
+		{ name=>"tweets", type=>"tweet", required => 1, multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweetcount', volatile => 1 }, #in there for exporting -- items may be better as subobjects (something to think about in the next round of deveopment
 
 		{ name=>"highest_twitterid", type=>'bigint', volatile=>1},
 
@@ -69,6 +70,19 @@ sub get_system_field_info
 			],
 			render_value => 'EPrints::DataObj::TweetStream::render_top_field',
 		},
+		{ name => "top_tweetees", type=>"compound", multiple=>1,
+			'fields' => [
+				{
+					'sub_name' => 'tweetee',
+					'type' => 'text',
+				},
+				{
+					'sub_name' => 'count',
+					'type' => 'int',
+				}
+			],
+			render_value => 'EPrints::DataObj::TweetStream::render_top_field',
+		},
 		{ name => "top_target_urls", type=>"compound", multiple=>1,
 			'fields' => [
 				{
@@ -82,6 +96,8 @@ sub get_system_field_info
 			],
 			render_value => 'EPrints::DataObj::TweetStream::render_top_field',
 		},
+
+		#for creation of the bar chart
 		{ name => "frequency_period", type => 'set', options => [ 'daily', 'weekly', 'monthly', 'yearly' ] },
 		{ name => "frequency_values", type => 'compound', multiple=>1,
 			'fields' => [
@@ -96,6 +112,13 @@ sub get_system_field_info
 			],
 			render_value => 'EPrints::DataObj::TweetStream::render_top_frequency_values',
 		},
+
+		#for generating CSV
+		{ name => "hashtags_max_cols", type=>'int', volatile => '1' };
+		{ name => "tweetees_max_cols", type=>'int', volatile => '1' };
+		{ name => "target_urls_max_cols", type=>'int', volatile => '1' };
+
+
 	)
 };
 
@@ -211,6 +234,15 @@ sub render_top_lhs
 		return $a;
 	}
 
+	if ($fieldname eq 'top_tweetees')
+	{
+		my $base_url = 'http://twitter.com/';
+		my $user = $stuff->{tweetee};
+
+		my $a = $session->make_element('a', href=>$base_url . $user, title=> $user);
+		$a->appendChild($session->make_text($user));
+		return $a;
+	}
 	#we should never get here
 	return $session->make_text("$fieldname unhandled in render_top_lhs\n");
 }
@@ -399,31 +431,34 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
+	my $repository = $self->repository;
+
 	$self->update_triggers();
+
+	#set tweets (the rendered value) to items (the used itemrefs)
+	$self->set_value('tweets', $self->get_value('items'));
 
 	#grab the counts and anything else we need
 	my $counter = {};
 	my $extra_data = {};
+	my $multiplicity_counts = {}; #for CSV export, let's find out how multiple the multiple fields are.
 
 	#enrich twitterfeed
 	my $highest_id = 0;
 	foreach my $tweetid (@{$self->get_value('items')})
 	{
-		my $tweet = EPrints::DataObj::Tweet->new($self->{session}, $tweetid);
+		my $tweet = EPrints::DataObj::Tweet->new($repository, $tweetid);
 		next unless $tweet;
 		next if $tweet->get_value('twitterid') < 0; #it's an error tweet
 
 		my $twitterid = $tweet->get_value('twitterid');
 		$highest_id = $twitterid if $twitterid > $highest_id;
 
-		foreach my $top_val_name (qw/ from_users hashtags target_urls /)
+		#accumulate data
+		foreach my $top_val_name (qw/ from_users hashtags target_urls tweetees /)
 		{
 			my $val;
-			if ($top_val_name eq 'hashtags')
-			{
-				$val = $tweet->get_hashtags;
-			}
-			elsif ($top_val_name eq 'from_users')
+			if ($top_val_name eq 'from_users')
 			{
 				$val = $tweet->get_value('from_user');
 			}
@@ -438,26 +473,34 @@ sub commit
 			{
 				foreach my $thing (@{$val})
 				{
-					if ($top_val_name eq 'hashtags')
+					if ($repository->config('tweetstream_tops',"top_$top_val_name",'case_insensitive'))
 					{
 						$thing = lc($thing);
 					}
-
 					$counter->{$top_val_name}->{$thing}++;
 				}
 			}
 			else
 			{
+					if ($repository->config('tweetstream_tops',"top_$top_val_name",'case_insensitive'))
+					{
+						$val = lc($val);
+					}
 					$counter->{$top_val_name}->{$val}++;
 			}
 
 		}
-		$extra_data->{'profile_image_url'}->{$tweet->get_value('from_user')} = $tweet->get_value('profile_image_url') if $tweet->is_set('from_user');
+		if ($tweet->is_set('from_user'))
+		{
+			my $username = $tweet->get_value('from_user');
+			$username = lc($username) if $repository->config('tweetstream_tops',"top_from_users",'case_insensitive');
+			$extra_data->{'profile_image_url'}->{$username} = $tweet->get_value('profile_image_url');
+		}
 	}
 
 	$self->set_value('highest_twitterid', $highest_id);
 
-	foreach my $top_val_name (qw/ from_user hashtag target_url /)
+	foreach my $top_val_name (qw/ from_user hashtag target_url tweetee /)
 	{
 		my $n = $self->{session}->config('tweetstream_tops', 'top_'.$top_val_name.'s', 'n');
 
@@ -594,7 +637,6 @@ sub YMD_to_label
 
 	if ($period eq 'weekly')
 	{
-print STDERR "Calculating week of $year, $month, $day\n";
 		my ($week, $wyear) = Week_of_Year($year, $month, $day);
 		return "Week $week, $wyear";
 	}
@@ -684,7 +726,6 @@ IMPORTANT -- the array must be sorted in newest first order, which is
 sub add_tweetids
 {
 	my ($self, $tweetids) = @_;
-
 	return 0 unless defined $tweetids;
 
 	my @new_items = reverse @{$tweetids};
@@ -706,7 +747,6 @@ sub add_tweetids
 		last if $new_items[$i] == $items[$#items]; 
 		$i--;
 	}
-
 
 	if ($i >= 0) #we didn't find a duplicate
 	{
@@ -740,6 +780,17 @@ sub render
 	return ($dom, $title);
 }
 
+#a parallel list of tweet ids (due to a utf8 issue) will be rendered as the number of tweets.
+sub render_tweetcount
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+        my $xml = $session->xml;
+	my $frag = $xml->create_document_fragment;
+	$frag->appendChild($xml->create_text_node(scalar @{$value} . ' tweets'));
+
+	return $frag;
+}
 
 sub render_items
 {
@@ -785,24 +836,35 @@ sub render_items
 		}
 	}
 
+	$frag->appendChild($object->render_exporters);
+
+	return $frag;
+}
+
+sub render_exporters
+{
+	my ($self) = @_;
+
+	my $repository = $self->repository;
+	my $xml = $repository->xml;
+
 	my $export_ul = $xml->create_element('ul');
-	foreach my $pluginid (qw/ Export::TweetStream::JSON /)
+	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::XML /)
 	{
-		my $plugin = $session->plugin($pluginid);
+		my $plugin = $repository->plugin($pluginid);
 		next unless $plugin;
 
 		my $li = $xml->create_element( "li" );
-		my $url = $plugin->dataobj_export_url( $object );
-		my $a = $session->render_link( $url );
+		my $url = $plugin->dataobj_export_url( $self );
+		my $a = $repository->render_link( $url );
 		$a->appendChild( $plugin->render_name );
 		$li->appendChild( $a );
 		$export_ul->appendChild( $li );
 
 	}
-	$frag->appendChild($session->html_phrase('TweetStream/export_menu', export_list => $export_ul));
+	return ($repository->html_phrase('TweetStream/export_menu', export_list => $export_ul));
 
-
-	return $frag;
+	
 }
 
 sub has_owner
@@ -823,7 +885,7 @@ sub data_for_export
 
 	my $data;
 
-	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_target_urls highest_twitterid /)
+	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_tweetees top_target_urls highest_twitterid /)
 	{
 		$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
 	}

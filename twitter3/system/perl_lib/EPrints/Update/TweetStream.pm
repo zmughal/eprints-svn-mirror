@@ -126,7 +126,7 @@ sub update_all
 			$current_item->{orderval} = $tweet->{id}; #lowest processed so far, for ordering
 
 			my $tweetobj = EPrints::DataObj::Tweet::tweet_with_twitterid($current_item->{session},$tweet->{id});
-			unless (defined $tweetobj)
+			if (!defined $tweetobj)
 			{
 				$tweetobj = EPrints::DataObj::Tweet->create_from_data(
 					$current_item->{session},
@@ -202,6 +202,7 @@ print STDERR 'bar';
 print STDERR ref $tweetstream, "\n";
 		$tweetstream->add_tweetids($queue_item->{tweetids});
 	}
+print STDERR 'baz';
 }
 
 sub _get_feeds_aux

@@ -34,7 +34,9 @@ sub get_system_field_info
 		{ name=>"twitterid", type=>"bigint", required=>1 },
 
 		{ name=>"json_source", type=>"storable", required=>1, render_value => 'EPrints::DataObj::Tweet::render_json_source' }, #full source kept for futureproofing
+		{ name=>"json_source_text", type=>"text", volatile => 1 }, #UTF issues -- this field is not used for storing data, but is used for XML export 
 
+		#extracted tweet metadata
 		{ name=>"text", type=>"text" },
 		{ name=>"from_user", type=>"text", render_value => 'EPrints::DataObj::Tweet::render_from_user' },
 		{ name=>"profile_image_url", type=>"url", render_value => 'EPrints::DataObj::Tweet::render_profile_image_url' },
@@ -42,9 +44,10 @@ sub get_system_field_info
 		{ name=>"source", type=>"text" },
 		{ name=>"created_at", type=>"time"},
 
+		#value added extraction and enrichment
 		{ name=>"text_enriched", type=>"longtext", render_value => 'EPrints::DataObj::Tweet::render_text_enriched' },
-
-		
+		{ name=>"tweetees", type=>"text", multiple=>1 },
+		{ name=>"hashtags", type=>"text", multiple=>1 },
 		{ name=>"target_urls", type=>"url", multiple => 1 },
 		{ 
 			name=>"url_redirects",
@@ -227,9 +230,17 @@ sub commit
 
 	$self->update_triggers();
 
-	if ($self->is_set('json_source'))
+	if ($self->is_set('json_source')) #should always be true, but just in case....
 	{
 		$self->process_json;
+	}
+	$self->enrich_text; #note that this function also sets target_urls and url_redirects
+	$self->set_value('tweetees', $self->tweetees);
+	$self->set_value('hashtags', $self->hashtags);
+
+	if ($self->is_set('json_source_text'))
+	{
+		$self->set_value('json_source_text'); #should never store a value in the database.
 	}
 	
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
@@ -301,14 +312,23 @@ sub process_json
 	my $time = str2time($tweet_data->{created_at});
 	$self->set_value('created_at',EPrints::Time::get_iso_timestamp($time));
 
-	#enrich text
-	$self->enrich_text;
 
 
 	return 1;
 }
 
-sub get_hashtags
+sub tweetees
+{
+	my ($self) = @_;
+
+	my $message = $self->get_value('text');
+	return [] unless $message;
+
+	my @tweetees = ($message =~ m/\@[A-Za-z0-9-_]+/g);
+	return \@tweetees;
+}
+
+sub hashtags
 {
 	my ($self) = @_;
 
@@ -317,16 +337,6 @@ sub get_hashtags
 
 	my @tags = ($message =~ m/#[A-Za-z0-9-_]+/g);
 	return \@tags;
-}
-
-sub get_urls
-{
-        my ($self) = @_;
-
-        my $message = $self->get_value('text');
-        return unless $message;
-
-
 }
 
 sub enrich_text
@@ -414,6 +424,65 @@ sub tweetstream_list
 
 	return $searchexp->perform_search;
 }
+
+#copied from parent class.  Required for better rendering of json source 'storable' field.
+sub to_sax
+{
+	my( $self, %opts ) = @_;
+
+	my $handler = $opts{Handler};
+	my $dataset = $self->{dataset};
+	my $name = $dataset->base_id;
+
+	my %Attributes;
+
+	my $uri = $self->uri;
+	if( defined $uri )
+	{
+		$Attributes{'{}id'} = {
+				Prefix => '',
+				LocalName => 'id',
+				Name => 'id',
+				NamespaceURI => '',
+				Value => $uri,
+			};
+	}
+
+	$handler->start_element({
+		Prefix => '',
+		LocalName => $name,
+		Name => $name,
+		NamespaceURI => EPrints::Const::EP_NS_DATA,
+		Attributes => \%Attributes,
+	});
+
+	foreach my $field ($dataset->fields)
+	{
+		next if !$field->property( "export_as_xml" );
+
+		if ($field->{name} eq 'json_source_text')
+		{
+			my $json = JSON->new->allow_nonref;
+			my $json_data = $json->pretty->encode($self->get_value('json_source'));
+			$field->to_sax( $json_data, %opts );
+		}
+		else
+		{
+			$field->to_sax(
+				$field->get_value( $self ),
+				%opts
+			);
+		}
+	}
+
+	$handler->end_element({
+		Prefix => '',
+		LocalName => $name,
+		Name => $name,
+		NamespaceURI => EPrints::Const::EP_NS_DATA,
+	});
+}
+
 
 
 ######################################################################
@@ -584,9 +653,9 @@ sub data_for_export
 	{
 		$data = $self->value('json_source');
 	}
-	else
+	else #should never be true, but let's have something to fall back to/
 	{
-		foreach my $fieldname (qw/ from_user text created_at /)
+		foreach my $fieldname (qw/ from_user text created_at /) 
 		{
 			$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
 		}

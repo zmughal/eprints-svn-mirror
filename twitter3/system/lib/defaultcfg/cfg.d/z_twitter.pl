@@ -3,11 +3,18 @@
 # n -> how many to store
 # cols -> how many columns to render them
 # max_len -> the maximum length of any rendered value before it gets truncated (currently doesn't apply to users)
+# case_insensitive -> convert to lowercase
 $c->{tweetstream_tops} = 
 {
 	top_from_users => {
 		n => 30,
 		cols => 3,
+		case_insensitive => 1,
+	},
+	top_tweetees => {
+		n => 30,
+		cols => 4,
+		case_insensitive => 1,
 	},
 	top_target_urls => {
 		n => 30,
@@ -18,6 +25,7 @@ $c->{tweetstream_tops} =
 		n => 80,
 		cols => 4,
 		max_len => 15,
+		case_insensitive => 1,
 	}
 };
 
