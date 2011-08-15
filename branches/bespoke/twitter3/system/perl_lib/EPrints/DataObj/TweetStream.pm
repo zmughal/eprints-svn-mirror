@@ -113,10 +113,10 @@ sub get_system_field_info
 			render_value => 'EPrints::DataObj::TweetStream::render_top_frequency_values',
 		},
 
-		#for generating CSV
-		{ name => "hashtags_max_cols", type=>'int', volatile => '1' };
-		{ name => "tweetees_max_cols", type=>'int', volatile => '1' };
-		{ name => "target_urls_max_cols", type=>'int', volatile => '1' };
+		#for generating CSV, these store the highest count of each of the multiple fields
+		{ name => "hashtags_ncols", type=>'int', volatile => '1' },
+		{ name => "tweetees_ncols", type=>'int', volatile => '1' },
+		{ name => "target_urls_ncols", type=>'int', volatile => '1' },
 
 
 	)
@@ -471,6 +471,9 @@ sub commit
 
 			if (ref $val eq 'ARRAY')
 			{
+				$multiplicity_counts->{$top_val_name} = 0 unless defined $multiplicity_counts->{$top_val_name};
+				$multiplicity_counts->{$top_val_name} = (scalar @{$val}) if $multiplicity_counts->{$top_val_name} < scalar @{$val};
+
 				foreach my $thing (@{$val})
 				{
 					if ($repository->config('tweetstream_tops',"top_$top_val_name",'case_insensitive'))
@@ -500,6 +503,7 @@ sub commit
 
 	$self->set_value('highest_twitterid', $highest_id);
 
+	#top counts
 	foreach my $top_val_name (qw/ from_user hashtag target_url tweetee /)
 	{
 		my $n = $self->{session}->config('tweetstream_tops', 'top_'.$top_val_name.'s', 'n');
@@ -522,6 +526,12 @@ sub commit
 		}
 
 		$self->set_value('top_' . $top_val_name . 's', $counts);
+	}
+
+	#multiplicity (for CSV)
+	foreach my $fieldname (qw/ hashtags tweetees target_urls /)
+	{
+		$self->set_value($fieldname . '_ncols', $multiplicity_counts->{$fieldname});
 	}
 
 	#create the time graph values
@@ -548,6 +558,26 @@ sub commit
 	return( $success );
 }
 
+#returns the csv columns of a *Tweet* object, and the max multiplicity for this stream for each field
+sub csv_cols
+{
+	my ($self) = @_;
+
+	return
+	[
+		{ fieldname => "twitterid", ncols => 1 },
+		{ fieldname => "from_user", ncols => 1 },
+		{ fieldname => "created_at", ncols => 1 },
+		{ fieldname => "text", ncols => 1 },
+		{ fieldname => "profile_image_url", ncols => 1 },
+		{ fieldname => "iso_language_code", ncols => 1 },
+		{ fieldname => "source", ncols => 1 },
+		{ fieldname => "text_enriched", ncols => 1 },
+		{ fieldname => "tweetees", ncols => ( $self->get_value('tweetees_ncols') ? $self->get_value('tweetees_ncols') : 1 ) },
+		{ fieldname => "hashtags", ncols => ( $self->get_value('hashtags_ncols') ? $self->get_value('hashtags_ncols') : 1 ) },
+		{ fieldname => "target_urls", ncols => ( $self->get_value('target_urls_ncols') ? $self->get_value('target_urls_ncols') : 1 ) },
+	];
+}
 
 sub periodise_dates
 {
@@ -763,23 +793,6 @@ sub add_tweetids
 	$self->commit;
 }
 
-sub render
-{
-	my ($self) = @_;
-
-	my $session = $self->{session};
-
-	my $dom = $session->make_doc_fragment;
-	my $h1 = $session->make_element('h1');
-	$h1->appendChild($session->make_text('HELLO'));
-	$dom->appendChild($h1);
-
-	my $title = $session->make_doc_fragment;
-	$title->appendChild($session->make_text('Hello Title'));
-
-	return ($dom, $title);
-}
-
 #a parallel list of tweet ids (due to a utf8 issue) will be rendered as the number of tweets.
 sub render_tweetcount
 {
@@ -849,7 +862,7 @@ sub render_exporters
 	my $xml = $repository->xml;
 
 	my $export_ul = $xml->create_element('ul');
-	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::XML /)
+	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::XML Export::TweetStream::CSV /)
 	{
 		my $plugin = $repository->plugin($pluginid);
 		next unless $plugin;
