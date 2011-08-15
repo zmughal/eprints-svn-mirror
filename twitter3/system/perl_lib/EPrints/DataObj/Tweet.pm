@@ -643,6 +643,7 @@ sub render_text_enriched
 
 }
 
+
 sub data_for_export
 {
 	my ($self) = @_;
