@@ -812,14 +812,29 @@ sub render_items
 	my $n_oldest = $session->config('tweetstream_tweet_renderopts','n_oldest');
 	my $n_newest = $session->config('tweetstream_tweet_renderopts','n_newest');
 
+	my $frag =  $object->render_items_actual($n_oldest, $n_newest);
+	$frag->appendChild($object->render_exporters);
+
+	return $frag;
+}
+
+sub render_items_actual
+{
+	my ($self, $n_oldest, $n_newest) = @_;
+
+	my $session = $self->{session};
         my $xml = $session->xml;
 	my $tweet_ds = $session->dataset('tweet');
 	my $frag = $xml->create_document_fragment;
+	my $value = $self->value('items');
 
 	my $ol = $xml->create_element('ol', class => 'tweets');
 	$frag->appendChild($ol);
 
-	if ($object->number_of_tweets <= ($n_oldest + $n_newest))
+	if (
+		($self->number_of_tweets <= ($n_oldest + $n_newest)) ||
+		(!defined $n_oldest or !defined $n_newest)
+	)
 	{
 		
 		foreach my $tweetid (@{$value})
@@ -842,14 +857,12 @@ sub render_items
 			{
 				$flag = 0;
 				my $li = $xml->create_element('li', style => "margin-top: 1em; margin-bottom: 1em;");
-				$li->appendChild($session->html_phrase('DataObj::Tweet/unshown_items', n=>$xml->create_text_node(($object->number_of_tweets - ($n_oldest+$n_newest)))));
+				$li->appendChild($session->html_phrase('DataObj::Tweet/unshown_items', n=>$xml->create_text_node(($self->number_of_tweets - ($n_oldest+$n_newest)))));
 				$ol->appendChild($li);
 			}
 
 		}
 	}
-
-	$frag->appendChild($object->render_exporters);
 
 	return $frag;
 }
@@ -862,7 +875,7 @@ sub render_exporters
 	my $xml = $repository->xml;
 
 	my $export_ul = $xml->create_element('ul');
-	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::XML Export::TweetStream::CSV /)
+	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::XML Export::TweetStream::CSV Export::TweetStream::HTML /)
 	{
 		my $plugin = $repository->plugin($pluginid);
 		next unless $plugin;
