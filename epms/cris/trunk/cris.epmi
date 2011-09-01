@@ -1,6 +1,7 @@
-<?xml version='1.0'?>
-<epm xmlns="http://eprints.org/ep2/data/2.0" id="http://yomiko.ecs.soton.ac.uk:8080/id/epm/cris">
+<?xml version='1.0' encoding='utf-8'?>
+<epm xmlns='http://eprints.org/ep2/data/2.0' id='http://yomiko.ecs.soton.ac.uk:8080/id/epm/cris'>
   <epmid>cris</epmid>
+  <uri>http://yomiko.ecs.soton.ac.uk:8080/id/epm/cris</uri>
   <documents>
     <document>
       <files>
