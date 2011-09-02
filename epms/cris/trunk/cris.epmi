@@ -6,67 +6,102 @@
     <document>
       <files>
         <file>
-          <filename>citations/org_unit/default.xml</filename>
+          <filename>epm/cris/cfg/cfg.d/zz_cerif2008.pl</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>218bf5c30e6f9c8c90a100c112121b34</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>5668</filesize>
+        </file>
+        <file>
+          <filename>epm/cris/cfg/citations/org_unit/default.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>7fa8db24994646e02c8cf5dbdfd79c16</hash>
           <hash_type>MD5</hash_type>
           <filesize>360</filesize>
         </file>
         <file>
-          <filename>citations/org_unit/summary_page.xml</filename>
+          <filename>epm/cris/cfg/citations/org_unit/summary_page.xml</filename>
           <mime_type>text/xml</mime_type>
-          <hash>ae7c5250f8c4423d2ccc9d949d1b280d</hash>
+          <hash>09b10a1800136c74ec240c3e48bfa939</hash>
           <hash_type>MD5</hash_type>
-          <filesize>666</filesize>
+          <filesize>894</filesize>
         </file>
         <file>
-          <filename>citations/org_unit/summary_title.xml</filename>
+          <filename>epm/cris/cfg/citations/org_unit/summary_title.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>9af4b2da086563f8c212c8092dde304b</hash>
           <hash_type>MD5</hash_type>
           <filesize>257</filesize>
         </file>
         <file>
-          <filename>citations/project/default.xml</filename>
+          <filename>epm/cris/cfg/citations/project/default.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>be527039d437102598fda007b610fb91</hash>
           <hash_type>MD5</hash_type>
           <filesize>439</filesize>
         </file>
         <file>
-          <filename>citations/project/result.xml</filename>
+          <filename>epm/cris/cfg/citations/project/result.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>a767b50c366dc18d8cb41bdd5765cc1a</hash>
           <hash_type>MD5</hash_type>
           <filesize>455</filesize>
         </file>
         <file>
-          <filename>citations/project/summary_page.xml</filename>
+          <filename>epm/cris/cfg/citations/project/summary_page.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>d7efed1fb5b8bad939afee2c32388040</hash>
           <hash_type>MD5</hash_type>
           <filesize>1232</filesize>
         </file>
         <file>
-          <filename>citations/project/summary_title.xml</filename>
+          <filename>epm/cris/cfg/citations/project/summary_title.xml</filename>
           <mime_type>text/xml</mime_type>
           <hash>9af4b2da086563f8c212c8092dde304b</hash>
           <hash_type>MD5</hash_type>
           <filesize>257</filesize>
         </file>
         <file>
-          <filename>epm/cris/cfg/cfg.d/zz_cerif2008.pl</filename>
+          <filename>epm/cris/cfg/namedsets/ref_uoa</filename>
           <mime_type>text/plain</mime_type>
-          <hash>41cd381d7c6e8cd23c15e9581926c95c</hash>
+          <hash>e732618996347c068790f74456d067fa</hash>
           <hash_type>MD5</hash_type>
-          <filesize>5414</filesize>
+          <filesize>99</filesize>
+        </file>
+        <file>
+          <filename>epm/cris/cfg/workflows/org_unit/default.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>2ca3c55d506a63a592b84e90f63696e7</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>655</filesize>
+        </file>
+        <file>
+          <filename>epm/cris/cfg/workflows/project/default.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>80be72f660c05b5b320d256bdd79e3f5</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>843</filesize>
         </file>
         <file>
           <filename>lang/en/phrases/cris.xml</filename>
           <mime_type>text/xml</mime_type>
-          <hash>1a0df01b77d59d393447cdfa8f0a0539</hash>
+          <hash>301cf9c014ec0e79ac42e3e9bc0172cd</hash>
           <hash_type>MD5</hash_type>
-          <filesize>2729</filesize>
+          <filesize>3737</filesize>
+        </file>
+        <file>
+          <filename>lang/en/phrases/ref_uoa.xml</filename>
+          <mime_type>text/xml</mime_type>
+          <hash>8aa40183e4f4d871cb7ece102af9f7cb</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>3382</filesize>
+        </file>
+        <file>
+          <filename>plugins/EPrints/Plugin/Screen/EPMC/Cris.pm</filename>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>c86525b329897688c2c439e9cc9f960e</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>1455</filesize>
         </file>
         <file>
           <filename>static/images/epm/cris.png</filename>
@@ -95,7 +130,7 @@
       <content>coverimage</content>
     </document>
   </documents>
-  <version>1.0.1</version>
+  <version>1.0.5</version>
   <controller>EPMC::Cris</controller>
   <creators>
     <item>

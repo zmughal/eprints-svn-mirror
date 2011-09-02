@@ -20,6 +20,21 @@ my $accept = $c->{plugins}->{"Export::SummaryPage"}->{params}->{accept} ||= [];
 
 push @$accept, qw( dataobj/project dataobj/org_unit );
 
+push @{$c->{user_roles}->{admin}}, qw(
+	+project/create
+	+project/edit
+	+project/view
+	+project/destroy
+	+project/details
+	+org_unit/create
+	+org_unit/edit
+	+org_unit/view
+	+org_unit/destroy
+	+org_unit/details
+	+project/export
+	+org_unit/export
+);
+
 push @{$c->{user_roles}->{editor}}, qw(
 	+project/create
 	+project/edit
@@ -267,12 +282,11 @@ unshift @{$c->{fields}->{org_unit}}, (
 
 	{
 		name => 'projects',
-		type => 'dataobjref',
+		type => 'subobject',
 		datasetid => 'project',
+		dataset_fieldname => '',
+		dataobj_fieldname => 'org_units_id',
 		multiple => 1,
-		fields => [
-			{ sub_name=>"title", type=>"text", },
-		],
 	},
 
 	{

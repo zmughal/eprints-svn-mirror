@@ -15,6 +15,7 @@
 </table>
 </div>
 
-<div><a href="{$config{http_cgiurl}}/users/home?screen=Workflow::View&amp;dataset=org_unit&amp;dataobj={as_string(org_unitid)}">View</a></div>
+<h3>Actions (login required)</h3> <table class="ep_summary_page_actions"><tr><td> <img class="ep_form_action_icon" src="/style/images/action_view.png" title="View Item" alt="View Item" value="View Item" /></td> <td><a href="{$config{http_cgiurl}}/users/home?screen=Workflow::View&amp;dataset=org_unit&amp;dataobj={as_string(org_unitid)}">View Item</a></td></tr></table>
+
 
 </cite:citation>

@@ -53,6 +53,10 @@
 <epp:phrase id="project_fieldname_org_units_id">Id</epp:phrase>
 <epp:phrase id="project_fieldname_org_units_title">Title</epp:phrase>
 <epp:phrase id="project_fieldname_value">Grant Value</epp:phrase>
+<epp:phrase id="project_fieldname_eprints">Publications</epp:phrase>
+
+<epp:phrase id="project:workflow:stage:default:title">Details</epp:phrase>
+<epp:phrase id="org_unit:workflow:stage:default:title">Details</epp:phrase>
 
 </epp:phrases>
 
