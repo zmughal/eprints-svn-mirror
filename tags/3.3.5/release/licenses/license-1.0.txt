@@ -1,0 +1,17 @@
+License for eprints.org software version: __VERSION__
+
+Copyright (C) 2000, University of Southampton
+
+The University of Southampton retains the copyright of this software
+code with the exception of the open archives component (in the
+openarchives/ directory), which is a modified version of code
+distributed by Cornell University Digital Library Research Group.
+
+This software is freely distributable. Modified versions of this
+software may be distributed provided that a file README is included
+describing the modifications and from where the original version may
+be obtained.
+
+This software is provided with no guarantees of suitability for any
+intended purpose. Use of the software is entirely at the end user's
+risk.
