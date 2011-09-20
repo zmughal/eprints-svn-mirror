@@ -1,5 +1,7 @@
 #!@PERL_PATH@ -w
 
+use Find::Bin;
+
 ######################################################################
 #
 # EPrints 2 installer : Handles upgrading, simple command detection,
@@ -238,6 +240,10 @@ my @dirs = (
 	tests => [0644, $uid, $gid, 0755],
 	var => [0664, $uid, $gid, 02775], # indexer may run as 'apache'
 );
+
+# Copy in our epindexer with its safe user & group
+unlink("$from_path/bin/epindexer");
+copy("$FindBin::Bin/bin/epindexer", "$from_path/bin/epindexer");
 
 my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
 

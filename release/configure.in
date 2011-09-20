@@ -179,7 +179,8 @@ AC_SUBST(PLATFORM)
 
 AC_OUTPUT([
         install.pl
+		bin/epindexer
 ])
 
-chmod +x install.pl
+chmod +x install.pl bin/epindexer
 echo "Now run ./install.pl to install/upgrade to $PREFIX"
