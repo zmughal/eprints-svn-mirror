@@ -52,7 +52,7 @@ my $eprint = EPrints::DataObj::EPrint->new(
 			$id, 
 			$session->get_repository->get_dataset( "archive" ) );
 
-if( !defined $eprint )
+if( !defined $eprint || $eprint->get_value( "eprint_status" ) ne "archive" )
 {
 	error( 
 		$session, 
