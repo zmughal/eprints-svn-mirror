@@ -1,5 +1,7 @@
 #!@PERL_PATH@ -w
 
+use Find::Bin;
+
 ######################################################################
 #
 # EPrints 2 installer : Handles upgrading, simple command detection,
