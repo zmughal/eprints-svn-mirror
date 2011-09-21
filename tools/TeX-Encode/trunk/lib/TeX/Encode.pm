@@ -13,7 +13,7 @@ use TeX::Encode::BibTeX;
 
 our @ISA = qw(Encode::Encoding);
 
-our $VERSION = '1.2';
+our $VERSION = '1.3';
 
 __PACKAGE__->Define(qw(LaTeX latex));
 

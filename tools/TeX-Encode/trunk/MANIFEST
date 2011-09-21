@@ -1,6 +1,8 @@
 Changes
 debug/debug.pl
 lib/TeX/Encode.pm
+lib/TeX/Encode/BibTeX.pm
+lib/TeX/Encode/charmap.pm
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP

@@ -1,8 +1,13 @@
 Revision history for Perl extension Encode::LaTeX.
 
+1.3
+	- Oops, missing BibTeX.pm and charmap.pm from MANIFEST
+
 1.2
 	- Added support to encode() for check argument
 	- Adds braces to protect whitespace after macros
+	- This version is a clean-up version that doesn't emit HTML fragments, if
+	  you want HTML you should look at http://www.mathjax.org/
 
 1.1
 	- Added support for \ensuremath{}
