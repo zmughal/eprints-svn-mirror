@@ -702,11 +702,15 @@ sub remove
 
 	#remove tweets belonging to this object that don't belong to other objects
 	my $tweet_ds = $self->{session}->get_repository->get_dataset( "tweet" );
-	foreach my $tweetid ($self->get_value('items'))
+	foreach my $tweetid (@{$self->get_value('items')})
 	{
+print STDERR "Checking for parents of $tweetid\n";
 		my $tweet = $tweet_ds->dataobj($tweetid);
 		next unless $tweet;
+print STDERR "Fount Dataobj\n";
 		my $parent_tweetstreams = $tweet->tweetstream_list;
+print STDERR 'Found ' . $parent_tweetstreams->count . "\n";
+
 		$tweet->remove if $parent_tweetstreams->count == 1; #remove it it's only in one tweetstream (this one)
 	}
 
@@ -799,9 +803,26 @@ sub add_tweetids
 
 	if ($updatedflag)
 	{
-		$self->set_value('items', \@items);
+		#got 6 duplicates over 25 hours -- suspect odd behavior of twitter API, so make sure there are no duplicates before writing
+		$self->set_value('items', $self->_remove_duplicates(@items));
 		$self->commit;
 	}
+}
+
+sub _remove_duplicates
+{
+	my ($self, @items) = @_;
+
+	my %seen;
+	my $dedup_items = [];
+
+#this may not be the most efficient way to do this -- we're storing each value thrice.
+	foreach my $tweetid(@items)
+	{
+		push @{$dedup_items}, $tweetid unless $seen{$tweetid};
+		$seen{$tweetid} = 1;
+	}
+	return $dedup_items;
 }
 
 #a parallel list of tweet ids (due to a utf8 issue) will be rendered as the number of tweets.

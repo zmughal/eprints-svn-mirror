@@ -198,8 +198,6 @@ sub tweet_with_twitterid
 {
 	my( $repo, $twitterid ) = @_;
 
-print STDERR "Searching for tweet with $twitterid\n";
-	
 	my $dataset = $repo->dataset( "tweet" );
 
 	my $results = $dataset->search(
@@ -209,8 +207,6 @@ print STDERR "Searching for tweet with $twitterid\n";
 				value => $twitterid, match => "EX"
 			}
 		]);
-print STDERR "found ", $results->count, "\n";
-
 
 	return $results->item( 0 );
 }
