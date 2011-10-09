@@ -33,8 +33,8 @@ $c->{tweetstream_tops} =
 #n_ parameters define how many appear before and after the ... in the middle
 $c->{tweetstream_tweet_renderopts} = 
 {
-	n_oldest => 10,
-	n_newest => 10,
+	n_oldest => 15,
+	n_newest => 25,
 };
 
 
