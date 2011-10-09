@@ -7,6 +7,7 @@ use EPrints::Search;
 use JSON;
 use Date::Parse;
 use URI::Find;
+use HTML::Entities;
 
 use strict;
 
@@ -196,6 +197,8 @@ are not found.
 sub tweet_with_twitterid
 {
 	my( $repo, $twitterid ) = @_;
+
+print STDERR "Searching for tweet with $twitterid\n";
 	
 	my $dataset = $repo->dataset( "tweet" );
 
@@ -206,6 +209,8 @@ sub tweet_with_twitterid
 				value => $twitterid, match => "EX"
 			}
 		]);
+print STDERR "found ", $results->count, "\n";
+
 
 	return $results->item( 0 );
 }
@@ -619,8 +624,8 @@ sub render_text_enriched
 
 	my $text_span = $xml->create_element('span', class=>'text', id=>'tweet-'.$object->get_value('twitterid'));
 #I'm not sure I'm doing this right, but I've found a way that works.  What's the EPrints way of doing this?
-	use HTML::Entities;
-	my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".decode_entities($value)."</fragment>" ); };
+
+	my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".$value."</fragment>" ); };
 #	my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".decode_entities($value)."</fragment>" ); };
 
 	if( $@ or not $value)

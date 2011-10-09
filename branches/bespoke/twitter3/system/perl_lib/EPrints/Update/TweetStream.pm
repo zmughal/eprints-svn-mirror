@@ -59,23 +59,22 @@ sub update_all
 
 	my $api_url = 'http://search.twitter.com/search.json';
 
+#get al tweetstreams in all repositories, and create queue items for all the search strings
 	my $tweetstreams = get_current_feeds($reps);
-
 	my $queue_items = {};
-
 	foreach my $tweetstream (@{$tweetstreams})
 	{
 		create_queue_item($queue_items, $tweetstream);
 	}
 
 	my @queue = values %{$queue_items};
-
 	my $ua = LWP::UserAgent->new;
-
 	my $nosort = 0;
-	ITEM: while ( scalar @queue ) #test API limits too
+
+	ITEM: while ( scalar @queue ) #future development -- test API limits too
 	{
-		#prioritise by date, but have some parallelisation.  We'll only get nothing if we have feeds_in_parallel+1 trending topics.
+		#prioritise by date, but have some parallelisation
+		#nosort flag counts down from FEEDS_IN_PARALLEL
 		if (!$nosort)
 		{
 			@queue = sort { ( $a->{orderval} ? $b->{orderval} : -1 ) <=> ( $b->{orderval} ? $a->{orderval} : -1) } @queue; #if there's no orderval, sort highest (i.e. prioritise new streams)
@@ -83,7 +82,10 @@ sub update_all
 		}
 		$nosort--;
 
+		#remove item from the front of the queue
 		my $current_item = shift @queue;
+
+		#query Twitter API
 		my $url = URI->new( $api_url );
 		$url->query_form( %{$current_item->{search_params}} );
 		my $response = $ua->get($url);
@@ -95,9 +97,11 @@ sub update_all
 		}
 		else
 		{
+			#handle failure
 			my $code = $response->code;
 			if ($code == 403) #forbidden -- probably because we've gone back too many pages on this item
 			{
+				#commit this item and move to next in queue
 				$current_item->{commit} = 1;
 				post_process(\@queue,$current_item);
 				next ITEM;
@@ -108,8 +112,8 @@ sub update_all
 			last ITEM;
 		}
 
+		#convert JSON to perl structure
 		my $json = JSON->new->allow_nonref;
-
 		my $tweets = eval { $json->utf8()->decode($json_tweets); };
 		if ($@)
 		{
@@ -120,28 +124,32 @@ sub update_all
 		$current_item->{request_failed} = 0;
 
 		#create a tweet dataobj for each tweet and store the objid in the queue item
-		foreach my $tweet (@{$tweets->{results}})
+		TWEET_IN_UPDATE: foreach my $tweet (@{$tweets->{results}})
 		{
 			$current_item->{search_params}->{max_id} = $tweet->{id} unless $current_item->{search_params}->{max_id}; #highest ID, for consistant paging
 			$current_item->{orderval} = $tweet->{id}; #lowest processed so far, for ordering
 
+			#check to see if we already have a tweet with this twitter id in this repository
 			my $tweetobj = EPrints::DataObj::Tweet::tweet_with_twitterid($current_item->{session},$tweet->{id});
 			if (!defined $tweetobj)
 			{
 				$tweetobj = EPrints::DataObj::Tweet->create_from_data(
 					$current_item->{session},
-					{ twitterid => $tweet->{id},
-					json_source => $tweet } 
+					{
+						twitterid => $tweet->{id},
+						json_source => $tweet
+					} 
 				);
 				$tweetobj->commit;
 			}
 			push @{$current_item->{tweetids}}, $tweetobj->id;
 
-			if ($tweet->{id} == $current_item->{since_twitterid})
+			if ($tweet->{id} <= $current_item->{since_twitterid}) #the one we're considering is the same or younger than the oldest in our stream
 			{
-				last;
+				$current_item->{commit} = 1;
+				last TWEET_IN_UPDATE;
 			}
-		}
+		}                                                               
 
 		if ( #we didn't get all tweets upto the one we last stored, but we exhausted our search
 			not scalar @{$tweets->{results}} #empty page 
@@ -152,20 +160,23 @@ sub update_all
 		post_process(\@queue, $current_item);
 	}
 
+#We're out of API limit
 	foreach my $incomplete_item (@queue)
 	{
+		$incomplete_item->{commit} = 1;
 		post_process(\@queue, $incomplete_item);
 	}
 
 }
 
-#after updating a page, do what needs to be done to the item -- Most importantly, does the next page need to be queued
+#after updating a page, do what needs to be done to the item -- Most importantly, does the next page need to be requeued
 sub post_process
 {
 	my ($queue, $item) = @_;
 
-	commit_streams($item);
-	return;
+#debug - avoid paging: it takes too much time.
+#	commit_streams($item);
+#	return;
 
 	if ($item->{commit})
 	{
@@ -194,15 +205,11 @@ sub post_process
 sub commit_streams
 {
 	my ($queue_item) = @_;
-print STDERR 'foo';
 	foreach my $id (@{$queue_item->{tweetstreamids}})
 	{
-print STDERR 'bar';
 		my $tweetstream = EPrints::DataObj::TweetStream->new($queue_item->{session}, $id);
-print STDERR ref $tweetstream, "\n";
 		$tweetstream->add_tweetids($queue_item->{tweetids});
 	}
-print STDERR 'baz';
 }
 
 sub _get_feeds_aux

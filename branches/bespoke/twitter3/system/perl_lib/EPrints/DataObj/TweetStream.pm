@@ -747,8 +747,11 @@ $tweetids is an arrayref containing the tweetids (note: not twitterids)
   of the tweets to be added.
 
 IMPORTANT -- the array must be sorted in newest first order, which is
-  the oder that they would have been supplied by twitter.  Note that
+  the order that they would have been supplied by twitter.  Note that
   such sorting *must* be done by twitterid (or date), not tweetid.
+
+
+IMPORTANT:  There may be tweets in $tweetids that already exist in this record.
 
 =cut
 ######################################################################
@@ -758,6 +761,7 @@ sub add_tweetids
 	my ($self, $tweetids) = @_;
 	return 0 unless defined $tweetids;
 
+	#reverse to make it newest first
 	my @new_items = reverse @{$tweetids};
 
 	if (not $self->is_set('items'))
@@ -778,19 +782,26 @@ sub add_tweetids
 		$i--;
 	}
 
-	if ($i >= 0) #we didn't find a duplicate
+	my $updatedflag = 0;
+
+	if ($i < 0) #we didn't find a duplicate
 	{
 		push @items, EPrints::DataObj::Tweet::error_id($self->{session}, -1);
+		push @items, @new_items;
+		$updatedflag = 1;
 	}
-	else
+	elsif ($i < $#new_items) #test to see if we already have the most recent tweet in our stream
 	{
 		$i++; # $i was previously the index of the duplicate item
 		push @items, @new_items[$i..$#new_items];
+		$updatedflag = 1;
 	}
 
-	push @items, @new_items;
-	$self->set_value('items', \@items);
-	$self->commit;
+	if ($updatedflag)
+	{
+		$self->set_value('items', \@items);
+		$self->commit;
+	}
 }
 
 #a parallel list of tweet ids (due to a utf8 issue) will be rendered as the number of tweets.
@@ -812,8 +823,10 @@ sub render_items
 	my $n_oldest = $session->config('tweetstream_tweet_renderopts','n_oldest');
 	my $n_newest = $session->config('tweetstream_tweet_renderopts','n_newest');
 
-	my $frag =  $object->render_items_actual($n_oldest, $n_newest);
+	my $frag = $session->make_doc_fragment;
+
 	$frag->appendChild($object->render_exporters);
+	$frag->appendChild($object->render_items_actual($n_oldest, $n_newest));
 
 	return $frag;
 }
