@@ -609,6 +609,7 @@ sub run_index
 
 		foreach my $repo ( @repos )
 		{
+			$repo->{database} = EPrints::Database->new( $repo );
 			# give the next code $timeout secs to complete
 			eval {
 				local $SIG{ALRM} = sub { die "alarm\n" };
