@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -30,8 +35,8 @@ You can get these keys by registering at http://recaptcha.net/.
 
 package EPrints::MetaField::Recaptcha;
 
-use EPrints::MetaField::Id;
-@ISA = qw( EPrints::MetaField::Id );
+use EPrints::MetaField::Text;
+@ISA = qw( EPrints::MetaField::Text );
 
 use strict;
 
@@ -39,7 +44,7 @@ sub render_input_field_actual
 {
 	my( $self, $session, $value, $dataset, $staff, $hidden_fields, $obj, $basename ) = @_;
 
-	my $public_key = $session->config( "recaptcha", "public_key" );
+	my $public_key = $session->get_repository->get_conf( "recaptcha", "public_key" );
 
 	if( !defined $public_key )
 	{
@@ -55,7 +60,8 @@ sub render_input_field_actual
 		error => $value,
 		);
 
-	my $script = $frag->appendChild( $session->make_javascript( undef,
+	my $script = $frag->appendChild( $session->make_element( "script",
+		type => "text/javascript",
 		src => $url ) );
 
 	$url = URI->new( "https://www.google.com/recaptcha/api/noscript" );
@@ -90,7 +96,7 @@ sub form_value_actual
 {
 	my( $self, $session, $object, $basename ) = @_;
 
-	my $private_key = $session->config( "recaptcha", "private_key" );
+	my $private_key = $session->get_repository->get_conf( "recaptcha", "private_key" );
 	my $remote_ip = $session->get_request->connection->remote_ip;
 	my $challenge = $session->param( "recaptcha_challenge_field" );
 	my $response = $session->param( "recaptcha_response_field" );
@@ -153,31 +159,3 @@ sub validate
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

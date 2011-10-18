@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Component::Field::Multi
-
-=cut
-
 package EPrints::Plugin::InputForm::Component::Field::Multi;
 
 use EPrints::Plugin::InputForm::Component::Field;
@@ -22,23 +16,6 @@ sub new
 	$self->{visible} = "all";
 
 	return $self;
-}
-
-sub wishes_to_export
-{
-	my( $self ) = @_;
-
-	return $self->{session}->param( $self->{prefix} . "_export" );
-}
-
-sub export
-{
-	my( $self ) = @_;
-
-	my $frag = $self->render_content;
-
-	print $self->{session}->xhtml->to_xhtml( $frag );
-	$self->{session}->xml->dispose( $frag );
 }
 
 sub update_from_form
@@ -62,8 +39,12 @@ sub validate
 	
 	foreach my $field ( @{$self->{config}->{fields}} )
 	{
-		my $for_archive = defined($field->{required}) &&
-			$field->{required} eq "for_archive";
+		my $for_archive = 0;
+		
+		if( $field->{required} eq "for_archive" )
+		{
+			$for_archive = 1;
+		}
 
 		# cjg bug - not handling for_archive here.
 		if( $field->{required} && !$self->{dataobj}->is_set( $field->{name} ) )
@@ -78,6 +59,8 @@ sub validate
 		
 		push @problems, $self->{dataobj}->validate_field( $field->{name} );
 	}
+	
+	$self->{problems} = \@problems;
 	
 	return @problems;
 }
@@ -94,15 +77,7 @@ sub parse_config
 		if( $node->nodeName eq "field" ) 
 		{
 			my $field = $self->xml_to_metafield( $node );
-			return if !defined $field;
-			$self->{config}->{field}->{required} = 1 if $field->get_property( "required" );
-			if ($self->{workflow}->{processor}->{required_fields_only}) {
-				if ($field->get_property( "required" ) ) {
-					push @{$self->{config}->{fields}}, $field;
-				}
-			} else {
-				push @{$self->{config}->{fields}}, $field;
-			}
+			push @{$self->{config}->{fields}}, $field;
 		}
 
 		if( $node->nodeName eq "title" ) 
@@ -142,11 +117,7 @@ sub render_content
 {
 	my( $self, $surround ) = @_;
 
-	my $frag = $self->{session}->make_doc_fragment;
-
 	my $table = $self->{session}->make_element( "table", class => "ep_multi" );
-	$frag->appendChild( $table );
-
 	my $tbody = $self->{session}->make_element( "tbody" );
 	$table->appendChild( $tbody );
 	my $first = 1;
@@ -190,18 +161,11 @@ sub render_content
 			
 		  );
 
-		@parts{qw( no_help no_toggle )} = @$self{qw( no_help no_toggle )};
-
 		$parts{help_prefix} = $self->{prefix}."_help_".$field->get_name;
 
 		$table->appendChild( $self->{session}->render_row_with_help( %parts ) );
 	}
-
-	$frag->appendChild( $self->{session}->make_javascript( <<EOJ ) );
-new Component_Field ('$self->{prefix}');
-EOJ
-
-	return $frag;
+	return $table;
 }
 
 
@@ -271,31 +235,3 @@ sub get_state_fragment
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

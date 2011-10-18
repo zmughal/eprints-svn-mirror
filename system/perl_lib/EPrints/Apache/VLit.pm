@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -28,6 +33,7 @@ configuration if you object to it for some reason.
 
 package EPrints::Apache::VLit;
 
+use CGI;
 use Digest::MD5;
 use FileHandle;
 
@@ -82,7 +88,7 @@ sub handler
 	# undo eprints rewrite!
 	my $uri = $r->uri;	
 	$uri =~ s#/([0-9]+)/([0-9][0-9])/([0-9][0-9])/([0-9][0-9])/#/$1$2$3$4/#;
-	my $repository = EPrints->new->current_repository;
+	my $repository = EPrints::Repository->new_from_request( $r );
 	my $baseurl = $repository->get_conf( "http_url" ).$uri;
 	
 	my $LSMAP = {
@@ -171,7 +177,7 @@ sub ls_charrange
 {
 	my( $filename, $param, $locspec, $r, $baseurl, $args ) = @_;
 
-	my $repository = EPrints->new->current_repository( $r );
+	my $repository = EPrints::Repository->new_from_request( $r );
 	
 #	if( $r->content_type !~ m#^text/# )
 #	{
@@ -419,7 +425,7 @@ sub ls_area
 		hrange => { start=>0 },
 		vrange => { start=>0 }
 	};
-	my $repository = EPrints->new->current_repository( $r );
+	my $repository = EPrints::Repository->new_from_request( $r );
 
 	my $mode = $args->{mode};
 
@@ -594,32 +600,4 @@ sub cache_file
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

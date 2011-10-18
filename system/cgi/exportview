@@ -37,7 +37,7 @@ if( defined $session->param( "view" ) )
 		exit;
 	}
 
-	my $export_url = $session->config( "perl_url" )."/exportview";
+	my $export_url = $session->get_repository->get_conf( "perl_url" )."/exportview";
 	my $fn = $values;
 	$fn =~ s/\//_/g;
 	$export_url .= "/$viewid/$values/$format/$fn".$plugin->param("suffix");
@@ -58,6 +58,38 @@ my $viewid = $1;
 my @view_path = split( '/', $2 );
 my $format = $3;
 
+my $ds = $session->get_repository->get_dataset( "archive" );
+
+my $view;
+foreach my $a_view ( @{$session->get_repository->get_conf( "browse_views" )} )
+{
+	$view = $a_view if( $a_view->{id} eq $viewid );
+}
+if( !defined $view )
+{
+	EPrints::abort( "view with ID '$viewid' is not available." );
+}
+
+my $filters = EPrints::Update::Views::get_filters( $session, $view, \@view_path );
+if( !defined $filters )
+{
+	$session->not_found; #404
+	$session->terminate;
+	exit;
+}
+
+my $search = new EPrints::Search(
+				custom_order=>$view->{order},
+				satisfy_all=>1,
+				session=>$session,
+				dataset=>$ds );
+$search->add_field( $ds->get_field('metadata_visibility'), 'show', 'EQ' );
+my $n=0;
+foreach my $filter ( @{$filters} )
+{
+	$search->add_field( $filter->{fields}, $filter->{value}, "EX", undef, "filter".($n++), 0 );
+}
+
 my $plugin = get_plugin( $session, $format );
 if( !defined $plugin )
 {
@@ -66,25 +98,6 @@ if( !defined $plugin )
 	$session->terminate;
 	exit;
 }
-
-my $view;
-foreach my $a_view ( @{$session->config( "browse_views" )} )
-{
-	$view = $a_view if( $a_view->{id} eq $viewid );
-}
-if( !defined $view )
-{
-	EPrints::abort( "view with ID '$viewid' is not available." );
-}
-$view = EPrints::Update::Views->new( repository => $session, view => $view );
-
-my @path_values = $view->unescape_path_values( @view_path );
-my $filters = $view->get_filters( \@path_values, 1 ); # EXact
-
-my $list = $view->dataset->search(
-	custom_order => $view->{order},
-	satisfy_all => 1,
-	filters => $filters );
 
 $session->send_http_header( "content_type"=>$plugin->param("mimetype") );
 $plugin->initialise_fh( \*STDOUT );
@@ -99,8 +112,11 @@ foreach my $argname (keys %arguments)
 	}
 }
 
+my $list = $search->perform_search;
 print $list->export( $format, %arguments );	
 	
+$list->dispose;
+
 $session->terminate;
 exit;
 

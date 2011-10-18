@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -42,11 +47,7 @@ sub render_single_value
 {
 	my( $self, $session, $value ) = @_;
 
-	my $searchexp = $self->make_searchexp( $session, $value );
-
-	return $session->make_text( $value ) if !defined $searchexp;
-
-	return $searchexp->render_description;
+	return $self->make_searchexp( $session, $value )->render_description;
 }
 
 
@@ -65,35 +66,18 @@ sub make_searchexp
 {
 	my( $self, $session, $value, $basename ) = @_;
 
-	my $dataset = $session->dataset( $self->{datasetid} );
+	my $dataset = $session->get_repository->get_dataset( $self->{datasetid} );
 
 	my $searchexp = EPrints::Search->new(
 		session => $session,
 		dataset => $dataset,
 		prefix => $basename );
 
-	# new-style search spec
-	if( $value =~ /^\?/ )
-	{
-		my $url = URI->new( $value );
-		my %spec = $url->query_form;
-		$searchexp = $session->plugin( "Search::$spec{plugin}",
-			dataset => $dataset,
-			prefix => $basename,
-		);
-		if( !defined $searchexp )
-		{
-			$session->log( "Unknown search plugin in: $value" );
-			return;
-		}
-		$value = $spec{exp};
-	}
-
 	my $fields;
 	my $conf_key = $self->get_property( "fieldnames_config" );
 	if( defined($conf_key) )
 	{
-		$fields = $session->config( $conf_key );
+		$fields = $session->get_repository->get_conf( $conf_key );
 	}
 	else
 	{
@@ -151,6 +135,8 @@ sub get_basic_input_elements
 		$div->appendChild( $sf->render() );
 	}
 
+	$searchexp->dispose();
+
 	return [ [ { el=>$div } ] ];
 }
 
@@ -175,6 +161,7 @@ sub form_value_basic
 	{
 		$value = $searchexp->serialise;	
 	}
+	$searchexp->dispose();
 
 	return $value;
 }
@@ -194,31 +181,3 @@ sub get_property_defaults
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

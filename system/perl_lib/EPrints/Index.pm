@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -46,9 +51,7 @@ Remove all indexes to the field in the specified object.
 
 sub remove
 {
-	my( $session, $dataset, $objectid, $fieldids ) = @_;
-
-	$fieldids = [$fieldids] if ref($fieldids) ne "ARRAY";
+	my( $session, $dataset, $objectid, $fieldid ) = @_;
 
 	my $rv = 1;
 
@@ -62,24 +65,14 @@ sub remove
 	my $keyfield = $dataset->get_key_field();
 
 	# remove from rindex table
-	$db->do(
-		"DELETE FROM " . 
-			$db->quote_identifier( $rindextable ) . 
-		" WHERE " . 
-			$db->quote_identifier( $keyfield->get_sql_name )."=".$db->quote_value( $objectid ) . 
-			" AND " . 
-			$db->quote_identifier( "field" )." IN (".join(',', map { $db->quote_value( $_ ) } @$fieldids).")"
-	);
+	$db->delete_from($rindextable,
+		[ $keyfield->get_sql_name(), "field" ],
+		[ $objectid, $fieldid ] );
 
 	# remove from grep table
-	$db->do(
-		"DELETE FROM " . 
-			$db->quote_identifier( $grepindextable ) . 
-		" WHERE " . 
-			$db->quote_identifier( $keyfield->get_sql_name )."=".$db->quote_value( $objectid ) . 
-			" AND " . 
-			$db->quote_identifier( "fieldname" )." IN (".join(',', map { $db->quote_value( $_ ) } @$fieldids).")"
-	);
+	$db->delete_from($grepindextable,
+		[ $keyfield->get_sql_name, "fieldname" ],
+		[ $objectid, $fieldid ] );
 
 	return $rv;
 }
@@ -246,7 +239,7 @@ sub _do_ordervalues
 	my $keyname = $keyfield->get_sql_name;
 	my $keyvalue = $data->{$keyfield->get_name()};
 
-	foreach my $langid ( @{$session->config( "languages" )} )
+	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
 
@@ -274,7 +267,7 @@ sub _do_ordervalues
 				[$keyname, @fnames],
 				[$keyvalue, @fvals] );
 		}
-		elsif( @fnames )
+		else
 		{
 			$session->get_database->_update( $ovt,
 				[$keyname],
@@ -309,7 +302,7 @@ sub delete_ordervalues
 	my $keyfield = $dataset->get_key_field();
 	my $keyvalue = $id;
 
-	foreach my $langid ( @{$session->config( "languages" )} )
+	foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 	{
 		# cjg raw SQL!
 		my $ovt = $dataset->get_ordervalues_table_name( $langid );
@@ -365,7 +358,7 @@ sub do_index
 	my $seen_action = 0; # have we done anything
 	my $loop_max = 10; # max times to loop
 
-	my $index_queue = $session->dataset( "index_queue" );
+	my $index_queue = $session->get_repository->get_dataset( "index_queue" );
 	my $searchexp = EPrints::Search->new(
 		allow_blank => 1,
 		session => $session,
@@ -384,7 +377,7 @@ sub do_index
 
 		$iq->remove();
 	
-		my $dataset = $session->dataset( $datasetid );
+		my $dataset = $session->get_repository->get_dataset( $datasetid );
 		if( !defined $dataset )
 		{
 			EPrints::Index::indexlog( "Could not make dataset: $datasetid ($fieldcode)" );
@@ -399,6 +392,14 @@ sub do_index
 		if( $fieldid eq EPrints::DataObj::IndexQueue::ALL() )
 		{
 			push @fields, $dataset->get_fields();
+		}
+		elsif( $fieldid eq EPrints::DataObj::IndexQueue::FULLTEXT() )
+		{
+			push @fields, EPrints::MetaField->new( 
+				dataset => $dataset, 
+				name => $fieldid,
+				multiple => 1,
+				type => "fulltext" );
 		}
 		else
 		{
@@ -444,32 +445,4 @@ sub do_index
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

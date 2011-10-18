@@ -1,15 +1,14 @@
-=head1 NAME
-
-EPrints::Apache::Login
-
-=cut
-
 ######################################################################
 #
 # EPrints::Apache::Login
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2009 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -33,15 +32,45 @@ sub handler
 		$problems = $session->html_phrase( "cgi/login:no_cookies" );
 	}
 
-	my $screenid = $session->param( "screen" );
-	if( !defined $screenid || $screenid !~ /^Login::/ )
+	my $username = $session->param( "login_username" );
+	my $password = $session->param( "login_password" );
+	if( defined $username )
 	{
-		$screenid = "Login";
+		my $real_username = $session->valid_login( $username, $password );
+		if( defined $real_username )
+		{
+			my $user = $session->user_by_username( $real_username );
+
+			my $url = $session->get_url( host=>1 );
+			$url .= "?login_params=".URI::Escape::uri_escape( $session->param("login_params") );
+			$url .= "&login_check=1";
+			# always set a new random cookie value when we login
+			my @a = ();
+			srand;
+			my $r = $session->get_request;
+			for(1..16) { push @a, sprintf( "%02X",int rand 256 ); }
+			my $code = join( "", @a );
+			$session->login( $user,$code );
+			my $cookie = $session->{query}->cookie(
+				-name    => "eprints_session",
+				-path    => "/",
+				-value   => $code,
+				-domain  => $session->get_conf("cookie_domain"),
+			);			
+			$r->err_headers_out->add('Set-Cookie' => $cookie);
+			$session->redirect( $url );
+			return DONE;
+		}
+
+		$problems = $session->html_phrase( "cgi/login:failed" );
 	}
+
+	$r->status( 401 );
+	$r->custom_response( 401, '' ); # disable the normal error document
 
 	EPrints::ScreenProcessor->process(
 		session => $session,
-		screenid => $screenid,
+		screenid => "Login",
 		problems => $problems,
 	);
 
@@ -49,31 +78,3 @@ sub handler
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

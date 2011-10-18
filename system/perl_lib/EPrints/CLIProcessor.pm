@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -49,8 +54,6 @@ sub color
 Create a new processor object. Supported options:
 
   scripted - backwards compatibility for import scripted interface
-  epdata_to_dataobj - replace L</epdata_to_dataobj>
-  message - replace L</message>
 
 =cut
 
@@ -76,27 +79,10 @@ sub message
 {
     my( $self, $type, $msg ) = @_;
 
-	return $self->{message}( $type, $msg ) if defined $self->{message};
-
 	print STDERR color($type);
 	$msg = EPrints::Utils::tree_to_utf8( $msg );
 	print STDERR "\u$type! $msg\n";
 	print STDERR color('reset');
-}
-
-=item $dataobj = $processor->epdata_to_dataobj( $epdata, %opts )
-
-Requests the handler create the new object from $epdata.
-
-=cut
-
-sub epdata_to_dataobj
-{
-	my( $self, $epdata, %opts ) = @_;
-
-	return $self->{epdata_to_dataobj}( $epdata, %opts ) if defined $self->{epdata_to_dataobj};
-
-	return $opts{dataset}->create_dataobj( $epdata );
 }
 
 =item $processor->parsed( [ $epdata ] )
@@ -143,31 +129,3 @@ sub object
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

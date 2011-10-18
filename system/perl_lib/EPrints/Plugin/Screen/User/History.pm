@@ -1,14 +1,6 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::User::History
-
-=cut
-
 package EPrints::Plugin::Screen::User::History;
 
-use EPrints::Plugin::Screen::Workflow;
-
-@ISA = ( 'EPrints::Plugin::Screen::Workflow' );
+our @ISA = ( 'EPrints::Plugin::Screen::User' );
 
 use strict;
 
@@ -21,8 +13,8 @@ sub new
 	$self->{expensive} = 1;
 	$self->{appears} = [
 		{
-			place => "dataobj_user_view_tabs",
-			position => 600,
+			place => "user_actions",
+			position => 300,
 		}
 	];
 
@@ -45,10 +37,7 @@ sub get_history
 {
 	my( $self ) = @_;
 
-	my $user = $self->{processor}->{dataobj};
-	$user = $self->{processor}->{user} if !defined $user;
-
-	my $cache_id = "history_".$user->id;
+	my $cache_id = "history_".$self->{processor}->{user}->get_id;
 
 	if( !defined $self->{processor}->{$cache_id} )
 	{
@@ -60,7 +49,7 @@ sub get_history
 		
 		$searchexp->add_field(
 			$ds->get_field( "userid" ),
-			$user->id );
+			$self->{processor}->{user}->get_id );
 		$searchexp->add_field(
 			$ds->get_field( "datasetid" ),
 			'eprint' );
@@ -70,39 +59,45 @@ sub get_history
 	return $self->{processor}->{$cache_id};
 }
 
+
+
 sub render
 {
 	my( $self ) = @_;
 
 	my $list = $self->get_history;
+
+
 	my $cacheid = $list->{cache_id};
 
 	my $container = $self->{session}->make_element( 
 				"div", 
 				class=>"ep_paginate_list" );
-
-	# a tab's screen is the parent screen
-	my %params = (
-		$self->hidden_bits,
-		screen => $self->{processor}->{screenid},
-		view => $self->get_subtype,
-	);
-
 	my %opts =
 	(
-		params => \%params,
+		params => { 
+			screen => $self->{processor}->{screenid},
+			_cache => $cacheid,
+		},
 		render_result => sub { return $self->render_result_row( @_ ); },
 		render_result_params => $self,
 		page_size => 50,
 		container => $container,
 	);
 
-	return EPrints::Paginate->paginate_list( 
+
+
+	my $page = $self->{session}->render_form( "GET" );
+	$page->appendChild( 
+		EPrints::Paginate->paginate_list( 
 			$self->{session}, 
 			"_history", 
 			$list,
-			%opts );
+			%opts ) );
+
+	return $page;
 }	
+
 
 sub render_result_row
 {
@@ -113,32 +108,7 @@ sub render_result_row
 	return $div;
 }
 
+
+
+
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

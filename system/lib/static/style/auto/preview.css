@@ -10,9 +10,9 @@
 .ep_preview
 {
 	display: none;
-	position: fixed;
-	top: 0px;
-	left: 0px;
+	position: absolute;
+	top: 0;
+	left: 0;
 	width: 400px;	
 }
 

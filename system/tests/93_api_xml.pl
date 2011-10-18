@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 17;
+use Test::More tests => 16;
 
 use strict;
 use warnings;
@@ -54,7 +54,7 @@ $node->appendChild( $xml->create_element( "script", type => 'text/javascript' ) 
 $node->appendChild( $xml->create_element( "div" ) );
 $node->appendChild( $xml->create_element( "br" ) );
 my $str = $xml->to_string( $node );
-is($str,'<html><script type="text/javascript"/><div/><br/></html>',"to_string");
+is($str,'<html><script type="text/javascript"/><div/><br/></html>',"to_string $xml");
 $str = $xhtml->to_xhtml( $node );
 is($str,'<html xmlns="http://www.w3.org/1999/xhtml"><script type="text/javascript">// <!-- No script --></script><div></div><br /></html>',"to_xhtml");
 
@@ -71,23 +71,3 @@ ok( $clone->hasChildNodes, "deep clone clones child nodes" );
 
 $clone = $xml->clone_node( $node );
 ok( !$clone->hasChildNodes, "shallow clone doesn't clone children" );
-
-$node = eval { $xhtml->tree([ # dl
-	[ "fruit", # dt
-		[ "apple", "orange", ], # ul {li, li}
-	],
-	[ "vegetable", # dt
-		[ "potato", "carrot", ], # ul {li, li}
-		],
-	[ "animal", # dt
-		[ # dl
-			[ "cat", # dt
-				[ "lion", "leopard", ], # ul {li, li}
-			],
-		],
-	],
-	"soup", # ul {li}
-	$xml->create_element( "p" ), # <p> is appended
-]) };
-
-ok( defined $node && $node->toString =~ /leopard/, "XHTML::tree" );

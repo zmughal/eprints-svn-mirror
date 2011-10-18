@@ -138,7 +138,6 @@ sub update_page
 	local $self->{_p2w_head_depth} = 0;
 	local $self->{_p2w_methods} = 0;
 	local $self->{_wiki} = {};
-	local $self->{_package_name} = $package_name;
 
 	# locate the source file
 	my $file = $self->_p2w_locate_package( $package_name );
@@ -611,7 +610,6 @@ sub interior_sequence
 	}
 	if( $seq_cmd eq "L" )
 	{
-		$seq_arg =~ s#^/#$self->{_package_name}/#;
 		# mediawiki should take care of URL highlighting for us
 		if( $seq_arg =~ /^(?:(?:https?)|(?:ftp)|(?:mailto)):/ )
 		{
@@ -667,10 +665,6 @@ sub _p2w_split_pod_link
 	my( $text, $name ) = split /\|/, $seq_arg;
 	$name = $text if !defined $name;
 	my( $module, $sec ) = split /\//, $name;
-	if( $name eq $text && $module eq $self->{_package_name} )
-	{
-		$text = $sec;
-	}
 	if( $module =~ /^"(.+)"$/ )
 	{
 		$sec = $1;
@@ -759,33 +753,3 @@ sub _fragment_id_readable {
 }}
 
 1;
-
-=back
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

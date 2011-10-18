@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Admin::Config::Edit
-
-=cut
-
 ##WARNING - There are lots of system() calls in this file, these need to be removed post haste!
 
 
@@ -29,7 +23,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{actions} = [ "save_config", "revert_config", "download_full_file", "process_upload", "process_image_upload", "reload_config" ];
+	$self->{actions} = [ "save_config", "revert_config", "download_full_file", "process_upload", "process_image_upload" ];
 
 	return $self;
 }
@@ -100,13 +94,6 @@ sub allow_process_image_upload
 	return $self->can_be_viewed;
 }
 
-sub allow_reload_config
-{
-	my( $self ) = @_;
-
-	return $self->allow( "config/reload" );
-}
-
 # return an array of DOM explanations of issues with this file
 # empty array if it's OK
 # this does not test in context, just validates XML etc.
@@ -135,19 +122,6 @@ sub save_broken
 	close DATA;
 }
 
-sub action_reload_config
-{
-	my ( $self ) = @_;
-	
-	my $repository = $self->{repository};
-	
-	$repository->reload_config();
-	
-	$self->{processor}->add_message(
-			"message",
-			$self->{session}->html_phrase( "Plugin/Screen/Admin/Reload:reloaded" )
-			);
-}
 
 sub action_revert_config
 {
@@ -271,7 +245,7 @@ sub action_process_image_upload
 	
 	my $url = $self->{session}->get_repository->get_conf("base_url");
 	$image_location =~ s/$url//g;
-	$image_location = $session->config( "config_path" ) . "/static" . $image_location;
+	$image_location = $session->get_repository->get_conf( "config_path" ) . "/static" . $image_location;
 	
 	my $fh = $session->get_query->upload( $fname );
 
@@ -416,7 +390,7 @@ sub action_process_upload
 				my $original = "";
 				my $string = $self->{processor}->{configfile};
 				if ($doc eq "page") {
-					$original = $session->config( "config_path" ) . "/" . $string;
+					$original = $session->get_repository->get_conf( "config_path" ) . "/" . $string;
 					open (FH,$original);
 					my $tmpfile = File::Temp->new( SUFFIX => ".txt" );
 					binmode($tmpfile);
@@ -446,7 +420,7 @@ sub action_process_upload
 				} elsif ($doc eq "template") {
 					my $lang = substr $string,0,rindex($string,"/");
 					$lang = substr $lang,0,rindex($lang,"/");
-					$original = $session->config( "config_path" ) . "/" . $lang . "/templates/default.xml";
+					$original = $session->get_repository->get_conf( "config_path" ) . "/" . $lang . "/templates/default.xml";
 					#print $node_collection->{$doc};	
 					#exit;
 					my $tmpfile = File::Temp->new( SUFFIX => ".txt" );
@@ -712,7 +686,7 @@ sub action_download_full_file {
 
 	my $filename = substr $string, $index+1, $length;
 
-	my $from = $session->config( "config_path" ) . "/" . $string;
+	my $from = $session->get_repository->get_conf( "config_path" ) . "/" . $string;
 	my $doc = $session->get_repository->parse_xml( $from );
 
 	if( !defined $doc )
@@ -941,24 +915,18 @@ sub render
 
 	my $page = $self->{session}->make_doc_fragment;
 
-	$page->appendChild( $self->html_phrase( "intro" ));
-
-	my %buttons;
-       	
-	push @{$buttons{_order}}, "reload_config";
-       	$buttons{reload_config} = $self->{session}->phrase( "Plugin/Screen/Admin/Reload:title" );
 	
-	my $form = $self->render_form;
-	$form->appendChild( $self->{session}->render_action_buttons( %buttons ) );
-
-	$page->appendChild( $form ) if ($self->allow( "config/reload" ));
-
+	$page->appendChild( $self->html_phrase( "intro" ));
+	
 	$self->{processor}->{screenid}=~m/::Edit::(.*)$/;
 	my $type = $1;
 	my $doc_link = $self->{session}->render_link("http://eprints.org/d/?keyword=${1}ConfigFile&filename=".$self->{processor}->{configfile});
 	$page->appendChild( $self->{session}->html_phrase( "Plugin/Screen/Admin/Config/Edit:documentation", link=>$doc_link ));
 	
-	$form = $self->render_form;
+
+	my $form = $self->render_form;
+	#$page->appendChild( $form );
+
 	if( $type eq "XPage" )
 	{
 	$page->appendChild( $self->html_edit($form) );
@@ -998,7 +966,7 @@ sub config_edit
 
        	push @{$buttons{_order}}, "save_config";
        	$buttons{save_config} = $self->{session}->phrase( "Plugin/Screen/Admin/Config/Edit:save_config_button" );
-       	
+
 	if( $broken )
 	{
         	push @{$buttons{_order}}, "revert_config";
@@ -1014,8 +982,9 @@ sub config_edit
 	if (defined $parser_files)
 	{
 		my $rel_path = $self->{session}->config( "rel_path" );
-		$div->appendChild( $self->{session}->make_javascript( undef, src=> "$rel_path/javascript/codemirror/codemirror.js" ) );
-		$div->appendChild( $self->{session}->make_javascript('
+		my $js = $self->{session}->make_element( "script", type=>"text/javascript", src=> "$rel_path/javascript/codemirror/codemirror.js" );
+		$div->appendChild($js);
+		my $js2 = $self->{session}->make_javascript('
 			document.observe("dom:loaded",function(){
 			var editor = CodeMirror.fromTextArea(\'code\', {
 			height: "350px",
@@ -1024,7 +993,8 @@ sub config_edit
 			path: "'.$rel_path.'/javascript/codemirror/",
 			continuousScanning: 500,
 			lineNumbers: true
-			});});') );
+			});});');
+		$div->appendChild($js2);
 	}
 	
 	my $box;
@@ -1291,7 +1261,7 @@ sub get_images
 
 	my $filename = substr $string, $index+1, $length;
 
-	my $from = $session->config( "config_path" ) . "/" . $string;
+	my $from = $session->get_repository->get_conf( "config_path" ) . "/" . $string;
 
 	my $doc = $session->get_repository->parse_xml( $from );
 
@@ -1512,31 +1482,3 @@ sub register_furniture
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

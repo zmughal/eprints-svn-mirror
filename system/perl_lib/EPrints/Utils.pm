@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -61,7 +66,7 @@ use URI;
 
 use strict;
 
-$EPrints::Utils::FULLTEXT = "documents";
+$EPrints::Utils::FULLTEXT = "_fulltext_";
 
 BEGIN {
 	eval "use Term::ReadKey";
@@ -440,12 +445,12 @@ sub wget
 
 	if( $url->scheme eq "file" )
 	{
-		if( !$session->config( "enable_file_imports" ) )
+		if( !$session->get_repository->get_conf( "enable_file_imports" ) )
 		{
 			return HTTP::Response->new( 403, "Access denied by configuration: file imports disabled" );
 		}
 	}
-	elsif( !$session->config( "enable_web_imports" ) )
+	elsif( !$session->get_repository->get_conf( "enable_web_imports" ) )
 	{
 		return HTTP::Response->new( 403, "Access denied by configuration: web imports disabled" );
 	}
@@ -555,6 +560,8 @@ sub render_citation
 	my $collapsed = EPrints::XML::EPC::process( $cstyle, %params, in=>"render_citation" );
 	my $r = _render_citation_aux( $collapsed, %params );
 
+	EPrints::XML::trim_whitespace( $r );
+
 	return $r;
 }
 
@@ -648,7 +655,7 @@ sub field_from_config_string
 			{
 				my( $k, $v ) = split( /=/, $render_pair );
 				$v = 1 unless defined $v;
-				$q{($k eq "top"?"top":"render_$k")} = $v;
+				$q{"render_$k"} = $v;
 			}
 		}
 	}
@@ -1055,36 +1062,96 @@ sub cmd_version
 {
 	my( $progname ) = @_;
 
-	$progname = $0;
-	$progname =~ s/^.*\///;
+	my $version_id = $EPrints::SystemSettings::conf->{version_id};
+	my $version = $EPrints::SystemSettings::conf->{version};
+	
+	print <<END;
+$progname (GNU EPrints $version_id)
+$version
 
-	print $progname." ".EPrints->human_version." [Schema $EPrints::Database::DBVersion]\n\n";
-
-	my $license_bin = $EPrints::SystemSettings::conf->{base_path} . "/bin/epadmin";
-	open(my $fh, "<", $license_bin) or die "Error opening $license_bin: $!";
-	COPYRIGHT: while(<$fh>)
-	{
-		next if $_ !~ /^=for COPYRIGHT BEGIN/;
-		<$fh>;
-		while(<$fh>)
-		{
-			last COPYRIGHT if $_ =~ /^=for COPYRIGHT END/;
-			print $_;
-		}
-	}
-	LICENSE: while(<$fh>)
-	{
-		next if $_ !~ /^=for LICENSE BEGIN/;
-		<$fh>;
-		while(<$fh>)
-		{
-			last LICENSE if $_ =~ /^=for LICENSE END/;
-			print $_;
-		}
-	}
-	close($fh);
+__LICENSE__
+END
 	exit;
 }
+
+# This code is for debugging memory leaks in objects.
+# It is not used by EPrints except when developing. 
+#
+# 
+# my %OBJARRAY = ();
+# my %OBJSCORE = ();
+# my %OBJPOS = ();
+# my %OBJPOSR = ();
+# my $c = 0;
+
+
+######################################################################
+#
+# EPrints::Utils::destroy( $ref )
+#
+######################################################################
+
+sub destroy
+{
+	my( $ref ) = @_;
+#
+#	my $class = delete $OBJARRAY{"$ref"};
+#	my $n = delete $OBJPOS{"$ref"};
+#	delete $OBJPOSR{$n};
+#	
+#	$OBJSCORE{$class}--;
+#	print "Kill: $ref ($class) [$OBJSCORE{$class}]\n";
+
+}
+
+#my %OBJOLDSCORE = ();
+#use Data::Dumper;
+#sub debug
+#{
+#	my @k = sort {$b<=>$a} keys %OBJPOSR;
+#	for(0..9)
+#	{
+#		print "=========================================\n";
+#		print $OBJPOSR{$k[$_]}."\n";
+#	}
+#	foreach( keys %OBJSCORE ) { 
+#		my $diff = $OBJSCORE{$_}-$OBJOLDSCORE{$_};
+#		if( $diff > 0 ) { $diff ="+$diff"; }
+#		print "$_ $OBJSCORE{$_}   $diff\n"; 
+#		$OBJOLDSCORE{$_} = $OBJSCORE{$_};
+#	}
+#}
+#
+#sub bless
+#{
+#	my( $ref, $class ) = @_;
+#
+#	CORE::bless $ref, $class;
+#
+#	$OBJSCORE{$class}++;
+#	print "Make: $ref ($class) [$OBJSCORE{$class}]\n";
+#	$OBJARRAY{"$ref"}=$class;
+#	$OBJPOS{"$ref"} = $c;
+#	#my $x = $ref;
+#	$OBJPOSR{$c} = "$c - $ref\n";
+#	my $i=1;
+#	my @info;
+#	while( @info = caller($i++) )
+#	{
+#		$OBJPOSR{$c}.="$info[3] $info[2]\n";
+#	}
+#
+#
+#	if( ref( $ref ) =~ /XML::DOM/  )
+#	{// to_string
+#		#$OBJPOSR{$c}.= $ref->toString."\n";
+#	}
+#	++$c;
+#
+#	return $ref;
+#}
+
+
 
 ######################################################################
 
@@ -1212,18 +1279,13 @@ sub human_filesize
 my %REQUIRED_CACHE;
 sub require_if_exists
 {
-	my( $module, @params ) = @_;
+	my( $module ) = @_;
 
 	# this is very slightly faster than just calling eval-require, because
 	# perl doesn't have to build the eval environment
 	if( !exists $REQUIRED_CACHE{$module} )
 	{
-		local $SIG{__DIE__};
-		$REQUIRED_CACHE{$module} = @params ?
-		# require_if_exists( "Foo::Bar", "1.2" )
-			eval "use $module @params; 1" :
-		# require_if_exists( "Foo::Bar" )
-			eval "require $module";
+		$REQUIRED_CACHE{$module} = eval "require $module";
 	}
 
 	return $REQUIRED_CACHE{$module};
@@ -1363,31 +1425,3 @@ sub make_sitemap_url
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

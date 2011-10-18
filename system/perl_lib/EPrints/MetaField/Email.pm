@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -15,7 +20,7 @@ B<EPrints::MetaField::Email> - no description
 
 =head1 DESCRIPTION
 
-Contains an Email address that is linked when rendered.
+not done
 
 =over 4
 
@@ -23,10 +28,17 @@ Contains an Email address that is linked when rendered.
 
 package EPrints::MetaField::Email;
 
-use EPrints::MetaField::Id;
-@ISA = qw( EPrints::MetaField::Id );
-
 use strict;
+use warnings;
+
+BEGIN
+{
+	our( @ISA );
+
+	@ISA = qw( EPrints::MetaField::Text );
+}
+
+use EPrints::MetaField::Text;
 
 sub render_single_value
 {
@@ -39,38 +51,54 @@ sub render_single_value
 	return $text if !defined $value;
 	return $text if( $self->{render_dont_link} );
 
-	my $link = $session->render_link( "mailto:".$value );
-	$link->appendChild( $text );
-	return $link;
+	my $a = $session->render_link( "mailto:".$value );
+	$a->appendChild( $text );
+	return $a;
+}
+
+sub get_index_codes
+{
+       my( $self, $session, $value ) = @_;
+
+       if( !$self->get_property( "multiple" ) )
+       {
+               return( [ $value ], [], [] );
+       }
+       return( $value, [], [] );
+}
+
+sub get_search_conditions_not_ex
+{
+       my( $self, $session, $dataset, $search_value, $match, $merge,
+               $search_mode ) = @_;
+       
+       if( $match eq "EQ" )
+       {
+               return EPrints::Search::Condition->new( 
+                       '=', 
+                       $dataset,
+                       $self, 
+                       $search_value );
+       }
+
+       return EPrints::Search::Condition->new( 
+                       'index',
+                       $dataset,
+                       $self, 
+                       $search_value );
+}
+
+sub render_search_value
+{
+       my( $self, $session, $value ) = @_;
+
+       my $valuedesc = $session->make_doc_fragment;
+       $valuedesc->appendChild( $session->make_text( '"' ) );
+       $valuedesc->appendChild( $session->make_text( $value ) );
+       $valuedesc->appendChild( $session->make_text( '"' ) );
+
+       return $valuedesc;
 }
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

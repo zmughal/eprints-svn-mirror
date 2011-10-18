@@ -1,369 +1,179 @@
-=for Pod2Wiki
-
-=head1 NAME
-
-EPrints::Plugin::Export::XSLT - XSLT-based exports
-
-=head1 SYNOPSIS
-
-Create a file in C<Plugins/Export/XSLT/> called 'Title.xsl' containing:
-
-	<?xml version="1.0"?> 
-	
-	<xsl:stylesheet
-		version="1.0"
-		xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-		ept:name="Titles"
-		ept:visible="all"
-		ept:advertise="1"
-		ept:accept="list/eprint dataobj/eprint"
-		ept:mime_type="application/xml; charset=utf-8"
-		ept:qs="0.1"
-		xmlns:ept="http://eprints.org/ep2/xslt/1.0"
-		xmlns:ep="http://eprints.org/ep2/data/2.0"
-		exclude-result-prefixes="ept ep"
-	>
-	
-	<xsl:param name="results" />
-	
-	<xsl:template match="text()" />
-	
-	<xsl:template match="/ept:template">
-	<titles><xsl:value-of select="$results"/></titles>
-	</xsl:template>
-	
-	<xsl:template match="/ep:eprints/ep:eprint">
-	  <title><xsl:value-of select="ep:title"/></title>
-	</xsl:template>
-	
-	</xsl:stylesheet>
-
-=head1 DESCRIPTION
-
-This export plugin allows you to use XSL Transforms to export data from EPrints. The plugin is fed EPrints XML and can output any resulting data supported by XSLT.
-
-This is the inverse process of L<EPrints::Plugin::Import::XSLT>.
-
-=head2 Headers and Footers
-
-You can specify a template to use for your output:
-
-	<xsl:template match="ept:template">
-		<html>
-			<body>
-				<xsl:value-of select="$results"/>
-			</body>
-		</html>
-	</xsl:template>
-
-Note: you can output unbalanced XML by using disable-output-escaping:
-
-	<xsl:template match="ept:template">
-		<xsl:text disable-output-escaping="yes">
-			&lt;html&gt;
-				&lt;body&gt;
-		</xsl:text>
-		<xsl:value-of select="$results"/>
-	</xsl:template>
-
-=head2 Controlling XML Declarations
-
-If your stylesheet outputs XML (the default):
-
-	<xsl:output method="xml"/>
-
-The XML declaration will only be outputted once at the start of the export, regardless of how many records there are.
-
-To output as XML and suppress the XML declaration entirely define an empty prefix:
-
-	<xsl:stylesheet
-		xmlns:ept="http://eprints.org/ep2/xslt/1.0"
-		ept:prefix=""
-	>
-
-=head1 PLUGIN OPTIONS
-
-All attributes on <xsl:stylesheet> that are in the EPT namespace are treated as plugin parameters. In addition to those parameters used by all L<EPrints::Plugin::Export> plugins XSLT uses:
-
-	prefix
-		Value is printed before any content (defaults to XML decl.)
-	postfix
-		Value is printed after any content.
-
-=head1 STYLESHEET PARAMETERS
-
-The following parameters are passed to the transform for each item:
-
-	total
-		Total items in result set.
-	position
-		1-indexed position in result set.
-	dataset
-		Base id of the item's dataset (e.g. "eprint").
-
-=head1 EXTENDED FUNCTIONS
-
-The standard EPrints global extended XPath functions are supported, see L<EPrints::XSLT>.
-
-=head1 SEE ALSO
-
-L<EPrints::Plugin::Export>
-
-=cut
-
 package EPrints::Plugin::Export::XSLT;
-
-use constant {
-	NS_XSLT => "http://www.w3.org/1999/XSL/Transform",
-};
 
 use EPrints::Plugin::Export;
 
 @ISA = ( "EPrints::Plugin::Export" );
 
+our %SETTINGS;
+
 use strict;
 
-# class-specific settings (e.g. the stylesheets)
-our %SETTINGS;
+our %TYPES = (
+	csv => {
+		suffix => ".txt",
+		mimetype => "application/vnd.ms-excel",
+	},
+	html => {
+		suffix => ".html",
+		mimetype => "text/html",
+	},
+	text => {
+		suffix => ".txt",
+		mimetype => "text/plain",
+	},
+	xml => {
+		suffix => ".xml",
+		mimetype => "text/xml",
+	},
+);
 
 sub new
 {
-	my( $class, @args ) = @_;
+	my( $class, %params ) = @_;
 
-	return $class->SUPER::new(
-		%{$SETTINGS{$class}},
-		@args
-	);
-}
+	my $self = $class->SUPER::new( %params );
 
-sub init_xslt
-{
-	my( $class, $repo, $xslt ) = @_;
+	my $path = $self->{path} = $EPrints::SystemSettings::conf->{base_path}."/lib/xslt/export";
 
-	my $doc = delete $xslt->{doc};
-	my $root = $doc->documentElement;
+	my $name = $self->{id};
 
-	my $ep_xsl_prefix = $root->lookupNamespacePrefix( EPrints::Const::EP_NS_XSLT );
-
-	# omit XML declarations (which we add by hand)
-	my( $output ) = $root->getElementsByTagNameNS( NS_XSLT, "output" );
-	if( !$output )
+	if( $name eq "Export::XSLT" )
 	{
-		$output = $root->appendChild(
-			$doc->createElementNS( NS_XSLT, "output"
-			) );
-	}
-	if( !$output->hasAttribute( "method" ) )
-	{
-		$output->setAttribute( method => "xml" );
-	}
-	$xslt->{method} = lc($output->getAttribute( "method" ));
-	if( !$output->hasAttribute( "encoding" ) )
-	{
-		$output->setAttribute( encoding => "UTF-8" );
-	}
-	$xslt->{encoding} = $output->getAttribute( "encoding" );
-	if( lc($xslt->{method}) eq "xml" )
-	{
-		$xslt->{prefix} = "<?xml version='1.0' encoding='".$xslt->{encoding}."'?>\n"
-			if !defined $xslt->{prefix};
-		$output->setAttribute( "omit-xml-declaration" => "yes" );
-	}
+		$self->{name} = "XSLT";
+		$self->{accept} = [];
+		$self->{visible} = "";
+		$self->{suffix} = "text";
+		$self->{mimetype} = "text/plain";
 
-	# header/footer
-	$xslt->{template} = 0;
-	foreach my $template ($root->getElementsByTagNameNS( NS_XSLT, "template" ))
-	{
-		my $match = $template->getAttribute( "match" ) or next;
-		$xslt->{template} = 1 if $match eq "$ep_xsl_prefix:template";
-	}
-
-	$xslt->{prefix} = "" if !defined $xslt->{prefix};
-	$xslt->{postfix} = "" if !defined $xslt->{postfix};
-
-	my $stylesheet = XML::LibXSLT->new->parse_stylesheet( $doc );
-	$xslt->{stylesheet} = $stylesheet;
-
-	$SETTINGS{$class} = $xslt;
-}
-
-sub padding
-{
-	my( $self, %opts ) = @_;
-
-	my( $prefix, $postfix ) = ($self->{prefix}, $self->{postfix});
-
-	my $xslt = EPrints::XSLT->new(
-		repository => $self->{session},
-		stylesheet => $self->{stylesheet},
-	);
-
-	# header
-	if( $self->{template} )
-	{
-		my $key = "d0a1cb555951d9f88fb03fc4247d9ba0";
-		my $template = XML::LibXML::Document->new;
-		$template->setDocumentElement( $template->createElementNS(
-			EPrints::Const::EP_NS_XSLT, "template"
-			) );
-		my $result = $xslt->transform( $template,
-			dataset => $opts{dataset}->base_id,
-			results => $key,
-			);
-		my @parts = split $key, $xslt->output_as_bytes( $result ), 2;
-		if( defined $parts[1] )
-		{
-			$prefix = $prefix . $parts[0];
-			$postfix = $parts[1] . $postfix;
-		}
-		else
-		{
-			Carp::carp( "ept:template used but missing \$result" );
+		if( exists $EPrints::SystemSettings::conf->{executables}->{xsltproc} ) {
+			$self->initialise( $path );
 		}
 	}
+	elsif( $name =~ s/^Export::XSLT::// )
+	{
+		$self->{name} = munge_name($name);
+		$self->{accept} = [ 'dataobj/eprint', 'list/eprint' ];
+		$self->{visible} = "all";
+		my $settings = $EPrints::Plugin::Export::XSLT::SETTINGS{$self->{id}};
+		$self->{suffix} = $settings->{suffix};
+		$self->{mimetype} = $settings->{mimetype};
+		$self->{stylesheet} = $settings->{stylesheet};
+	}
 
-	return( $prefix, $postfix );
+	return $self;
 }
 
-sub output_list
+sub munge_name
 {
-	my( $self, %opts ) = @_;
+	my( $name ) = @_;
+	$name =~ s/_/ /g;
+	return $name;
+}
 
-	$opts{dataset} ||= $opts{list}->{dataset};
+sub initialise
+{
+	my( $self, $path ) = @_;
+
+	opendir(my $dir, $path) or return;
+	my @stylesheets = grep { /\.xsl$/ } readdir($dir);
+	closedir($dir);
+
+	my $me = __PACKAGE__;
+
+	foreach my $stylesheet (@stylesheets)
+	{
+		my $name = $stylesheet;
+		next unless $name =~ s/^([a-zA-Z0-9_]+)(?:\.([^.]+))?\.xsl$/$1/;
+		my $type = $2;
+
+		my $suffix = $TYPES{text}->{suffix};
+		my $mimetype = $TYPES{text}->{mimetype};
+
+		if( defined $type )
+		{
+			if( exists($TYPES{$type}) )
+			{
+				$suffix = $TYPES{$type}->{suffix};
+				$mimetype = $TYPES{$type}->{mimetype};
+			}
+			else
+			{
+				EPrints::abort ".$type.xsl is not a valid extension for xslt transforms - you must rename or remove $path/$stylesheet\n";
+			}
+		}
+
+		my $class = __PACKAGE__ . "::$name";
+
+		eval <<EOC;
+package $class;
+
+our \@ISA = qw( $me );
+
+1;
+EOC
+
+		my $plugin = $class->new();
+		$EPrints::Plugin::Export::XSLT::SETTINGS{$plugin->{id}} = {
+			stylesheet => $stylesheet,
+			suffix => $suffix,
+			mimetype => $mimetype,
+		};
+		EPrints::PluginFactory->register_plugin( $plugin );
+	}
+}
+
+
+sub output_dataobj
+{
+	my( $plugin, $dataobj ) = @_;
 
 	my $r = "";
 
-	my $f = $opts{fh} ?
-		sub { print {$opts{fh}} $_[0] } :
-		sub { $r .= $_[0] };
+	my $session = $plugin->{session};
 
-	my( $prefix, $postfix ) = $self->padding( %opts );
+	my $path = $plugin->{path};
+	my $stylesheet = $plugin->{stylesheet};
 
-	&$f( $prefix );
+	my $xslt = "$path/$stylesheet";
 
-	my $total = $opts{list}->count;
-	my $position = 1;
+	if( !-r $xslt )
+	{
+		delete $EPrints::Plugin::REGISTRY{$plugin->{id}};
+		EPrints::abort "Oops! Looks like $xslt has disappeared\n";
+	}
 
-	$opts{list}->map(sub {
-		my( undef, undef, $item ) = @_;
+	my $xmlfile = File::Temp->new;
+	my $tmpfile = File::Temp->new;
 
-		&$f( $self->output_dataobj( $item, %opts,
-			total => $total,
-			position => $position++,
-		) );
-	});
+	my %args = (
+		STYLESHEET => $xslt,
+		SOURCE => "$xmlfile",
+		TARGET => "$tmpfile",
+	);
 
-	&$f( $postfix );
+	unless( $session->get_repository->can_invoke( "xsltproc", %args ) )
+	{
+		EPrints::abort "Can't invoke xsltproc\n";
+	}
+
+	my $xml_plugin = $session->plugin( "Export::XML" );
+	print $xmlfile $xml_plugin->output_dataobj( $dataobj );
+
+	my $rc = EPrints::Platform::exec( $session->get_repository, "xsltproc", %args );
+	if( $rc )
+	{
+		EPrints::abort "Error invoking xsltproc (result = $rc)\n";
+	}
+
+	{
+		use bytes;
+		utf8::encode($r); # turn off utf8
+		while(read($tmpfile,$r,4096,length($r)))
+		{
+		}
+	}
 
 	return $r;
 }
 
-sub output_dataobj
-{
-	my( $self, $dataobj, %opts ) = @_;
-
-	local $self->{session}->{xml};
-
-	$opts{dataset} ||= $opts{list} ? $opts{list}->{dataset} : $dataobj->dataset;
-
-	my( $prefix, $postfix );
-	if( !$opts{list} )
-	{
-		( $prefix, $postfix ) = $self->padding( %opts );
-	}
-
-	my $xml = $dataobj->to_xml;
-	my $doc = $xml->ownerDocument;
-
-	my $toplevel = $dataobj->dataset->base_id . "s";
-	my $root = $doc->createElementNS( EPrints::Const::EP_NS_DATA, $toplevel );
-	$root->appendChild( $xml );
-	$doc->setDocumentElement( $root );
-
-	my $xslt = EPrints::XSLT->new(
-		repository => $self->{session},
-		stylesheet => $self->{stylesheet},
-		dataobj => $dataobj,
-	);
-
-	my $result = $xslt->transform( $doc, 
-			single => defined($opts{list}),
-			dataset => $opts{dataset}->base_id,
-			total => (defined($opts{total}) ? $opts{total} : 1),
-			position => (defined($opts{position}) ? $opts{position} : 1)
-		);
-
-	if( !$opts{list} )
-	{
-		return
-			$prefix .
-			$xslt->output_as_bytes( $result ) .
-			$postfix;
-	}
-	else
-	{
-		return $xslt->output_as_bytes( $result );
-	}
-}
-
-sub xml_dataobj
-{
-	my( $self, $dataobj, %opts ) = @_;
-
-	return $self->{session}->xml->create_document_fragment
-		if $self->{method} ne "xml";
-
-	my $xml = $dataobj->to_xml;
-	my $doc = $xml->ownerDocument;
-
-	my $toplevel = $dataobj->dataset->base_id . "s";
-	my $root = $doc->createElementNS( EPrints::Const::EP_NS_DATA, $toplevel );
-	$root->appendChild( $xml );
-	$doc->setDocumentElement( $root );
-
-	my $xslt = EPrints::XSLT->new(
-		repository => $self->{session},
-		stylesheet => $self->{stylesheet},
-		dataobj => $dataobj,
-	);
-
-	my $result = $xslt->transform( $doc, 
-			dataset => $dataobj->dataset->base_id,
-			total => $opts{total},
-			position => $opts{position}
-		);
-
-	$xml = $self->{session}->xml->clone( $result->documentElement );
-
-	return $xml;
-}
-
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

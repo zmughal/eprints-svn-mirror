@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -41,7 +46,7 @@ B<EPrints::XML> - XML Abstraction Module
 
 	$xml->dispose( $dom_node );
 
-=head1 DESCRIPTION
+head1 DESCRIPTION
 
 EPrints can use either XML::DOM, XML::LibXML or XML::GDOME modules to generate
 and process XML. Some of the functionality of these modules differs so this
@@ -56,30 +61,24 @@ one place.
 
 package EPrints::XML;
 
+#use EPrints::SystemSettings;
+
 use Carp;
 
 $EPrints::XML::CLASS = undef;
 
 @EPrints::XML::COMPRESS_TAGS = qw/br hr img link input meta/;
 
-sub init
+if( $EPrints::SystemSettings::conf->{enable_libxml} )
 {
-	my $c = $EPrints::SystemSettings::conf;
-	my $disable_libxml = exists $c->{enable_libxml} && !$c->{enable_libxml};
-	my $disable_gdome = exists $c->{enable_gdome} && !$c->{enable_gdome};
-
-	if( !$disable_libxml )
-	{
-		eval "use EPrints::XML::LibXML; 1";
-		return 1 if !$@;
-	}
-
-	if( !$disable_gdome )
-	{
-		eval "use EPrints::XML::GDOME; 1";
-		return 1 if !$@;
-	}
-
+	require EPrints::XML::LibXML;
+}
+elsif( $EPrints::SystemSettings::conf->{enable_gdome} )
+{
+	require EPrints::XML::GDOME;
+}
+else
+{
 	require EPrints::XML::DOM; 
 }
 
@@ -184,50 +183,6 @@ sub create_element
 	return $node;
 }
 
-=item $node = $xml->create_data_element( $name, $value [, @attrs ] )
-
-Returns a new XML element named $name with $value for contents and optional attribute pairs @attrs.
-
-$value may be undef, an XML tree or an array ref of children, otherwise it is stringified and appended as a text node. Child entries are passed de-referenced to L</create_data_element>.
-
-	$xml->create_data_element(
-		"html",
-		[
-			[ "body",
-				[ "div", undef, id => "contents" ]
-			],
-		],
-		xmlns => "http://www.w3.org/1999/xhtml"
-	);
-
-=cut
-
-sub create_data_element
-{
-	my( $self, $name, $value, @attrs ) = @_;
-
-	my $node = $self->create_element( $name, @attrs );
-	return $node if !defined $value;
-
-	if( ref($value) eq "ARRAY" )
-	{
-		foreach my $child (@$value)
-		{
-			$node->appendChild( $self->create_data_element( @$child ) );
-		}
-	}
-	elsif( UNIVERSAL::can( $value, "hasChildNodes" ) ) # supported by all libraries
-	{
-		$node->appendChild( $value );
-	}
-	else
-	{
-		$node->appendChild( $self->create_text_node( $value ) );
-	}
-
-	return $node;
-}
-
 =item $node = $xml->create_cdata_section( $value )
 
 Returns a CDATA section containing $value.
@@ -320,13 +275,9 @@ sub clone
 
 Returns a clone of $node only (no children). The new node will be owned by this object.
 
-=begin InternalDoc
-
 =item $node = EPrints::XML::clone_node( $node [, $deep ] )
 
 DEPRECATED.
-
-=end InternalDoc
 
 =cut
 
@@ -389,7 +340,7 @@ sub text_contents_of
 	{
 		for($node->childNodes)
 		{
-			$str .= $self->text_contents_of( $_ );
+			$str .= text_contents_of( $_ );
 		}
 	}
 
@@ -425,8 +376,6 @@ sub to_string
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $string = EPrints::XML::to_string( $node, [$enc], [$noxmlns] )
 
 Return the given node (and its children) as a UTF8 encoded string.
@@ -440,8 +389,6 @@ Papers over some cracks, specifically that XML::GDOME does not
 support toString on a DocumentFragment, and that XML::GDOME does
 not insert a space before the / in tags with no children, which
 confuses some browsers. Eg. <br/> vs <br />
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -571,8 +518,6 @@ sub dispose
 	_dispose( $node );
 }
 
-=begin InternalDoc
-
 =item $doc = EPrints::XML::parse_xml( $file, $basepath, $no_expand )
 
 Return a DOM document describing the XML file specified by $file.
@@ -585,8 +530,6 @@ instead.
 In the event of an error in the XML file, report to STDERR and
 return undef.
 
-=end InternalDoc
-
 =cut
 ######################################################################
 
@@ -595,14 +538,10 @@ return undef.
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item event_parse( $fh, $handler )
 
 Parses the XML from filehandle $fh, calling the appropriate events
 in the handler where necessary.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -612,8 +551,6 @@ in the handler where necessary.
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $boolean = is_dom( $node, @nodestrings )
 
  return true if node is an object of type XML::DOM/GDOME::$nodestring
@@ -621,8 +558,6 @@ in the handler where necessary.
 
  if $nodestring is not defined then return true if $node is any 
  XML::DOM/GDOME object.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -652,8 +587,6 @@ sub is_dom
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $newnode = EPrints::XML::clone_and_own( $doc, $node, $deep )
 
 This function abstracts the different ways that XML::DOM and 
@@ -665,8 +598,6 @@ matter what document $node belongs to.
 If $deep is true then the clone will also clone all nodes belonging
 to $node, recursively.
 
-=end InternalDoc
-
 =cut
 ######################################################################
 
@@ -675,15 +606,11 @@ to $node, recursively.
 
 ######################################################################
 =pod
-
-=begin InternalDoc
 
 =item $document = EPrints::XML::make_document()
 
 Create and return an empty document.
 
-=end InternalDoc
-
 =cut
 ######################################################################
 
@@ -692,13 +619,9 @@ Create and return an empty document.
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item EPrints::XML::write_xml_file( $node, $filename )
 
 Write the given XML node $node to file $filename.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -720,13 +643,9 @@ END
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item EPrints::XML::write_xhtml_file( $node, $filename )
 
 Write the given XML node $node to file $filename with an XHTML doctype.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -766,8 +685,6 @@ END
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item EPrints::XML::tidy( $domtree, { collapse=>['element','element'...] }, [$indent] )
 
 Neatly indent the DOM tree. 
@@ -779,8 +696,6 @@ This method modifies the tree it is given. Possibly there should be
 a version which returns a new version without modifying the tree.
 
 Indent is the number of levels to ident by.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -876,13 +791,9 @@ sub tidy
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $namespace = EPrints::XML::namespace( $thing, $version )
 
 Return the namespace for the given version of the eprints xml.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -901,13 +812,9 @@ sub namespace
 	return undef;
 }
 
-=begin InternalDoc
-
 =item $v = EPrints::XML::version()
 
 Returns a string description of the current XML library and version.
-
-=end InternalDoc
 
 =cut
 
@@ -943,7 +850,6 @@ sub is_empty
 	return !$node->hasChildNodes();
 }
 
-# DEPRECATED, do not use
 sub trim_whitespace
 {
 	my( $node, $inner ) = @_;
@@ -961,7 +867,7 @@ sub trim_whitespace
 			$text .= $child->nodeValue;
 			next;
 		}
-		if( EPrints::XML::is_dom( $child, "Element" ) )
+		if( EPrints::XML::is_dom( $child, "Element", "CDATASection" ) )
 		{
 			if( $text ne "" )
 			{
@@ -993,341 +899,6 @@ sub trim_whitespace
 
 }
 
-sub add_to_xml
-{
-	my ($filename,$node,$id) = @_;
-	
-	my $xml = EPrints::XML::parse_xml( $filename );
-
-	$xml = _remove_blank_nodes($xml);
-
-	my $main_node;
-
-	foreach my $element ($xml->getChildNodes()) {
-		next if ($element->nodeName() eq "#text" or $element->nodeName() eq "#comment");
-		$main_node = $element;
-		last;
-	}
-	
-	return 1 if (!defined $main_node);
-
-	my $ret;
-
-	unless (ref($node) eq "XML::LibXML::Element") {
-		my $in_xml = EPrints::XML::parse_string( undef, $node );
-		$in_xml = EPrints::XML::_remove_blank_nodes($in_xml);
-		$node = $in_xml->getFirstChild();
-	}
-
-	foreach my $child ( $node->getChildNodes() ) {
-		$ret = _add_node_to_xml( $main_node, $child, $id, 0 );
-	}
-
-	$ret = _write_xml($xml,$filename);
-	
-	return $ret;
-}
-
-sub remove_package_from_xml
-{
-	my( $filename, $id ) = @_;
-	
-	my $xml = EPrints::XML::parse_xml( $filename );
-
-	$xml = _remove_blank_nodes($xml);
-
-	my $main_node;
-
-	foreach my $element ($xml->getChildNodes()) {
-		next if ($element->nodeName() eq "#text" or $element->nodeName() eq "#comment");
-		$main_node = $element;
-		last;
-	}
-	
-	return 1 if (!defined $main_node);
-
-	$main_node = _remove_required_nodes($main_node,$id);
-	$main_node = _remove_orphaned_chooses($main_node);
-	$main_node = _enable_disabled_nodes($main_node,$id);
-	
-	my $ret = _write_xml($xml,$filename);
-	
-	return $ret;
-}
-
-sub _add_node_to_xml
-{
-	my ( $xml, $node, $id, $depth ) = @_;
-
-	my $ret = 0;
-	
-	my @attrs = $node->getAttributes();
-	my $count = scalar @attrs;
-
-	foreach my $element ($xml->getChildNodes())
-	{
-#print STDERR "$depth : Element NAME " . $element->nodeName() . " VALUE " . $element->nodeValue() . "\n";
-#print STDERR "$depth : NODE NAME " . $node->nodeName() . " VALUE " . $node->nodeValue() . "\n";
-		
-		next unless (defined $element->nodeName);
-		next unless ($element->nodeName eq $node->nodeName);
-		my $match_count = 0;
-		my $match_type = undef;
-		foreach my $at (@attrs)
-		{
-#print STDERR $at->getName() . " : " . $at->getValue() . "\n";
-			if ($at->getName eq "operation") {
-				$match_type = $at->getValue();
-				$count--;
-				next;
-			}
-			next unless ($element->getAttribute($at->getName()) eq $at->getValue());
-			$match_count++;
-		}
-		next unless ($match_count == $count);
-		next unless (_trim($element->nodeValue) eq _trim($node->nodeValue));
-#print STDERR "HERE\n\n";
-		if ($match_type eq "replace") {
-			$element->setAttribute("disabled",1);
-			$element->setAttribute("disabled_by",$id);
-			$node->setAttribute("required_by",$id);
-			($element->parentNode())->insertAfter($node,$element);
-			return 1;
-		}
-		if ($match_type eq "disbale") {
-			$element->setAttribute("disabled",1);
-			$element->setAttribute("disabled_by",$id);
-			$node->setAttribute("required_by",$id);
-			return 1;
-		}
-		
-		$depth++;
-		if (!$node->hasChildNodes) {
-			return 1 if ($element->nodeName eq "#text" or $element->nodeName eq "#comment");
-			if ($element->hasAttribute("required_by")) {
-				my $id_string = _get_id_string($element,$id);
-				$element->setAttribute("required_by",$id_string);
-				return 1;
-			} else {
-				return 1;
-			}
-		} 
-		foreach my $child_node ( $node->getChildNodes ) {
-#print STDERR "CALLING WITH \n\n\n\n\n" . $child_node->toString() . "\n\n\n\n\n";
-			$ret = _add_node_to_xml($element,$child_node,$id,$depth);
-			if ($ret == 2) {
-				if ($element->hasAttribute("required_by")) {
-					my $id_string = _get_id_string($element,$id);
-					$element->setAttribute("required_by",$id_string);
-					return 1;
-				} else {
-					return 2;
-				}
-			}
-		}
-		
-	}
-	if ($ret == 2) {
-		if ($node->hasAttribute("required_by")) {
-			my $id_string = _get_id_string($node,$id);
-			$node->setAttribute("required_by",$id_string);
-		} else {
-			return 1;
-		}
-	}
-
-	#if ($depth > 0 and $ret < 1) {
-	if ($ret < 1) {
-		if (!($node->nodeName() eq "#comment") and !($node->nodeName() eq "#text")) {
-#print STDERR "ADDING REQUIRED BY \n\n";
-			$node->setAttribute("required_by",$id);
-		}
-#print STDERR "ADDING CHILD " . $node->nodeName() . "\n\n";
-		$xml->addChild($node);
-		return 1;
-	}
-
-	return $ret;
-}
-
-sub _trim($)
-{
-	my $string = shift;
-	$string =~ s/^\s+//;
-	$string =~ s/\s+$//;
-	return $string;
-}
-
-sub _remove_blank_nodes
-{
-	my ( $node ) = @_;
-
-	foreach my $element ( $node->getChildNodes ) {
-	 	$node->removeChild($element);
-		my $name = $element->nodeName();
-		my $value = $element->nodeValue();
-		unless (_trim($name) eq "#text" && _trim($value) eq "") {
-			$node->appendChild($element);
-		}
-		next if (_trim($name) eq "#text");
-		if ($element->hasChildNodes) 
-		{
-			$node->appendChild(_remove_blank_nodes($element));
-		}
-	}
-	return $node;
-}
-
-sub _write_xml 
-{
-	my( $xml_in, $filename ) = @_;
-
-	$xml_in = _remove_blank_nodes($xml_in);
-
-	open(my $fh, ">", $filename) or return 0;
-
-	print $fh EPrints::XML::to_string( $xml_in );
-
-	close($fh);
-
-	return 1;
-}
-
-sub _enable_disabled_nodes
-{
-	my ( $xml, $id ) = @_;
-	foreach my $element ( $xml->getChildNodes ) {
-		my $name = $element->nodeName();
-		if ($element->hasAttributes) {
-			my @attrs = $element->getAttributes();
-			foreach my $at (@attrs) 
-			{
-				if ($at->getName() eq "disabled_by")
-				{
-					my $id_string = $at->getValue();
-					my @ids = split(/ /,$id_string);
-					my $flag = 1;
-					my $out_ids;
-					foreach my $sids(@ids)
-					{
-						if (!($sids eq $id)) 
-						{
-							$out_ids .= $sids . " ";	
-							$flag = 0;
-						}
-					}
-					if ($flag == 1) {
-						$element->removeAttribute("disabled_by");
-						$element->removeAttribute("disabled");
-					} else {
-						$element->setAttribute("disabled_by",_trim($out_ids));
-					}
-				}
-			}
-		}
-		if ($element->hasChildNodes) 
-		{
-			$element = _enable_disabled_nodes($element,$id);
-		}
-	}
-
-	return $xml;
-}
-
-sub _remove_required_nodes
-{
-	my ( $xml, $id ) = @_;
-	
-	my $found = 0;
-	foreach my $element ( $xml->getChildNodes ) {
-		my $name = $element->nodeName();
-		if ($element->hasAttributes) {
-			my @attrs = $element->getAttributes();
-			foreach my $at (@attrs) 
-			{
-				if ($at->getName() eq "required_by")
-				{
-					my $id_string = $at->getValue();
-					my @ids = split(/ /,$id_string);
-					my $flag = 1;
-					my $out_ids;
-					foreach my $sids(@ids)
-					{
-						if (!($sids eq $id)) 
-						{
-							$out_ids .= $sids . " ";	
-							$flag = 0;
-						}
-					}
-					if ($flag == 1) {
-						$xml->removeChild($element);
-					} else {
-						$element->setAttribute("required_by",_trim($out_ids));
-					}
-				}
-			}
-		}
-		if ($element->hasChildNodes) 
-		{
-			$element = _remove_required_nodes($element,$id);
-		}
-	}
-
-	return $xml;
-
-}
-
-sub _remove_orphaned_chooses
-{
-	my ( $xml ) = @_;
-	
-	$xml = _remove_blank_nodes($xml);
-	
-	foreach my $element ( $xml->getChildNodes ) {
-		my $name = $element->nodeName;
-		my @preserve_nodes;
-		if ($name eq "epc:choose") {
-			if ($element->firstChild->nodeName eq "epc:otherwise")
-			{
-				foreach my $child ($element->firstChild->getChildNodes) 
-				{
-					$xml->appendChild($child);
-				}
-				$xml->removeChild($element);
-			}
-		}
-		if ($element->hasChildNodes) 
-		{
-			$element = _remove_orphaned_chooses($element);
-		}
-	}
-
-	return $xml;
-
-}
-
-sub _get_id_string 
-{
-	my ( $element, $id ) = @_;
-
-	my $id_string = $element->getAttribute("required_by");
-	my @ids = split(/ /,$id_string);
-	my $flag = 1;
-	my $out_ids;
-	foreach my $sids(@ids)
-	{
-		if ($sids eq $id) 
-		{
-			$flag = 0;
-		}
-	}
-	if ($flag > 0) 
-	{
-		$id_string .= " $id";
-	}
-	return $id_string;
-}
-
 # DEPRECATED
 sub make_document_fragment
 {
@@ -1336,31 +907,3 @@ sub make_document_fragment
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

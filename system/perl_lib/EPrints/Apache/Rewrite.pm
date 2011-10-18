@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -230,20 +235,28 @@ sub handler
 	}
 
 	# SWORD-APP
-	if( $uri =~ s! ^$urlpath/sword-app/servicedocument$ !!x )
+	if( $uri =~ s! ^$urlpath/sword-app/ !!x )
 	{
 		$r->handler( 'perl-script' );
 
 		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
 
-		$r->push_handlers(PerlAccessHandler => [
-			\&EPrints::Apache::Auth::authen,
-			\&EPrints::Apache::Auth::authz
-			] );
-
-		$r->set_handlers( PerlResponseHandler => [ \&EPrints::Apache::CRUD::servicedocument ] );
-
-		return OK;
+		if( $uri =~ s! ^atom\b !!x )
+		{
+			$r->set_handlers( PerlResponseHandler => [ 'EPrints::Sword::AtomHandler' ] );
+		}
+		elsif( $uri =~ s! ^deposit\b !!x )
+		{
+			$r->set_handlers( PerlResponseHandler => [ 'EPrints::Sword::DepositHandler' ] );
+		}
+		elsif( $uri =~ s! ^servicedocument\b !!x )
+		{
+			$r->set_handlers( PerlResponseHandler => [ 'EPrints::Sword::ServiceDocument' ] );
+		}
+		else
+		{
+			return NOT_FOUND;
+		}
 	}
 
 	# robots.txt (nb. only works if site is in root / of domain.)
@@ -284,18 +297,17 @@ sub handler
 		my $file = $1;
 		my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
 		$accept = "application/rdf+xml" unless defined $accept;
-		my $can_accept = "list/triple";
 
 		my $plugin = content_negotiate_best_plugin( 
 			$repository, 
 			accept_header => $accept,
 			consider_summary_page => 0,
-			plugins => [$repository->get_plugins(
+			plugins => [$repository->plugin_list(
 				type => "Export",
 				is_visible => "all",
-				can_accept => $can_accept )]
+				can_accept => "list/triple" )]
 		);
-	
+		
 		if( !defined $plugin )  { return NOT_FOUND; }
 
 		my $url = $repository->config( "http_cgiurl" )."/export/$file/".
@@ -315,7 +327,7 @@ sub handler
 			$repository, 
 			accept_header => $accept,
 			consider_summary_page => 0,
-			plugins => [$repository->get_plugins(
+			plugins => [$repository->plugin_list(
 				type => "Export",
 				is_visible => "all",
 				can_accept => "list/triple" )]
@@ -331,74 +343,75 @@ sub handler
 		return redir_see_other( $r, $url );
 	}
 
-	if( $uri =~ s! ^$urlpath/id/contents$ !!x )
-	{
-		$r->pnotes( dataset => $repository->dataset( "eprint" ) );
-		$r->pnotes( uri => $uri );
-
-		my( $rc, $plugin ) =
-			EPrints::Apache::CRUD::content_negotiate_best_plugin( $r );
-
-		return $rc if $rc != OK;
-
-		$r->pnotes( plugin => $plugin );
-
-		$r->handler( 'perl-script' );
-
-		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
-
-		$r->push_handlers(PerlAccessHandler => [
-			\&EPrints::Apache::CRUD::authen,
-			\&EPrints::Apache::CRUD::authz
-			] );
-
-		$r->set_handlers( PerlResponseHandler => [ "EPrints::Apache::CRUD" ] );
-
-		return OK;
-	}
-
-	if( $uri =~ s! ^$urlpath/id/([^/]+)/([^/]+)/? !!x )
+	if( $uri =~ m! ^$urlpath/id/([^/]+)/(.*)$ !x )
 	{
 		my( $datasetid, $id ) = ( $1, $2 );
 
 		my $dataset = $repository->get_dataset( $datasetid );
-		return NOT_FOUND if !defined $dataset;
-
-		($id, my @relations) = split /\./, $id;
-
-		my $dataobj = $dataset->dataobj( $id );
-		return NOT_FOUND if !defined $dataobj;
-
-		# get the real eprint dataset
-		if( $dataset->base_id eq "eprint" )
+		my $item;
+		if( defined $dataset )
 		{
-			$dataset = $dataobj->get_dataset;
+			$item = $dataset->dataobj( $id );
 		}
 
-		$r->pnotes( dataset => $dataset );
-		$r->pnotes( dataobj => $dataobj );
-		$r->pnotes( relations => \@relations );
-		$r->pnotes( uri => $uri );
+		if( defined $item )
+		{
+			# Subject URI's redirect to the top of that particular subject tree
+			# rather than the node in the tree. (the ancestor with "ROOT" as a parent).
+			if( $item->dataset->id eq "subject" )
+			{
+				ANCESTORS: foreach my $anc_subject_id ( @{$item->get_value( "ancestors" )} )
+				{
+					my $anc_subject = $repository->dataset("subject")->dataobj($anc_subject_id);
+					next ANCESTORS if( !$anc_subject );
+					next ANCESTORS if( !$anc_subject->is_set( "parents" ) );
+					foreach my $anc_subject_parent_id ( @{$anc_subject->get_value( "parents" )} )
+					{
+						if( $anc_subject_parent_id eq "ROOT" )
+						{
+							$item = $anc_subject;
+							last ANCESTORS;
+						}
+					}
+				}
+			}
 
-		my( $rc, $plugin ) =
-			EPrints::Apache::CRUD::content_negotiate_best_plugin( $r );
+			if( $item->dataset->confid eq "eprint" && $item->dataset->id ne "archive" )
+			{
+				return redir_see_other( $r, $item->get_control_url );
+			}
 
-		return $rc if $rc != OK;
+			# content negotiation. Only worries about type, not charset
+			# or language etc. at this stage.
+			#
+			my $accept = EPrints::Apache::AnApache::header_in( $r, "Accept" );
+			$accept = "text/html" unless defined $accept;
 
-		$r->pnotes( plugin => $plugin );
+			my $match = content_negotiate_best_plugin( 
+				$repository, 
+				accept_header => $accept,
+				consider_summary_page => ( $dataset->confid eq "eprint" || $dataset->confid eq "document" ? 1 : 0 ),
+				plugins => [$repository->plugin_list(
+					type => "Export",
+					is_visible => "all",
+					can_accept => "dataobj/".$dataset->confid )],
+			);
 
-		$r->handler( 'perl-script' );
+			if( $match eq "DEFAULT_SUMMARY_PAGE" )
+			{
+				return redir_see_other( $r, $item->get_url );
+			}
+			else
+			{
+				my $url = $match->dataobj_export_url( $item );	
+				if( defined $url )
+				{
+					return redir_see_other( $r, $url );
+				}
+			}
+		}	
 
-		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
-
-		$r->push_handlers(PerlAccessHandler => [
-			\&EPrints::Apache::CRUD::authen,
-			\&EPrints::Apache::CRUD::authz
-			] );
-
-		$r->set_handlers( PerlResponseHandler => [ "EPrints::Apache::CRUD" ] );
-
-		return OK;
+		return NOT_FOUND;
 	}
 
 	# /XX/ eprints
@@ -467,30 +480,15 @@ sub handler
 
 			$r->pool->cleanup_register(\&EPrints::Apache::LogHandler::document, $r);
 
-			my $rc = undef;
 			$repository->run_trigger( EPrints::Const::EP_TRIGGER_DOC_URL_REWRITE,
-				# same as for URL_REWRITE
 				request => $r,
-				   lang => $lang,    # en
-				   args => $args,    # "" or "?foo=bar"
-				urlpath => $urlpath, # "" or "/subdir"
-				cgipath => $cgipath, # /cgi or /subdir/cgi
-				    uri => $uri,     # /foo/bar
-				 secure => $secure,  # boolean
-			    return_code => \$rc,     # set to trigger a return
-				# extra bits
-				 eprint => $eprint,
-			       document => $doc,
-			       filename => $filename,
-			      relations => \@relations,
+				eprint => $eprint,
+				document => $doc,
+				filename => $filename,
+				relations => \@relations,
 			);
 
-			# if the trigger has set an return code
-			return $rc if defined $rc;
-	
-			# This way of getting a status from a trigger turns out to cause 
-			# problems and is included as a legacy feature only. Don't use it, 
-			# set ${$opts->{return_code}} = 404; or whatever, instead.
+			# a trigger has set an error code
 			return $r->status if $r->status != 200;
 		}
 		# OK, It's the EPrints abstract page (or something whacky like /23/fish)
@@ -535,7 +533,7 @@ sub handler
 		# redirect /foo to /foo/ 
 		if( $uri eq "/view" || $uri =~ m! ^/view/[^/]+$ !x )
 		{
-			return redir( $r, "$urlpath$uri/" );
+			return redir( $r, "$uri/" );
 		}
 
 		local $repository->{preparing_static_page} = 1; 
@@ -550,24 +548,8 @@ sub handler
 		EPrints::Update::Static::update_static_file( $repository, $lang, $localpath );
 	}
 
-	# set all static files to +1 month expiry
-	$r->headers_out->{Expires} = Apache2::Util::ht_time(
-		$r->pool,
-		time + 30 * 86400
-	);
-	# let Firefox cache secure, static files
-	if( $repository->get_secure )
-	{
-		$r->headers_out->{'Cache-Control'} = 'public';
-	}
-
 	if( $r->filename =~ /\.html$/ )
 	{
-		my $ua = $r->headers_in->{'User-Agent'};
-		if( $ua && $ua =~ /MSIE ([0-9]{1,}[\.0-9]{0,})/ && $1 >= 8.0 )
-		{
-			$r->headers_out->{'X-UA-Compatible'} = "IE=9";
-		}
 		$r->handler('perl-script');
 		$r->set_handlers(PerlResponseHandler => [ 'EPrints::Apache::Template' ] );
 	}
@@ -611,12 +593,13 @@ sub content_negotiate_best_plugin
 		$pset->{"text/html"} = { qs=>0.99, DEFAULT_SUMMARY_PAGE=>1 };
 	}
 
-	foreach my $plugin ( @{$o{plugins}} )
+	foreach my $a_plugin_id ( @{$o{plugins}} )
 	{
-		my( $type, %params ) = split( /\s*[;=]\s*/, $plugin->{mimetype} );
+		my $a_plugin = $repository->plugin( $a_plugin_id );
+		my( $type, %params ) = split( /\s*[;=]\s*/, $a_plugin->{mimetype} );
 	
-		next if( defined $pset->{$type} && $pset->{$type}->{qs} >= $plugin->{qs} );
-		$pset->{$type} = $plugin;
+		next if( defined $pset->{$type} && $pset->{$type}->{qs} >= $a_plugin->{qs} );
+		$pset->{$type} = $a_plugin;
 	}
 	my @pset_order = sort { $pset->{$b}->{qs} <=> $pset->{$a}->{qs} } keys %{$pset};
 
@@ -670,32 +653,4 @@ sub content_negotiate_best_plugin
 
 1;
 
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

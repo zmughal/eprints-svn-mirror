@@ -1,16 +1,8 @@
+
 body {
-	margin: 0;
-	font-family: Sans-serif;
+	margin: 1em;
+	font-family: Arial,Sans-serif;
 	font-size: 80%;
-}
-
-/* left-align if we're in a div (e.g. ep_block) that centres */
-ul {
-	text-align: left;
-}
-
-img {
-        border:0;
 }
 
 .ep_no_js { 
@@ -29,23 +21,26 @@ img {
 	display: none; 
 }
 
-h1, h2 {
-	font-weight: bold;
-}
 h1 {
-	margin: 0px;
-	margin-top: 10px;
-	font-size: 130%;
+	margin: 0px 0px 10px 0px;
+        font: bold 130% Arial,Sans-serif;
 	text-align: center;
+        color: #606060;
 }
+
 h2 {
-	font-size: 110%;
+        font: bold 110% Arial,Sans-serif;
+        color: #606060;
 }
+
 h3 {
-	font-size: 120%;
+        font: 120% Arial,Sans-serif;
+        color: #606060;
 }
+
 h4 {
-	font-size: 100%;
+        font: 100% Arial,Sans-serif;
+        color: #606060;
 }
 
 hr {
@@ -60,28 +55,30 @@ hr {
 
 .ep_toggle a, a.ep_toggle {
 	text-decoration: none;
+	color: #44c;
 }
 
 th.ep_row {
+	border-bottom: dashed #bbf 1px;
 	padding-right: 0.25em;
 	text-align: right;
 	width: 20%;
-	border-width: 1px;
 }
 td.ep_row {
+	border-left: dashed #bbf 1px;
+	border-bottom: dashed #bbf 1px;
 	padding-left: 0.25em;
 	text-align: left;
-	border-width: 1px;
 }
-
 th.ep_title_row {
-	border-width: 1px;
-	border-style: solid;
-	border-left: none;
-	border-right: none;
+	border-top: solid 1px #999999;
+	border-bottom: solid 1px #999999;
 	padding: 0.1em 0.5em 0.1em 0.5em;
 	font-size: 100%;
 	height: 2em;
+	background-image: url(images/gray_bar.png);
+	background-color: #808080;
+	color: #333;
 	font-weight: normal;
 }
 
@@ -97,6 +94,9 @@ th.ep_title_row {
 	text-align: center;
 }
 .ep_block td {
+	text-align: left;
+}
+ul {
 	text-align: left;
 }
 .ep_doc_icon

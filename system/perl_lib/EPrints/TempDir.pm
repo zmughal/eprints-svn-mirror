@@ -4,68 +4,86 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
 package EPrints::TempDir;
 
+use strict;
+use warnings;
+
 use File::Temp;
 
-use strict;
+our @ISA = qw( File::Temp );
 
 =pod
 
+=for Pod2Wiki
+
 =head1 NAME
 
-EPrints::TempDir - Create temporary directories that are removed automatically
+EPrints::TempDir - Create temporary directories that can automatically be removed
+
+=head1 SYNOPSIS
+
+	use EPrints::TempDir;
+
+	my $dir = EPrints::TempDir->new(
+		TEMPLATE => 'tempXXXXX',
+		DIR => 'mydir',
+		UNLINK => 1);
+
+	opendir DIR, "$dir"; # Stringifies object
 
 =head1 DESCRIPTION
 
-DEPRECATED
+This module is basically a clone of File::Temp, but provides an object-interface to directory creation. When the object goes out of scope (and UNLINK is specified) the directory will automatically get removed.
 
-Use C<<File::Temp->newdir()>>;
+=head1 METHODS
 
-=head1 SEE ALSO
+=over 4
 
-L<File::Temp>
+=item EPrints::TempDir->new()
+
+Create a temporary directory (see L<File::Temp>::tempdir for a description of
+the arguments);
 
 =cut
 
+# When this object is stringified return the directory name
+use overload '""' => sub { return shift->{'dir'} };
+
+# NB this can't use my( $class ) = @_ because it may take 1 argument or named
+# arguments
 sub new
 {
 	my $class = shift;
+	my $templ = 'eprintsXXXXX';
+	if( 1 == @_ % 2 )
+	{
+		$templ = shift;
+	}
+	my %args = (TEMPLATE=>$templ,@_);
+	$args{dir} = File::Temp::tempdir(%args);
+	return bless \%args, ref($class) || $class;
+}
 
-	return File::Temp->newdir( @_, TMPDIR => 1 );
+sub DESTROY
+{
+	my( $self ) = @_;
+	if( $self->{UNLINK} )
+	{
+		EPrints::Utils::rmtree($self->{dir});
+	}
 }
 
 1;
 
 __END__
 
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-
+=back

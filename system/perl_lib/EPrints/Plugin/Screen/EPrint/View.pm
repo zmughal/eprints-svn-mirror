@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::EPrint::View
-
-=cut
-
 
 package EPrints::Plugin::Screen::EPrint::View;
 
@@ -37,33 +31,6 @@ sub new
 	];
 
 	return $self;
-}
-
-sub wishes_to_export { shift->{repository}->param( "ajax" ) }
-
-sub export_mime_type { "text/html;charset=utf-8" }
-
-sub export
-{
-	my( $self ) = @_;
-
-	my $id_prefix = "ep_eprint_views";
-
-	my $current = $self->{session}->param( "${id_prefix}_current" );
-	$current = 0 if !defined $current;
-
-	my @screens;
-	foreach my $item ( $self->list_items( "eprint_view_tabs", filter => 0 ) )
-	{
-		next if !($item->{screen}->can_be_viewed & $self->who_filter);
-		next if $item->{action} && !$item->{screen}->allow_action( $item->{action} );
-		push @screens, $item->{screen};
-	}
-
-	my $content = $screens[$current]->render;
-	binmode(STDOUT, ":utf8");
-	print $self->{repository}->xhtml->to_xhtml( $content );
-	$self->{repository}->xml->dispose( $content );
 }
 
 sub register_furniture
@@ -129,47 +96,86 @@ sub render
 
 	# if in archive and can request delete then do that here TODO
 
+	my $view = $self->{session}->param( "view" );
+	if( defined $view )
+	{
+		$view = "Screen::$view";
+	}
+
 	my $id_prefix = "ep_eprint_views";
 
-	my $current = $self->{session}->param( "${id_prefix}_current" );
-	$current = 0 if !defined $current;
+#	my @views = qw/ summary full actions export export_staff edit edit_staff history /;
 
+
+	my $current;
 	my @screens;
+	my $tabs = [];
+	my $labels = {};
+	my $links = {};
+	my $slowlist = [];
 	foreach my $item ( $self->list_items( "eprint_view_tabs", filter => 0 ) )
 	{
 		next if !($item->{screen}->can_be_viewed & $self->who_filter);
 		next if $item->{action} && !$item->{screen}->allow_action( $item->{action} );
+		if( $item->{screen}->{expensive} )
+		{
+			push @{$slowlist}, $item->{screen_id};
+		}
+
+		$current = $item->{screen} if defined $view && $view eq $item->{screen_id};
 		push @screens, $item->{screen};
+		push @{$tabs}, $item->{screen_id};
+		$labels->{$item->{screen_id}} = $item->{screen}->render_tab_title;
+		$links->{$item->{screen_id}} = "?screen=".$self->{processor}->{screenid}."&eprintid=".$self->{processor}->{eprintid}."&view=".substr( $item->{screen_id}, 8 );
 	}
 
-	my @labels;
-	my @contents;
-	my @expensive;
+	$current = $screens[0] if !defined $current;
+	$view = $current->get_id if !defined $view;
 
-	for(my $i = 0; $i < @screens; ++$i)
+	$chunk->appendChild( 
+		$self->{session}->render_tabs( 
+			id_prefix => $id_prefix,
+			current => $view,
+			tabs => $tabs,
+			labels => $labels,
+			links => $links,
+			slow_tabs => $slowlist ) );
+			
+	my $panel = $self->{session}->make_element( 
+			"div", 
+			id => "${id_prefix}_panels", 
+			class => "ep_tab_panel" );
+	$chunk->appendChild( $panel );
+
+	if( $view ne $current->get_id )
 	{
-		my $screen = $screens[$i];
-		push @labels, $screen->render_tab_title;
-		push @expensive, $i if $screen->{expensive};
-		if( $screen->{expensive} && $i != $current )
+		my $view_div = $self->{session}->make_element( "div", 
+				id => "${id_prefix}_panel_$view" );
+		$panel->appendChild( $view_div );
+		$view_div->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:view_unavailable" ) ); # error
+	}
+
+	# don't render the other tabs if this is a slow tab - they must reload
+	foreach my $screen (@screens)
+	{
+		my $view_div = $self->{session}->make_element( "div", 
+			id => "${id_prefix}_panel_".$screen->get_id, 
+			style => "display: none" );
+		$panel->appendChild( $view_div );
+		if( $screen eq $current )
 		{
-			push @contents, $self->{session}->html_phrase(
-				"cgi/users/edit_eprint:loading"
-			);
+			$view_div->setAttribute( style => "display: block" );
+			$view_div->appendChild( $screen->render );
+		}
+		elsif( $screen->{expensive} )
+		{
+			$view_div->appendChild( $self->{session}->html_phrase( "cgi/users/edit_eprint:loading" ) );
 		}
 		else
 		{
-			push @contents, $screen->render;
+			$view_div->appendChild( $screen->render );
 		}
 	}
-
-	$chunk->appendChild( $self->{session}->xhtml->tabs(
-		\@labels,
-		\@contents,
-		basename => $id_prefix,
-		current => $current,
-		expensive => \@expensive,
-		) );
 
 	$chunk->appendChild( $buttons->cloneNode(1) );
 	return $chunk;
@@ -244,32 +250,4 @@ sub redirect_to_me_url
 
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

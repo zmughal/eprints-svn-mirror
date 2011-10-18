@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::Atom
-
-=cut
-
 package EPrints::Plugin::Export::Atom;
 
 use EPrints::Plugin::Export::Feed;
@@ -19,462 +13,199 @@ sub new
 	my $self = $class->SUPER::new( %opts );
 
 	$self->{name} = "Atom";
-	$self->{accept} = [qw(
-		list/eprint dataobj/eprint
-		list/document dataobj/document
-		list/file dataobj/file
-	)];
+	$self->{accept} = [ 'list/eprint' ];
 	$self->{visible} = "all";
 	$self->{suffix} = ".xml";
-	$self->{mimetype} = "application/atom+xml;charset=utf-8";
+	$self->{mimetype} = "application/atom+xml";
+
+	$self->{number_to_show} = 10;
+	$self->{arguments} = {
+		indexOffset => 1,
+	};
 
 	return $self;
 }
 
 sub output_list
 {
-	my( $self, %opts ) = @_;
+	my( $plugin, %opts ) = @_;
 
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
+	my $list = $opts{list}->reorder( "-datestamp" );
 
-	my $r = '';
-	my $f = defined($opts{fh}) ?
-		sub { print {$opts{fh}} "$_[0]\n" } :
-		sub { $r .= "$_[0]\n" };
-	my $fx = sub { &$f( $xml->to_string( $_[0] ) ); $xml->dispose( $_[0] ); };
+	my $session = $plugin->{session};
 
-	my $list = $opts{list};
-	my $dataset = $list->{dataset};
-	my $dataset_id = $dataset->base_id;
+	my $response = $session->make_element( "feed",
+		"xmlns"=>"http://www.w3.org/2005/Atom",
+		"xmlns:opensearch" => "http://a9.com/-/spec/opensearch/1.1"
+	);
 
-	&$f( "<?xml version=\"1.0\" encoding=\"utf-8\" ?>" );
-	&$f( '<feed
-	xmlns="http://www.w3.org/2005/Atom"
-	xmlns:opensearch="'.EPrints::Const::EP_NS_OPENSEARCH.'"
-	xmlns:xhtml="http://www.w3.org/1999/xhtml"
->' );
-	
-	# title
-	my $title = $repo->phrase( "archive_name" );
-	$title.= ": ".$xhtml->to_text_dump( $list->render_description );
-	&$fx( $xml->create_data_element(
+	my $title = $session->phrase( "archive_name" );
+
+	$title.= ": ".EPrints::Utils::tree_to_utf8( $list->render_description );
+
+	my $host = $session->config( 'host' );
+
+	$response->appendChild( $session->render_data_element(
+		4,
 		"title",
 		$title ) );
 
-	# self link
-	if( exists $opts{link_self} )
-	{
-		&$fx( $xml->create_data_element(
-			"link",
-			undef,
-			rel => "self",
-			href => $opts{link_self} ) );
-	}
-
-	# front-page link
-	&$fx( $xml->create_data_element(
+	$response->appendChild( $session->render_data_element(
+		4,
 		"link",
-		undef,
-		rel => "alternate",
-		href => $repo->config( "frontpage" ) ) );
+		"",
+		href => $session->get_repository->get_conf( "frontpage" ) ) );
 	
-	# feed last-update
-	&$fx( $xml->create_data_element(
+	$response->appendChild( $session->render_data_element(
+		4,
+		"link",
+		"",
+		rel => "self",
+		href => $session->get_full_url ) );
+
+	$response->appendChild( $session->render_data_element(
+		4,
 		"updated", 
 		EPrints::Time::get_iso_timestamp() ) );
 
-	# feed generator
-	&$fx( $xml->create_data_element(
-		"generator",
-		"EPrints",
-		uri => "http://www.eprints.org/",
-		version => EPrints->human_version ) );
+	my( $sec,$min,$hour,$mday,$mon,$year ) = localtime;
 
-	# feed logo
-	my $site_logo = $self->param( "logo" ) || $repo->config( "site_logo" );
-	$site_logo = URI->new_abs( $site_logo, $repo->current_url( host => 1, path => 'static' ) );
-	&$fx( $xml->create_data_element(
-		"logo",
-		$site_logo ) );
-
-	# feed id
-	&$fx( $xml->create_data_element(
+	$response->appendChild( $session->render_data_element(
+		4,
 		"id", 
-		$repo->config( "frontpage" ) ) );
+		"tag:".$host.",".($year+1900).":feed:feed-title" ) );
 
-	if( exists $opts{links} )
+	my $totalResults = $list->count;
+	my $startIndex = ($opts{indexOffset} || 1) - 1;
+	$startIndex = 0 if $startIndex < 0;
+	my $itemsPerPage = 0;
+	if( $startIndex + $plugin->{number_to_show} < $totalResults )
 	{
-		&$fx( $opts{links} );
+		$itemsPerPage = $plugin->{number_to_show};
 	}
-
-	# opensearch
-	local $_;
-	for(qw( totalResults itemsPerPage startIndex ))
+	elsif( $startIndex > $totalResults )
 	{
-		if( exists $opts{$_} )
-		{
-			&$fx( $xml->create_data_element(
-				"opensearch:$_",
-				$opts{$_}
-				) );
-		}
-	}
-	if( exists $opts{offsets} )
-	{
-		if( my $search = delete $opts{offsets}{search} )
-		{
-			&$fx( $xml->create_data_element(
-				"link",
-				undef,
-				rel => "search",
-				%$search,
-			) );
-		}
-		foreach my $key (sort keys %{$opts{offsets}})
-		{
-			&$fx( $xml->create_data_element(
-				"link",
-				undef,
-				rel => $key,
-				type => $self->param( "mimetype" ),
-				title => $repo->phrase( "lib/searchexpression:$key",
-					n => "",
-				),
-				href => $opts{offsets}->{$key} ) );
-		}
-	}
-
-	# entries
-	my $fn = "output_$dataset_id";
-	$list->map(sub {
-		my( undef, undef, $dataobj ) = @_;
-
-		&$f( $self->$fn( $dataobj, %opts ) );
-	});
-
-	&$f( '</feed>' );
-
-	return $r;
-}
-
-sub output_dataobj
-{
-	my( $self, $dataobj, %opts ) = @_;
-
-	my $dataset_id = $dataobj->get_dataset_id;
-	my $fn = "output_$dataset_id";
-
-	$opts{single} = 1;
-
-	my $xml = '<?xml version="1.0" encoding="utf-8" ?>' . "\n" . $self->$fn( $dataobj, %opts );
-	
-	if( $self->{repository}->get_online )
-	{
-		my $r = $self->{repository}->get_request;
-		use bytes;
-		my $ctx = Digest::MD5->new;
-		$ctx->add( Encode::encode_utf8( $xml ) );
-		$r->headers_out->{'ETag'} = $ctx->hexdigest;
-		$r->headers_out->{'Content-MD5'} = $ctx->b64digest;
-		$r->headers_out->{'Content-Length'} = length($xml);
-	}
-
-	return $xml;
-}
-
-sub output_eprint
-{
-	my( $self, $dataobj, %opts ) = @_;
-
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
-
-	my $entry;
-	if ($opts{single}) {
-		$entry = $xml->create_element( "entry", xmlns=> "http://www.w3.org/2005/Atom", "xmlns:sword"=> "http://purl.org/net/sword/" );
-	} else {
-		$entry = $xml->create_element( "entry" );
-	}
-
-	$entry->appendChild( $xml->create_data_element(
-			"title",
-			$xhtml->to_text_dump( $dataobj->render_description ) ) );
-	$entry->appendChild( $xml->create_data_element(
-			"link",
-			undef,
-			rel => "self",
-			href => $self->dataobj_export_url( $dataobj ) ) );
-	$entry->appendChild( $xml->create_data_element( 
-			"link",
-			undef,
-			rel => "edit",
-			href => $dataobj->uri ) );
-	$entry->appendChild( $xml->create_data_element( 
-			"link",
-			undef,
-			rel => "edit-media",
-			href => $dataobj->uri . "/contents" ) );
-	$entry->appendChild( $xml->create_data_element( 
-			"link",
-			undef,
-			rel => "contents",
-			href => $dataobj->uri . "/contents" ) );
-	$entry->appendChild( $xml->create_data_element(
-			"link",
-			undef,
-			rel => "alternate",
-			href => $dataobj->uri ) );
-	foreach my $doc ($dataobj->get_all_documents)
-	{
-		if( $doc->exists_and_set( "content" ) && $doc->value( "content" ) eq "coverimage" && defined($doc->thumbnail_url) )
-		{
-			$entry->appendChild( $xml->create_data_element(
-				"icon",
-				$repo->current_url( host => 1, path => 0 ).$doc->thumbnail_url,
-			) );
-		}
-	}
-	if( $dataobj->exists_and_set( "abstract" ) )
-	{
-		$entry->appendChild( $xml->create_data_element(
-				"summary",
-				$dataobj->get_value("abstract") ) );
-	}
-
-	my $updated;
-	my $datestamp = $dataobj->get_value( "lastmod" );
-	if( $datestamp =~ /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/ )
-	{
-		$updated = "$1T$2Z";
+		$itemsPerPage = 0;
 	}
 	else
 	{
-		$updated =  EPrints::Time::get_iso_timestamp();
+		$itemsPerPage = $totalResults - $startIndex;
 	}
 
-	$entry->appendChild( $xml->create_data_element(
-				"updated",
-				$updated ) );	
+	$response->appendChild( $session->render_data_element(
+		4,
+		"opensearch:totalResults", 
+		$totalResults ) );
 
-	$entry->appendChild( $xml->create_data_element(
-				"id", 
-				$dataobj->uri ) );
+	$response->appendChild( $session->render_data_element(
+		4,
+		"opensearch:itemsPerPage", 
+		$itemsPerPage ) );
 
-	$entry->appendChild( $xml->create_data_element(
-		"category",
-		undef,
-		term => $dataobj->value( "type" ),
-		label => $dataobj->value( "type" ),
-		scheme => $repo->config( "base_url" )."/data/eprint/type/"
-	) );
-	
-	$entry->appendChild( $xml->create_data_element(
-		"category",
-		undef,
-		term => $dataobj->value( "eprint_status" ),
-		label => $dataobj->value( "eprint_status" ),
-		scheme => $repo->config( "base_url" )."/data/eprint/status/"
-	) );
-	
-	$entry->appendChild( $xml->create_data_element(
-		"link",
-		undef,
-		rel => "http://purl.org/net/sword/terms/statement",
-		href => $dataobj->uri
-	) );
-	
-	$entry->appendChild( $xml->create_data_element(
-		"sword:state",
-		undef,
-		href => $repo->config( "base_url" )."/data/eprint/status/" . $dataobj->value( "eprint_status" )
-	) );
+	$response->appendChild( $session->render_data_element(
+		4,
+		"opensearch:startIndex", 
+		$startIndex + 1 ) );
 
-	$entry->appendChild( $xml->create_data_element(
-		"sword:stateDescription",
-		$repo->html_phrase("cgi/users/edit_eprint:staff_item_is_in_" . $dataobj->value( "eprint_status" ), link=> $repo->make_text($dataobj->uri), url=>$repo->make_text("") )
-	) );
-	
-	my $original_deposit = $xml->create_data_element(
-		"sword:originalDeposit",
-		undef,
-		href => $dataobj->uri
+	my %offsets = (
+		first => 1,
+		previous => $startIndex-9,
+		next => $startIndex+11,
+		last => $totalResults-($totalResults % $plugin->{number_to_show})
 	);
-	$entry->appendChild($original_deposit);
-	
-	$updated = undef;
-	if ( $dataobj->exists_and_set( "datestamp" ) )
+	delete $offsets{'previous'}
+		if $startIndex == 0;
+	delete $offsets{'next'}
+		if ($startIndex+$plugin->{number_to_show}) > $totalResults;
+
+	foreach my $key (sort keys %offsets)
 	{
+		my $uri = URI->new( $session->current_url( host => 1, query => 1 ) );
+		my %q = $uri->query_form;
+		delete $q{indexOffset};
+		$uri->query_form( %q, indexOffset => $offsets{$key} );
+		$response->appendChild( $session->render_data_element(
+			4,
+			"link", 
+			'',
+			rel => $key,
+			href => "$uri",
+			type => $plugin->param( "mimetype" ) ) );
+	}
+
+	foreach my $eprint ( $list->get_records( $startIndex, $plugin->{number_to_show} ) )
+	{
+		my $item = $session->make_element( "entry" );
+		
+		$item->appendChild( $session->render_data_element(
+			2,
+			"title",
+			EPrints::Utils::tree_to_utf8( $eprint->render_description ) ) );
+		$item->appendChild( $session->render_data_element(
+			2,
+			"link",
+			"",
+			href => $eprint->get_url ) );
+		$item->appendChild( $session->render_data_element(
+			2,
+			"summary",
+			EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ) );
+
+		my $updated;
+		my $datestamp = $eprint->get_value( "datestamp" );
 		if( $datestamp =~ /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/ )
 		{
 			$updated = "$1T$2Z";
 		}
-	}
-	if (defined $updated) 
-	{
-		$original_deposit->appendChild( $xml->create_data_element(
-			"sword:depositedOn",
-			$updated
-		) );
-	}
-
-	if ( $dataobj->exists_and_set( "sword_depositor" ) ) 
-	{
-		my $user = $repo->user($dataobj->value( "sword_depositor" ));
-		if (defined $user) 
+		else
 		{
-			$original_deposit->appendChild( $xml->create_data_element(
-				"sword:depositedBy",
-				$user->value("username")
-			) );
+			print STDERR "Invalid date\n";
+			$updated =  EPrints::Time::get_iso_timestamp();
+		}
 		
-			my $owner = $repo->user($dataobj->value("userid"));
-			
-			if (!($user->id eq $owner->id))
-			{
-				$original_deposit->appendChild( $xml->create_data_element(
-					"sword:depositedOnBehalfOf",
-					$owner->value("username")
-				) );
-			}
+		$item->appendChild( $session->render_data_element(
+			2,
+			"updated",
+			$updated ) );	
 
+		$item->appendChild( $session->render_data_element(
+			4,
+			"id", 
+			$eprint->uri ) );
 
-		}
-	}
-
-	if( $dataobj->exists_and_set( "creators" ) )
-	{
-		my $names = $dataobj->get_value( "creators" );
-		foreach my $name ( @$names )
+		if( $eprint->exists_and_set( "creators" ) )
 		{
-			my $author = $xml->create_element( "author" );
-
-			my $name_str = EPrints::Utils::make_name_string( $name->{name}, 1 );
-			$author->appendChild( $xml->create_data_element(
-						"name",
-						$name_str ) );
-			
-			$author->appendChild( $xml->create_data_element(
-						"email",
-						$name->{id} ) );
-
-			$entry->appendChild( $author );
+			my $names = $eprint->get_value( "creators" );
+			foreach my $name ( @$names )
+			{
+				my $author = $session->make_element( "author" );
+				
+				my $name_str = EPrints::Utils::make_name_string( $name->{name}, 1 );
+				$author->appendChild( $session->render_data_element(
+					4,
+					"name",
+					$name_str ) );
+				$item->appendChild( $author );
+			}
 		}
-	}
 
-	my $r = $xml->to_string( $entry, indent => 1 );
-	$xml->dispose( $entry );
+		$response->appendChild( $item );		
+	}	
 
-	return $r;
-}
+	my $atomfeed = <<END;
+<?xml version="1.0" encoding="utf-8" ?>
+END
+	$atomfeed.= EPrints::XML::to_string( $response );
+	EPrints::XML::dispose( $response );
 
-sub output_document
-{
-	my( $self, $dataobj, %opts ) = @_;
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} $atomfeed;
+		return undef;
+	} 
 
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
-
-	my $main = $dataobj->stored_file( $dataobj->value( "main" ) );
-
-	my $entry = $xml->create_element( "entry" );
-	
-	$entry->appendChild( $xml->create_data_element(
-			"id",
-			$dataobj->uri ) );
-	$entry->appendChild( $xml->create_data_element(
-			"title",
-			$xhtml->to_text_dump( $dataobj->render_description ) ) );
-	
-	my @files = @{$dataobj->get_value( "files" )};
-
-	$entry->appendChild( $xml->create_data_element( 
-		"link",
-		undef,
-		rel => "contents",
-		href => $dataobj->uri . "/contents" ) );	
-	$entry->appendChild( $xml->create_data_element( 
-		"link",
-		undef,
-		rel => "edit-media",
-		href => $dataobj->uri . "/contents" ) );	
-
-	$entry->appendChild( $xml->create_data_element(
-			"summary",
-			$xhtml->to_text_dump( $dataobj->render_citation ) ) );
-
-	$entry->appendChild( $xml->create_data_element(
-		"content",
-		undef,
-		type => ($main ? $main->value( "mime_type" ) : undef),
-		src => $dataobj->uri . "/contents" ) );
-
-	my $r = $xml->to_string( $entry, indent => 1 );
-	$xml->dispose( $entry );
-
-	return $r;
-}
-
-sub output_file
-{
-	my( $self, $dataobj, %opts ) = @_;
-
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
-
-	my $doc = $dataobj->parent();
-
-	my $entry = $xml->create_element( "entry" );
-	
-	$entry->appendChild( $xml->create_data_element(
-			"id",
-			$dataobj->uri ) );
-	$entry->appendChild( $xml->create_data_element(
-			"title",
-			$dataobj->get_value("filename") ) );
-	$entry->appendChild( $xml->create_data_element(
-			"link",
-			undef,
-			rel => "alternate",
-			href => $doc->get_url( $dataobj->value( "filename" ) ) ) );
-	
-	my $r = $xml->to_string( $entry, indent => 1 );
-	$xml->dispose( $entry );
-
-	return $r;
+	return $atomfeed;
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

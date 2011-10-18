@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -32,20 +37,16 @@ sub new
 {
 	my( $class, %properties ) = @_;
 
+	$properties{fields} = [
+		{ sub_name=>"title", type=>"text", },
+		{ sub_name=>"id", type=>"int", input_cols=>6, },
+	];
+
 	$properties{input_lookup_url} = 'lookup/dataobjref' if !defined $properties{input_lookup_url};
 
 	my $self = $class->SUPER::new( %properties );
 
 	return $self;
-}
-
-sub extra_subfields
-{
-	my( $self ) = @_;
-
-	return (
-		{ sub_name=>"id", type=>"int", input_cols=>6, },
-	);
 }
 
 sub get_property_defaults
@@ -91,61 +92,35 @@ sub render_value_no_multiple
 		return $xml->create_document_fragment;
 	}
 
-	my $ds = $session->dataset( $self->get_property('datasetid') );
-
-	my $frag = $xml->create_document_fragment;
-	my $extras = $xml->create_document_fragment;
-
-	# populate extras with values that aren't part of the referenced dataobj
-	foreach my $field (@{$self->property( "fields_cache" )})
-	{
-		my $name = $field->property( "sub_name" );
-		next if $name eq "id";
-		next if $ds->has_field( $name );
-		next if !EPrints::Utils::is_set( $value->{$name} );
-		$extras->appendChild( $xml->create_text_node( ", " ) ) if $extras->hasChildNodes;
-		$extras->appendChild( $field->render_single_value( $session, $value->{$name}, $alllangs, $nolink, $object ) );
-	}
-
-	# retrieve the remote dataobj (or fake it with the data we have)
 	my $dataobj;
 	if( EPrints::Utils::is_set( $value->{id} ) )
 	{
+		my $ds = $session->dataset( $self->get_property('datasetid') );
 		$dataobj = $ds->dataobj( $value->{id} );
 
-		if( defined $dataobj )
+		if( !defined $dataobj )
 		{
-			$frag->appendChild( $dataobj->render_citation_link() );
-		}
-		else
-		{
-			$frag->appendChild( $session->html_phrase( "lib/metafield/itemref:not_found",
+			return $session->html_phrase( "lib/metafield/itemref:not_found",
 				id=>$xml->create_text_node( $value->{id} ),
-				objtype=>$session->html_phrase( "datasetname_".$ds->base_id))
-			);
+				objtype=>$session->html_phrase( "datasetname_".$ds->base_id));
 		}
 	}
 	else
 	{
-		my $dataobj = $ds->make_dataobj({});
-		foreach my $name (keys %$value)
-		{
-			next if $name eq "id";
-			next if !$ds->has_field( $name );
-			$dataobj->set_value( $name, $value->{$name} );
-		}
-
-		$frag->appendChild( $dataobj->render_citation() );
+		return $xml->create_text_node( $value->{title} );
 	}
 
-	if( $extras->hasChildNodes )
+	if( EPrints::Utils::is_set( $value->{title} ) )
 	{
-		$frag->appendChild( $xml->create_text_node( " (" ) );
-		$frag->appendChild( $extras );
-		$frag->appendChild( $xml->create_text_node( ")" ) );
-	}
+		my $link = $xml->create_element( "a", href => $dataobj->get_url );
+		$link->appendChild( $xml->create_text_node( $value->{title} ) );
 
-	return $frag;
+		return $link;
+	}
+	else
+	{
+		return $dataobj->render_citation_link;
+	}
 }
 
 sub _dataset
@@ -212,31 +187,3 @@ sub render_input_field_actual
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

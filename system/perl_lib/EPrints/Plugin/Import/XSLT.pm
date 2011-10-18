@@ -1,112 +1,146 @@
-=head1 NAME
-
-EPrints::Plugin::Import::XSLT
-
-=cut
-
 package EPrints::Plugin::Import::XSLT;
 
 use EPrints::Plugin::Import;
 
 @ISA = ( "EPrints::Plugin::Import" );
 
-use strict;
+our %SETTINGS;
 
-our %SETTINGS; # class-specific settings
+use strict;
 
 sub new
 {
-	my( $class, @args ) = @_;
+	my( $class, %params ) = @_;
 
-	return $class->SUPER::new(
-		%{$SETTINGS{$class}},
-		@args
-	);
+	my $self = $class->SUPER::new( %params );
+
+	my $path = $self->{path} = $EPrints::SystemSettings::conf->{base_path}."/lib/xslt/import";
+
+	my $name = $self->{id};
+
+	if( $name eq "Import::XSLT" )
+	{
+		$self->{name} = "XSLT";
+		$self->{visible} = "";
+		$self->{produce} = [];
+		$self->{suffix} = "text";
+		$self->{mimetype} = "text/plain";
+
+		if( exists $EPrints::SystemSettings::conf->{executables}->{xsltproc} ) {
+			$self->initialise( $path );
+		}
+	}
+	elsif( $name =~ s/^Import::XSLT::// )
+	{
+		$self->{name} = munge_name($name);
+		$self->{visible} = "all";
+		$self->{produce} = [ 'list/eprint' ];
+		$self->{session} ||= $self->{processor}->{session};
+		$self->{Handler} ||= EPrints::CLIProcessor->new(
+			session => $self->{session}
+		);
+		my $settings = $EPrints::Plugin::Import::XSLT::SETTINGS{$self->{id}};
+		$self->{stylesheet} = $settings->{stylesheet};
+	}
+
+	return $self;
 }
 
-sub init_xslt
+sub munge_name
 {
-	my( $class, $repo, $xslt ) = @_;
+	my( $name ) = @_;
+	$name =~ s/_/ /g;
+	return $name;
+}
 
-	my $stylesheet = XML::LibXSLT->new->parse_stylesheet( $xslt->{doc} );
-	$xslt->{stylesheet} = $stylesheet;
-	delete $xslt->{doc};
+sub initialise
+{
+	my( $self, $path ) = @_;
 
-	$SETTINGS{$class} = $xslt;
+	opendir(my $dir, $path) or return;
+	my @stylesheets = grep { /\.xsl$/ } readdir($dir);
+	closedir($dir);
+
+	my $me = __PACKAGE__;
+
+	foreach my $stylesheet (@stylesheets)
+	{
+		my $name = $stylesheet;
+		next unless $name =~ s/^([a-zA-Z0-9_]+)(?:\.([^.]+))?\.xsl$/$1/;
+		my $type = $2;
+
+		my $class = __PACKAGE__ . "::$name";
+
+		eval <<EOC;
+package $class;
+
+our \@ISA = qw( $me );
+
+1;
+EOC
+
+		my $plugin = $class->new();
+		$EPrints::Plugin::Import::XSLT::SETTINGS{$plugin->{id}} = {
+			stylesheet => $stylesheet,
+		};
+		EPrints::PluginFactory->register_plugin( $plugin );
+	}
 }
 
 sub input_fh
 {
-	my( $self, %opts ) = @_;
+	my( $plugin, %opts ) = @_;
 
 	my $fh = $opts{fh};
-	my $session = $self->{session};
+	my $session = $plugin->{session};
 
-	my $dataset = $opts{dataset};
-	my $class = $dataset->get_object_class;
-	my $root_name = $dataset->base_id;
+	my $xmlplugin = $session->plugin( "Import::XML",
+		Handler => $plugin->handler,
+		parse_only => $plugin->{parse_only},
+	);
 
-	# read the source XML
-	# note: LibXSLT will only work with LibXML, so that's what we use here
-	my $source = XML::LibXML->new->parse_fh( $fh );
+	my $path = $plugin->{path};
+	my $stylesheet = $plugin->{stylesheet};
 
-	# transform it using our stylesheet
-	my $result = $self->transform( $source );
+	my $xslt = "$path/$stylesheet";
 
-	my @ids;
-
-	my $root = $result->documentElement;
-
-	foreach my $node ($root->getElementsByTagName( $root_name ))
+	if( !-r $xslt )
 	{
-		my $epdata = $class->xml_to_epdata( $session, $node );
-		my $dataobj = $self->epdata_to_dataobj( $dataset, $epdata );
-		next if !defined $dataobj;
-		push @ids, $dataobj->id;
+		delete $EPrints::Plugin::REGISTRY{$plugin->{id}};
+		EPrints::abort "Oops! Looks like $xslt has disappeared\n";
 	}
 
-	$session->xml->dispose( $source );
-	$session->xml->dispose( $result );
+	my $xmlfile = File::Temp->new;
+	my $epfile = File::Temp->new;
 
-	return EPrints::List->new(
-		session => $session,
-		dataset => $dataset,
-		ids => \@ids );
-}
+	binmode($xmlfile);
+	my $buffer;
+	while(read($fh,$buffer,4096))
+	{
+		print $xmlfile $buffer;
+	}
 
-sub transform
-{
-	my( $self, $doc ) = @_;
+	my %args = (
+		STYLESHEET => $xslt,
+		SOURCE => "$xmlfile",
+		TARGET => "$epfile",
+	);
 
-	return $self->{stylesheet}->transform( $doc );
+	unless( $session->get_repository->can_invoke( "xsltproc", %args ) )
+	{
+		EPrints::abort "Can't invoke xsltproc\n";
+	}
+
+	my $rc = EPrints::Platform::exec( $session->get_repository, "xsltproc", %args );
+	if( $rc )
+	{
+		$plugin->handler->message( "error", $session->make_text( "Error invoking xslt processor (result = $rc)" ) );
+		return;
+	}
+
+	my $list = $xmlplugin->input_fh( %opts, fh => $epfile );
+
+	return $list;
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

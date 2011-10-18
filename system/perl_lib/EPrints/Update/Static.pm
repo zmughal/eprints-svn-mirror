@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -116,7 +121,7 @@ sub update_static_file
 
 	my $target_mtime = EPrints::Utils::mtime( $target );
 
-	return if( defined $target_mtime && $target_mtime > $source_mtime ); # nothing to do
+	return if( $target_mtime > $source_mtime ); # nothing to do
 
 	$target =~ m/^(.*)\/([^\/]+)/;
 	my( $target_dir, $target_file ) = ( $1, $2 );
@@ -169,7 +174,7 @@ sub update_secure_auto_js
 	my $js = "";
 	$js .= "var eprints_http_root = ".EPrints::Utils::js_string( $session->get_url( scheme => "https", host => 1, path => "static" ) ).";\n";
 	$js .= "var eprints_http_cgiroot = ".EPrints::Utils::js_string( $session->get_url( scheme => "https", host => 1, path => "cgi" ) ).";\n";
-	$js .= "var eprints_oai_archive_id = ".EPrints::Utils::js_string( EPrints::OpenArchives::archive_id( $session ) ).";\n";
+	$js .= "var eprints_oai_archive_id = ".EPrints::Utils::js_string( $session->get_repository->get_conf('oai','v2','archive_id') ).";\n";
 	$js .= "\n";
 
 	update_auto(
@@ -189,7 +194,7 @@ sub update_auto_js
 	my $js = "";
 	$js .= "var eprints_http_root = ".EPrints::Utils::js_string( $session->get_url( scheme => "http", host => 1, path => "static" ) ).";\n";
 	$js .= "var eprints_http_cgiroot = ".EPrints::Utils::js_string( $session->get_url( scheme => "http", host => 1, path => "cgi" ) ).";\n";
-	$js .= "var eprints_oai_archive_id = ".EPrints::Utils::js_string( EPrints::OpenArchives::archive_id( $session ) ).";\n";
+	$js .= "var eprints_oai_archive_id = ".EPrints::Utils::js_string( $session->get_repository->get_conf('oai','v2','archive_id') ).";\n";
 
 	update_auto(
 			"$target_dir/javascript/auto.js",
@@ -386,32 +391,4 @@ sub copy_xhtml
 
 1;
 
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

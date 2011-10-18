@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -72,15 +77,11 @@ been an int and may be changed in a later upgrade.
 The ID of the eprint (if any) which this eprint is a commentary on.  This 
 field should have been an int and may be changed in a later upgrade.
 
-=item metadata_visibility (set)
+=item replacedby (itemref)
 
-This field is automatically set.
-
-	show - appears normally
-	no_search - hidden from search/views
-
-The 'hide' option may be used to force an eprint to not appear in search/views
-but is not considered a stable option.
+The ID of the eprint (if any) which has replaced this eprint. This is only set
+on records in the "deletion" dataset.  This field should have
+been an int and may be changed in a later upgrade.
 
 =back
 
@@ -123,10 +124,10 @@ sub get_system_field_info
 		sql_counter=>"eprintid" },
 
 	{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
-		sql_index=>0, default_value=>0, volatile=>1 },
+		sql_index=>0, default_value=>1, volatile=>1 },
 
 	{ name=>"documents", type=>"subobject", datasetid=>'document',
-		multiple=>1, text_index=>1 },
+		multiple=>1 },
 
 	{ name=>"files", type=>"subobject", datasetid=>"file",
 		multiple=>1 },
@@ -166,10 +167,12 @@ sub get_system_field_info
 	{ name=>"commentary", type=>"itemref", required=>0,
 		datasetid=>"eprint", can_clone=>0, sql_index=>0 },
 
+	{ name=>"replacedby", type=>"itemref", required=>0,
+		datasetid=>"eprint", can_clone=>0 },
+
 	{ name=>"metadata_visibility", type=>"set", required=>1,
 		default_value => "show",
-		volatile => 1,
-		options=>[ "show", "no_search", "hide" ] },
+		options=>[ "show", "no_search" ] },
 
 	{ name=>"contact_email", type=>"email", required=>0, can_clone=>0 },
 
@@ -187,10 +190,12 @@ sub get_system_field_info
 			{
 				sub_name => "type",
 				type => "text",
+				text_index => 0,
 			},
 			{
 				sub_name => "uri",
 				type => "text",
+				text_index => 0,
 			},
 		],
 	},
@@ -260,8 +265,8 @@ sub get_system_field_info
 		],
 		render_value=>"EPrints::DataObj::EPrint::render_edit_lock",
  	},
-	
-	)
+
+	);
 }
 
 =item $eprint->set_item_issues( $new_issues )
@@ -441,6 +446,8 @@ sub render_fileinfo
 	return $f;
 }
 
+
+
 ######################################################################
 # =pod
 # 
@@ -489,20 +496,46 @@ sub create_from_data
 {
 	my( $class, $session, $data, $dataset ) = @_;
 
-	my $self = $class->SUPER::create_from_data( $session, $data, $dataset );
+	my $new_eprint = $class->SUPER::create_from_data( $session, $data, $dataset );
 	
-	return undef unless defined $self;
+	return undef unless defined $new_eprint;
 
-	$self->set_value( "fileinfo", $self->fileinfo );
+	$session->get_database->counter_minimum( "eprintid", $new_eprint->get_id );
+	
+	$new_eprint->set_value( "fileinfo", $new_eprint->fileinfo );
 
-	$self->update_triggers();
+	$session->get_database->update(
+		$new_eprint->{dataset},
+		$new_eprint->{data},
+		$new_eprint->{changed} );
 
-	$self->save_revision( action => "create" );
+	$new_eprint->clear_changed;
+
+	$new_eprint->update_triggers();
 
 	# we only need to update the DB and queue changes (if necessary)
-	$self->SUPER::commit();
+	$new_eprint->SUPER::commit();
 
-	return $self;
+	my $user = $session->current_user;
+	my $userid = undef;
+	$userid = $user->get_id if defined $user;
+
+	my $history_ds = $session->get_repository->get_dataset( "history" );
+	my $event = $history_ds->create_object( 
+		$session,
+		{
+			_parent=>$new_eprint,
+			userid=>$userid,
+			datasetid=>"eprint",
+			objectid=>$new_eprint->get_id,
+			revision=>$new_eprint->get_value( "rev_number" ),
+			action=>"create",
+			details=>undef,
+		}
+	);
+	$event->set_dataobj_xml( $new_eprint );
+
+	return $new_eprint;
 }
 
 # Update all the stuff that needs updating before an eprint
@@ -514,27 +547,24 @@ sub update_triggers
 
 	$self->SUPER::update_triggers();
 
-	if( $self->{non_volatile_change} )
+	my $action = "clear_triples";
+	if( $self->get_value( "eprint_status" ) eq "archive" )
 	{
-		$self->set_value( "lastmod", EPrints::Time::get_iso_timestamp() );
-
-		my $action = "clear_triples";
-		if( $self->value( "eprint_status" ) eq "archive" )
-		{
-			$action = "update_triples";
-		}
-
-		my $user = $self->{session}->current_user;
-		my $userid;
-		$userid = $user->id if defined $user;
-
-		EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
-			pluginid => "Event::RDF",
-			action => $action,
-			params => [$self->internal_uri],
-			userid => $userid,
-		});
+		$action = "update_triples";
 	}
+			
+
+	my $user = $self->{session}->current_user;
+	my $userid;
+	$userid = $user->id if defined $user;
+
+	EPrints::DataObj::EventQueue->create_unique( $self->{session}, {
+		unique => "TRUE",
+		pluginid => "Event::RDF",
+		action => $action,
+		params => [$self->internal_uri],
+		userid => $userid,
+	});
 }
 
 
@@ -648,11 +678,6 @@ sub clone
 		delete $data->{$field->get_name};
 	}
 
-	if( !$nolink )
-	{
-		$data->{succeeds} = $self->id;
-	}
-
 	# Create the new EPrint record
 	my $new_eprint = $dest_dataset->create_object(
 		$self->{session},
@@ -666,6 +691,18 @@ sub clone
 	$new_eprint->{under_construction} = 1;
 
 	my $status = $self->get_value( "eprint_status" );
+	unless( $nolink )
+	{
+		# We assume the new eprint will be a later version of this one,
+		# so we'll fill in the succeeds field, provided this one is
+		# already in the main repository.
+#		if( $status eq "archive" || $status eq "deletion" )
+#		{
+#		}
+#		cjg disabled this condtion.
+
+		$new_eprint->set_value( "succeeds" , $self->get_value( "eprintid" ) );
+	}
 
 	# Attempt to copy the documents, if appropriate
 	my $ok = 1;
@@ -735,17 +772,6 @@ sub _transfer
 		"eprint_status" , 
 		$new_status );
 
-	my $update_threads = $old_status eq "archive" || $new_status eq "archive";
-
-	# visibility has changed so force commit to update our threads 
-	if( $update_threads )
-	{
-		$self->{changed}->{succeeds} = undef
-			if !exists $self->{changed}->{succeeds};
-		$self->{changed}->{commentary} = undef
-			if !exists $self->{changed}->{commentary};
-	}
-
 	# Write self
 	$self->commit( 1 );
 
@@ -768,15 +794,11 @@ sub _transfer
 		}
 	);
 
-	# visibility has changed which means all threaded eprints need updating
-	if( $update_threads )
+	# Need to clean up stuff if we move this record out of the
+	# archive.
+	if( $old_status eq "archive" )
 	{
-		$self->map_thread( $self->{dataset}->field( "succeeds" ), sub {
-			$_[2]->remove_static;
-		});
-		$self->map_thread( $self->{dataset}->field( "commentary" ), sub {
-			$_[2]->remove_static;
-		});
+		$self->_move_from_archive;
 	}
 
 	# Trigger any actions which are configured for eprints status
@@ -790,13 +812,13 @@ sub _transfer
 			$new_status );
 	}
 
-	# the call to 'eprint_status_change' above should be encapsulated in a trigger
-        $self->{dataset}->run_trigger( EPrints::Const::EP_TRIGGER_STATUS_CHANGE,
-		dataobj => $self,
-		old_status => $old_status,
-		new_status => $new_status
-	);
+	# if this succeeds something then update its metadata visibility
+	my $successor = EPrints::EPrint->new( $self->{session}, $self->{data}->{succeeds} );
+	$successor->succeed_thread_modified if( defined $successor );
 
+	# update this eprints metadata visibility if needed.
+	$self->succeed_thread_modified;
+	
 	return( 1 );
 }
 
@@ -910,14 +932,6 @@ sub remove
 	# remove the webpages associated with this record.
 	$self->remove_static;
 
-	# fix visibility of succeeded item
-	if( $self->is_set( "succeeds" ) )
-	{
-		my $succeeds = $self->{session}->eprint( $self->value( "succeeds" ) );
-		my $field = $self->{dataset}->field( "succeeds" );
-		$succeeds->removed_from_thread( $field, $self ) if defined $succeeds;
-	}
-
 	return $success;
 }
 
@@ -927,31 +941,12 @@ sub remove
 
 =item $success = $eprint->commit( [$force] );
 
-Commit any changes to the database.
+Commit any changes that might have been made to the database.
 
-Calls L</update_triggers> just before the database is updated.
+If the item has not be changed then this function does nothing unless
+$force is true.
 
-The actions this method does are dependent on some object attributes:
-
-	changed - HASH of changed fields (from L<EPrints::DataObj>)
-	non_volatile_change - BOOL (from L<EPrints::DataObj>)
-	under_construction - BOOL
-
-If B<datestamp> is unset and this eprint is in the B<archive> dataset datestamp will always be set which will in turn set B<datestamp> as changed.
-
-If no field values were changed and C<$force> is false returns.
-
-If C<under_construction> is false:
- - static files updated
-
-If C<non_volatile_change> is true:
- - B<lastmod> field updated
- - triples update queued
-
-If C<under_construction> is false and C<non_volatile_change> is true:
- - revision generated
-
-The goal of these controls is to only trigger expensive processes in response to user actions. Revisions need to be generated when the user changes metadata or uploads new files (see L<EPrints::DataObj::Document/commit>).
+Calls L</set_eprint_automatic_fields> just before the C<$eprint> is committed.
 
 =cut
 ######################################################################
@@ -960,56 +955,84 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
+	# get_all_documents() is called several times during commit
+	# setting _documents will cause it to be returned instead of searching
+	local $self->{_documents} = [$self->get_all_documents];
+
+	if( $self->{changed}->{succeeds} )
+	{
+		my $old_succ = EPrints::EPrint->new( $self->{session}, $self->{changed}->{succeeds} );
+		$old_succ->succeed_thread_modified if( defined $old_succ );
+
+		my $new_succ = EPrints::EPrint->new( $self->{session}, $self->{data}->{succeeds} );
+		$new_succ->succeed_thread_modified if( defined $new_succ );
+	}
+
 	# recalculate issues number
-	if( exists $self->{changed}->{item_issues_status} )
+	my $issues = $self->get_value( "item_issues" ) || [];
+	my $c = 0;
+	foreach my $issue ( @{$issues} )
 	{
-		my $issues_status = $self->value( "item_issues_status" ) || [];
-		my $c = 0;
-		foreach my $issue_status ( @{$issues_status} )
-		{
-			$c+=1 if( $issue_status eq "discovered" );
-			$c+=1 if( $issue_status eq "reported" );
-		}
-		$self->set_value( "item_issues_count", $c );
+		$c+=1 if( $issue->{status} eq "discovered" );
+		$c+=1 if( $issue->{status} eq "reported" );
+	}
+	$self->set_value( "item_issues_count", $c );
+
+	$self->update_triggers();
+
+	$self->set_value( "fileinfo", $self->fileinfo );
+
+	if( !$self->is_set( "datestamp" ) && $self->get_value( "eprint_status" ) eq "archive" )
+	{
+		$self->set_value( 
+			"datestamp" , 
+			EPrints::Time::get_iso_timestamp() );
 	}
 
-	if( !$self->is_set( "datestamp" ) && $self->value( "eprint_status" ) eq "archive" )
-	{
-		$self->set_value( "datestamp", EPrints::Time::get_iso_timestamp() );
-	}
-
-	if( scalar(keys %{$self->{changed}}) == 0 )
+	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
 
-	$self->update_triggers(); # might cause a new revision
-
-	if( !$self->under_construction )
+	if( !$self->under_construction && $self->{non_volatile_change} )
 	{
-		$self->remove_static;
-		if( $self->{non_volatile_change} )
-		{
-			$self->save_revision;
-		}
+		my $rev_number = $self->get_value( "rev_number" ) || 0;
+		$rev_number += 1;
+	
+		$self->set_value( "rev_number", $rev_number );
+
+		$self->set_value( 
+			"lastmod" , 
+			EPrints::Time::get_iso_timestamp() );
+
+		my $user = $self->{session}->current_user;
+		my $userid = undef;
+		$userid = $user->get_id if defined $user;
+	
+		my $history_ds = $self->{session}->get_repository->get_dataset( "history" );
+		my $event = $history_ds->create_object( 
+			$self->{session},
+			{
+				_parent=>$self,
+				userid=>$userid,
+				datasetid=>"eprint",
+				objectid=>$self->get_id,
+				revision=>$self->get_value( "rev_number" ),
+				action=>"modify",
+				details=>join('|', sort keys %{$self->{changed}}),
+			}
+		);
+		$event->set_dataobj_xml( $self );
 	}
 
-	my( $succeeds_old, $succeeds_new );
-	if( exists $self->{changed}->{succeeds} )
+	unless( $self->under_construction )
 	{
-		$succeeds_old = $self->{session}->eprint( $self->{changed}->{succeeds} );
-		$succeeds_new = $self->{session}->eprint( $self->value( "succeeds" ) );
+		$self->remove_static;
 	}
 
 	# commit changes and clear changed fields
 	my $success = $self->SUPER::commit( $force );
-
-	my $succeeds = $self->{dataset}->field( "succeeds" );
-	$succeeds_old->removed_from_thread( $succeeds, $self )
-		if defined $succeeds_old;
-	$succeeds_new->added_to_thread( $succeeds, $self )
-		if defined $succeeds_new;
 
 	return( $success );
 }
@@ -1017,55 +1040,31 @@ sub commit
 ######################################################################
 =pod
 
-=item $eprint->save_revision( %opts )
+=item $eprint->write_revision
 
-Increase the eprint revision number and save a complete copy of the record into the history (see L<EPrints::DataObj::History>).
-
-Options:
-
-	user - user that caused the action to occur, defaults to current user
-	action - see history.action, defaults to "modify"
-	details - see history.details, defaults to a description of changed fields
+Write out a snapshot of the XML describing the current state of the
+eprint.
 
 =cut
 ######################################################################
 
-sub save_revision
+sub write_revision
 {
-	my( $self, %opts ) = @_;
+	my( $self ) = @_;
 
-	my $repo = $self->repository;
+	my $tmpfile = File::Temp->new;
+	my $filename = "eprint.xml";
 
-	my $action = exists $opts{action} ? $opts{action} : "modify";
-	my $user = exists $opts{user} ? $opts{user} : $repo->current_user;
-	my $details = exists $opts{details} ? $opts{details} : join('|', sort keys %{$self->{changed}}),
+	binmode($tmpfile, ":utf8");
 
-	my $userid = defined $user ? $user->id : undef;
+	print $tmpfile '<?xml version="1.0" encoding="utf-8" ?>'."\n";
+	print $tmpfile $self->export( "XML" );
 
-	my $rev_number = $self->value( "rev_number" ) || 0;
-	++$rev_number;
-	$self->set_value( "rev_number", $rev_number );
+	seek($tmpfile,0,0);
 
-	my $event = $repo->dataset( "history" )->create_dataobj( 
-		{
-			_parent=>$self,
-			userid=>$userid,
-			datasetid=>$self->dataset->base_id,
-			objectid=>$self->id,
-			revision=>$rev_number,
-			action=>$action,
-			details=>$details,
-		}
-	);
-	$event->set_dataobj_xml( $self );
-
-	# make sure the revision number is correct in the database
-	$repo->database->update(
-		$self->{dataset},
-		$self->{data},
-		{ rev_number => delete $self->{changed}->{rev_number} }
-	);
+	$self->add_stored_file( $filename, $tmpfile, -s "$tmpfile" );
 }
+
 
 ######################################################################
 =pod
@@ -1171,7 +1170,8 @@ sub prune_documents
 
 =item @documents = $eprint->get_all_documents
 
-Return a list of all L<EPrint::Document> objects associated with this eprint excluding documents with a "isVolatileVersionOf" relation (e.g. thumbnails).
+Return an array of all EPrint::Document objects associated with this
+eprint.
 
 =cut
 ######################################################################
@@ -1182,15 +1182,51 @@ sub get_all_documents
 
 	my @docs;
 
+	my $relation = EPrints::Utils::make_relation( "isVolatileVersionOf" );
+
 	# Filter out any documents that are volatile versions
-	foreach my $doc (@{($self->value( "documents" ))})
+	foreach my $doc (@{($self->get_value( "documents" ))})
 	{
-		next if $doc->has_relation( undef, "isVolatileVersionOf" );
-		push @docs, $doc;
+		if( ! $doc->has_related_objects( $relation ) )
+		{
+			push @docs, $doc;
+		}
 	}
 
 	my @sdocs = sort { ($a->get_value( "placement" )||0) <=> ($b->get_value( "placement" )||0) || $a->id <=> $b->id } @docs;
 	return @sdocs;
+}
+
+
+
+######################################################################
+=pod
+
+=item @formats =  $eprint->required_formats
+
+Return a list of the required formats for this 
+eprint. Only one of the required formats is required, not all.
+
+An empty list means no format is required.
+
+=cut
+######################################################################
+
+sub required_formats
+{
+	my( $self ) = @_;
+
+	my $fmts = $self->{session}->get_repository->get_conf( 
+				"required_formats" );
+	if( ref( $fmts ) ne "ARRAY" )
+	{
+		# function pointer then...
+		$fmts = $self->{session}->get_repository->call(
+			'required_formats',
+			$self );
+	}
+
+	return @{$fmts};
 }
 
 ######################################################################
@@ -1210,8 +1246,25 @@ sub move_to_deletion
 
 	my $ds = $self->{session}->get_repository->get_dataset( "eprint" );
 	
+	my $last_in_thread = $self->last_in_thread( $ds->get_field( "succeeds" ) );
+	my $replacement_id = $last_in_thread->get_value( "eprintid" );
+
+	if( $replacement_id == $self->get_value( "eprintid" ) )
+	{
+		# This IS the last in the thread, so we should redirect
+		# enquirers to the one this replaced, if any.
+		$replacement_id = $self->get_value( "succeeds" );
+	}
+
+	$self->set_value( "replacedby" , $replacement_id );
+
 	my $success = $self->_transfer( "deletion" );
 
+	if( $success )
+	{
+		$self->generate_static_all_related;
+	}
+	
 	return $success;
 }
 
@@ -1270,6 +1323,23 @@ sub move_to_buffer
 
 
 ######################################################################
+# 
+# $eprint->_move_from_archive
+#
+# Called when an item leaves the main archive. Removes the static 
+# pages.
+#
+######################################################################
+
+sub _move_from_archive
+{
+	my( $self ) = @_;
+
+	$self->generate_static_all_related;
+}
+
+
+######################################################################
 =pod
 
 =item $success = $eprint->move_to_archive
@@ -1295,6 +1365,8 @@ sub move_to_archive
 				"update_archived_eprint", $self );
 			$self->commit;
 		}
+
+		$self->generate_static_all_related;
 	}
 	
 	return( $success );
@@ -1326,12 +1398,6 @@ sub local_path
 			"documents_path" )."/".$self->get_value( "dir" ) );
 }
 
-sub path
-{
-	my( $self ) = @_;
-
-	return sprintf("%d/", $self->id);
-}
 
 ######################################################################
 =pod
@@ -1433,6 +1499,34 @@ sub generate_static
 ######################################################################
 =pod
 
+=item $eprint->generate_static_all_related
+
+Generate the static pages for this eprint plus any it's related to,
+by succession or commentary.
+
+=cut
+######################################################################
+
+sub generate_static_all_related
+{
+	my( $self ) = @_;
+
+	$self->generate_static;
+
+	# Generate static pages for everything in threads, if 
+	# appropriate
+	my @to_update = $self->get_all_related;
+	
+	# Do the actual pdates
+	foreach my $related (@to_update)
+	{
+		$related->generate_static;
+	}
+}
+
+######################################################################
+=pod
+
 =item $eprint->remove_static
 
 Remove the static web page or pages.
@@ -1508,25 +1602,16 @@ sub render
 		$dom = $self->{session}->make_doc_fragment;
 		$dom->appendChild( $self->{session}->html_phrase( 
 			"lib/eprint:eprint_gone" ) );
-		my $replacement;
-		my $succeeds = $self->{dataset}->field( "succeeds" );
-		my $later = $self->later_in_thread( $succeeds );
-		if( $later->count > 0 )
-		{
-			$replacement = $later->item( 0 );
-		}
-		elsif( $self->is_set( "succeeds" ) )
-		{
-			$replacement = $self->{session}->eprint( $self->value( "succeeds" ) );
-			undef $replacement
-				if $replacement->value( "eprint_status" ) ne "archive";
-		}
+		my $replacement = new EPrints::DataObj::EPrint(
+			$self->{session},
+			$self->get_value( "replacedby" ) );
 		if( defined $replacement )
 		{
+			my $cite = $replacement->render_citation_link;
 			$dom->appendChild( 
 				$self->{session}->html_phrase( 
 					"lib/eprint:later_version", 
-					citation => $replacement->render_citation_link ) );
+					citation => $cite ) );
 		}
 	}
 	else
@@ -1673,7 +1758,7 @@ sub get_url
 
 =item $user = $eprint->get_user
 
-Return the EPrints::DataObj::User to whom this eprint belongs (if any).
+Return the EPrints::User to whom this eprint belongs (if any).
 
 =cut
 ######################################################################
@@ -1693,51 +1778,91 @@ sub get_user
 		}
 	}
 
-	$self->{user} = EPrints::DataObj::User->new( 
+	$self->{user} = EPrints::User->new( 
 		$self->{session}, 
 		$self->get_value( "userid" ) );
 
 	return $self->{user};
 }
 
-=begin InternalDoc
 
-=item $list = $eprint->later_in_thread( $field )
+######################################################################
+=pod
 
-Return a L<EPrints::List> of the immediately later items in the thread. 
+=item @eprints = $eprint->get_all_related
 
-=end InternalDoc
+Return the eprints that are related in some way to this in a succession
+or commentary thread. The returned list does NOT include this EPrint.
 
 =cut
+######################################################################
 
-sub later_in_thread
+sub get_all_related
 {
-	my( $self, $field ) = @_;
+	my( $self ) = @_;
 
-	my $dataset = $self->{session}->dataset( "archive" );
+	my $succeeds_field = $self->{dataset}->get_field( "succeeds" );
+	my $commentary_field = $self->{dataset}->get_field( "commentary" );
 
-	return $dataset->search(
-		filters => [
-			{
-				meta_fields => [$field->name],
-				value => $self->value( "eprintid" )
-			},
-		],
-		custom_order => "-datestamp" );
+	my @related = ();
+
+	if( $self->in_thread( $succeeds_field ) )
+	{
+		push @related, $self->all_in_thread( $succeeds_field );
+	}
+	
+	if( $self->in_thread( $commentary_field ) )
+	{
+		push @related, $self->all_in_thread( $commentary_field );
+	}
+	
+	# Remove duplicates, just in case
+	my %related_uniq;
+	my $eprint;	
+	my $ownid = $self->get_value( "eprintid" );
+	foreach $eprint (@related)
+	{
+		# We don't want to re-update ourself
+		next if( $ownid eq $eprint->get_value( "eprintid" ) );
+		
+		$related_uniq{$eprint->get_value("eprintid")} = $eprint;
+	}
+
+	return( values %related_uniq );
 }
 
-=item $bool = $eprint->in_thread( $field )
 
-Returns true if this eprint is in the $field thread.
+######################################################################
+=pod
+
+=item $boolean = $eprint->in_thread( $field )
+
+Return true if this eprint is part of a thread of $field. $field
+should be an EPrint::MetaField representing either "commentary" or
+"succeeds".
 
 =cut
+######################################################################
 
 sub in_thread
 {
 	my( $self, $field ) = @_;
+	
+	if( defined $self->get_value( $field->get_name ) )
+	{
+		return( 1 );
+	}
 
-	return $self->is_set( $field->name ) || $self->later_in_thread( $field )->count > 0;
+	my @later = $self->later_in_thread( $field );
+
+	return( 1 ) if( scalar @later > 0 );
+	
+	return( 0 );
 }
+
+
+######################################################################
+=pod
 
 =item $eprint = $eprint->first_in_thread( $field )
 
@@ -1745,139 +1870,257 @@ Return the first (earliest) version or first paper in the thread
 of commentaries of this paper in the repository.
 
 =cut
+######################################################################
 
 sub first_in_thread
 {
 	my( $self, $field ) = @_;
 	
-	my %seen;
-
-	while( $self->is_set( $field->name ) )
+	my $first = $self;
+	my $below = {};	
+	while( defined $first->get_value( $field->get_name ) )
 	{
-		my $id = $field->get_value( $self );
+		if( $below->{$first->get_id} )
+		{
+			$self->loop_error( $field, keys %{$below} );
+			last;
+		}
+		$below->{$first->get_id} = 1;
+		my $prev = EPrints::DataObj::EPrint->new( 
+				$self->{session},
+				$first->get_value( $field->get_name ) );
 
-		$self->loop_error( $field, keys %seen ), last if $seen{$id}++;
-
-		my $first = $self->{dataset}->dataobj( $id );
-		last if !defined $first;
-
-		$self = $first;
+		return( $first ) unless( defined $prev );
+		$first = $prev;
 	}
 			
-	return $self;
+	return( $first );
 }
+
+
+######################################################################
+=pod
+
+=item @eprints = $eprint->later_in_thread( $field )
+
+Return a list of the immediately later items in the thread. 
+
+=cut
+######################################################################
+
+sub later_in_thread
+{
+	my( $self, $field ) = @_;
+
+	my $dataset = $self->{session}->dataset( "archive" );
+
+	my $results = $dataset->search(
+		filters => [
+			{
+				meta_fields => [$field->name],
+				value => $self->value( "eprintid" )
+			},
+		],
+		custom_order => "-datestamp" );
+
+	return $results->slice;
+}
+
+
+######################################################################
+=pod
+
+=item @eprints = $eprint->all_in_thread( $field )
+
+Return all of the EPrints in the given thread.
+
+=cut
+######################################################################
+
+sub all_in_thread
+{
+	my( $self, $field ) = @_;
+
+	my $above = {};
+	my $set = {};
+	
+	my $first = $self->first_in_thread( $field );
+	
+	$self->_collect_thread( $field, $first, $set, $above );
+
+	return( values %{$set} );
+}
+
+######################################################################
+# 
+# $eprint->_collect_thread( $field, $current, $eprints, $set, $above )
+#
+# $above is a hash which contains all the ids eprints above the current
+# one as keys.
+# $set contains all the eprints found.
+#
+######################################################################
+
+sub _collect_thread
+{
+	my( $self, $field, $current, $set, $above ) = @_;
+
+	if( defined $above->{$current->get_id} )
+	{
+		$self->loop_error( $field, keys %{$above} );
+		return;
+	}
+	$set->{$current->get_id} = $current;	
+	my %above2 = %{$above};
+	$above2{$current->get_id} = $current; # copy the hash contents
+	$set->{$current->get_id} = $current;	
+	
+	my @later = $current->later_in_thread( $field );
+	foreach my $later_eprint (@later)
+	{
+		$self->_collect_thread( $field, $later_eprint, $set, \%above2 );
+	}
+}
+
+
+######################################################################
+=pod
 
 =item $eprint = $eprint->last_in_thread( $field )
 
-Returns the latest item in the $field thread on this eprint's branch of the thread tree.
+Return the last item in the specified thread.
 
 =cut
+######################################################################
 
 sub last_in_thread
 {
 	my( $self, $field ) = @_;
-
-	my %seen = ($self->id => 1);
-	while( 1 )
+	
+	my $latest;
+	my @later = ( $self );
+	my $above = {};
+	while( scalar @later > 0 )
 	{
-		my $later = $self->later_in_thread( $field );
-		my $item = $later->item( 0 );
-		last if !defined $item || $seen{$item->id}++;
-		$self = $item;
+		$latest = $later[0];
+		if( defined $above->{$latest->get_id} )
+		{
+			$self->loop_error( $field, keys %{$above} );
+			last;
+		}
+		$above->{$latest->get_id} = 1;
+		@later = $latest->later_in_thread( $field );
 	}
 
-	return $self;
+	return( $latest );
 }
 
-=begin InternalDoc
 
-=item $eprint->removed_from_thread( $field, $parent )
+######################################################################
+=pod
 
-Update this $eprint now its $parent no longer points to it in the $field thread.
+=item $eprint->remove_from_threads
 
-The change in $parent must be committed before L</removed_from_thread> is called.
+Extract the eprint from any threads it's in. i.e., if any other
+paper is a later version of or commentary on this paper, the link
+from that paper to this will be removed.
 
-=end InternalDoc
+Abstract pages are updated if needed.
 
 =cut
+######################################################################
 
-sub removed_from_thread
+sub remove_from_threads
 {
-	my( $self, $field, $parent ) = @_;
+	my( $self ) = @_;
 
-	my $later = $self->later_in_thread( $field );
+	return unless( $self->get_value( "eprint_status" ) eq "archive" );
 
-	# if we are no longer in a thread we become visible again
-	if( $later->count == 0 )
+	# Remove thread info in this eprint
+	$self->set_value( "succeeds", undef );
+	$self->set_value( "commentary", undef );
+	$self->commit;
+
+	my @related = $self->get_all_related;
+	my $eprint;
+	# Remove all references to this eprint
+	my $this_id = $self->get_value( "eprintid" );
+
+	foreach $eprint ( @related )
 	{
-		if( $self->value( "metadata_visibility" ) eq "no_search" )
+		# Update the objects if they refer to us (the objects were 
+		# retrieved before we unlinked ourself)
+		my $changed = 0;
+		if( $eprint->get_value( "succeeds" ) eq $this_id )
+		{
+			$self->set_value( "succeeds", undef );
+			$changed = 1;
+		}
+		if( $eprint->get_value( "commentary" ) eq $this_id )
+		{
+			$self->set_value( "commentary", undef );
+			$changed = 1;
+		}
+		if( $changed )
+		{
+			$eprint->commit;
+		}
+	}
+
+	# Update static pages for each eprint
+	foreach $eprint (@related)
+	{
+		next if( $eprint->get_value( "eprintid" ) eq $this_id );
+		$eprint->generate_static; 
+	}
+}
+
+#
+# $eprint->succeed_thread_modified
+#
+# Something either started or stopped succeeding this eprint.
+# Update the metadata_visibility flag accordingly.
+# If metadata visibility is "hide" then do nothing as this must not
+# be overridden.
+
+sub succeed_thread_modified
+{
+	my( $self ) = @_;
+
+	my $mvis = $self->get_value( "metadata_visibility" );
+
+	if( $mvis eq "hide" )
+	{
+		# do nothing
+		return;
+	}
+
+	my $ds = $self->{session}->get_repository->get_dataset( "eprint" );
+
+	my $last_in_thread = $self->last_in_thread( $ds->get_field( "succeeds" ) );
+	my $replacement_id = $last_in_thread->get_value( "eprintid" );
+
+	if( $replacement_id == $self->get_value( "eprintid" ) )
+	{
+		# This IS the last in the thread, so we should make
+		# the metadata discoverable, if it isn't already.
+		if( $mvis eq "no_search" )
 		{
 			$self->set_value( "metadata_visibility", "show" );
 			$self->commit;
 		}
+		return;
 	}
-}
 
-=begin InternalDoc
-
-=item $eprint->added_to_thread( $field, $parent )
-
-Update this $eprint now $parent has it in the $field thread.
-
-=end InternalDoc
-
-=cut
-
-sub added_to_thread
-{
-	my( $self, $field, $parent ) = @_;
-
-	return if $parent->value( "eprint_status" ) ne "archive";
-
-	# we are no longer visible
-	if( $self->value( "metadata_visibility" ) eq "show" )
+	# this is _not_ the last in its thread, so we should hide the
+	# metadata from searches and browsing.
+	
+	if( $mvis eq "show" )
 	{
 		$self->set_value( "metadata_visibility", "no_search" );
 		$self->commit;
 	}
-}
-
-=begin InternalDoc
-
-=item $eprint->map_thread( $field, $f )
-
-Apply function $f to every eprint in the $field thread that this eprint is a member of (including itself).
-
-=end InternalDoc
-
-=cut
-
-sub map_thread
-{
-	my( $self, $field, $f ) = @_;
-
-	my $first = $self->first_in_thread( $field );
-
-	my %seen = ( $first->id => 1 );
-	&$f( $self->{session}, $self->{dataset}, $first, 0 );
-	$first->_map_thread( $field, $f, \%seen, 1 );
-}
-
-# WARNING! render_version_thread uses this and relies on $level to build the
-# tree
-sub _map_thread
-{
-	my( $self, $field, $f, $seen, $level ) = @_;
-
-	$self->later_in_thread( $field )->map(sub {
-		my( undef, undef, $item ) = @_;
-
-		$self->loop_error( $field, keys %$seen), return if $seen->{$item->id};
-		$seen->{$item->id} = 1;
-
-		&$f( $self->{session}, $self->{dataset}, $item, $level );
-		$item->_map_thread( $field, $f, $seen, $level + 1 );
-	});
+	return;
 }
 
 ######################################################################
@@ -1896,61 +2139,81 @@ sub render_version_thread
 
 	my $html;
 
-	my $cstyle = "thread_".$field->get_name;
+	my $first_version = $self->first_in_thread( $field );
 
 	my $ul = $self->{session}->make_element( "ul" );
-
-	my $clevel = 0;
-	$self->map_thread( $field, sub {
-		my( $session, undef, $item, $level ) = @_;
-
-		# move down a level
-		while( $clevel < $level )
-		{
-			++$clevel;
-			$ul = $ul->lastChild->appendChild( $session->make_element( "ul" ) );
-		}
-		# move up a level
-		while( $clevel > $level )
-		{
-			--$clevel;
-			$ul = $ul->parentNode->parentNode; # ul -> li -> ul
-		}
-
-		my $li = $session->make_element( "li" );
-		$ul->appendChild( $li );
-
-		my $citation;
-		if( $item->id ne $self->id )
-		{
-			$li->appendChild( $item->render_citation_link( $cstyle ) );
-		}
-		else
-		{
-			$li->appendChild( $item->render_citation( $cstyle ) );
-			$li->appendChild( $item->{session}->make_text( " " ) );
-			$li->appendChild( $item->{session}->html_phrase( "lib/eprint:curr_disp" ) );
-		}
-	});
-
-	while( defined $ul->parentNode )
-	{
-		$ul = $ul->parentNode;
-	}
-
-	return $ul;
+	
+	$ul->appendChild( $first_version->_render_version_thread_aux( $field, $self, {} ) );
+	
+	return( $ul );
 }
 
-=begin InternalDoc
+######################################################################
+# 
+# $xhtml = $eprint->_render_version_thread_aux( $field, $eprint_shown, $above )
+#
+# $above is a hash ref, the keys of which are ID's of eprints already 
+# seen above this item. One item CAN appear twice, just not as it's
+#  own decentant.
+#
+######################################################################
+
+sub _render_version_thread_aux
+{
+	my( $self, $field, $eprint_shown, $above ) = @_;
+
+	my $li = $self->{session}->make_element( "li" );
+
+	if( defined $above->{$self->get_id} )
+	{
+		$self->loop_error( $field, keys %{$above} );
+		$li->appendChild( $self->{session}->make_text( "ERROR, THREAD LOOPS: ".join( ", ",keys %{$above} ) ));
+		return $li;
+	}
+	
+	my $cstyle = "thread_".$field->get_name;
+
+	if( $self->get_value( "eprintid" ) != $eprint_shown->get_value( "eprintid" ) )
+	{
+		$li->appendChild( $self->render_citation_link( $cstyle ) );
+	}
+	else
+	{
+		$li->appendChild( $self->render_citation( $cstyle ) );
+		$li->appendChild( $self->{session}->make_text( " " ) );
+		$li->appendChild( $self->{session}->html_phrase( "lib/eprint:curr_disp" ) );
+	}
+
+	my @later = $self->later_in_thread( $field );
+
+	# Are there any later versions in the thread?
+	if( scalar @later > 0 )
+	{
+		my %above2 = %{$above};
+		$above2{$self->get_id} = 1;
+		# if there are, start a new list
+		my $ul = $self->{session}->make_element( "ul" );
+		foreach my $version (@later)
+		{
+			$ul->appendChild( $version->_render_version_thread_aux(
+				$field, $eprint_shown, \%above2 ) );
+		}
+		$li->appendChild( $ul );
+	}
+	
+	return( $li );
+}
+
+######################################################################
+=pod
 
 =item $eprint->loop_error( $field, @looped_ids )
 
 This eprint is part of a threading loop which is not allowed. Log a
 warning.
 
-=end InternalDoc
-
 =cut
+######################################################################
 
 sub loop_error
 {
@@ -2010,15 +2273,24 @@ sub user_roles
 	return @roles;
 }
 
-=begin InternalDoc
+######################################################################
+=pod
 
 =item $eprint->datestamp
 
-=end InternalDoc
+DEPRECATED.
 
 =cut
+######################################################################
 
-sub datestamp { EPrints->deprecated }
+sub datestamp
+{
+	my( $self ) = @_;
+
+	my( $package,$filename,$line,$subroutine ) = caller(2);
+	$self->{session}->get_repository->log( 
+"The \$eprint->datestamp method is deprecated. It was called from $filename line $line." );
+}
 
 ######################################################################
 =pod
@@ -2040,7 +2312,7 @@ sub in_editorial_scope_of
 
 	my $session = $self->{session};
 
-	my $user_ds = $session->dataset( "user" );
+	my $user_ds = $session->get_repository->get_dataset( "user" );
 
 	my $ef_field = $user_ds->get_field( 'editperms' );
 
@@ -2130,48 +2402,6 @@ sub obtain_lock
 	$timeout = 3600 unless defined $timeout;
 	$self->set_value( "edit_lock_until", time + $timeout );
 
-	my $dataset = $self->{dataset};
-
-	# we really want locking to be quick
-	my $rv = $self->{session}->database->_update(
-		$dataset->get_sql_table_name,
-		[$dataset->get_key_field->get_sql_name],
-		[$self->id],
-		[
-			$dataset->field( "edit_lock_user" )->get_sql_name,
-			$dataset->field( "edit_lock_since" )->get_sql_name,
-			$dataset->field( "edit_lock_until" )->get_sql_name,
-		],
-		[
-			$self->value( "edit_lock_user" ),
-			$self->value( "edit_lock_since" ),
-			$self->value( "edit_lock_until" ),
-		]
-	);
-
-	return $rv == 1;
-}
-
-######################################################################
-=pod
-
-=item $boolean = $eprint->remove_lock( $user )
-
-=cut
-######################################################################
-
-sub remove_lock
-{
-	my( $self, $user ) = @_;
-
-	return 1 unless ( $self->is_locked() );
-	if( $self->get_value( "edit_lock_user" ) != $user->get_id )
-	{
-		# is locked, and not by $user, so fail to obtain lock.
-		return 0;
-	}
-	
-	$self->set_value("edit_lock", {} );
 	$self->commit;
 
 	return 1;
@@ -2302,32 +2532,4 @@ See L<ArchiveRenderConfig/eprint_render>.
 =back
 
 
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

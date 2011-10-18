@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -80,32 +85,19 @@ sub sql_row_from_value
 	return $session->database->quote_binary( $self->freeze( $session, $value ) );
 }
 
-sub to_sax
+sub to_xml_basic
 {
-	my( $self, $value, %opts ) = @_;
+	my( $self, $session, $value, $dataset, %opts ) = @_;
 
-	# can't freeze undef
-	return if !EPrints::Utils::is_set( $value );
-
-	$self->SUPER::to_sax( MIME::Base64::encode_base64($self->freeze( $self->{repository}, $value )), %opts );
+	return $self->SUPER::to_xml_basic( $session, MIME::Base64::encode_base64($self->freeze( $session, $value )), $dataset, %opts );
 }
 
-sub end_element
+# return epdata for a single value of this field
+sub xml_to_epdata_basic
 {
-	my( $self, $data, $epdata, $state ) = @_;
+	my( $self, $session, $xml, %opts ) = @_;
 
-	if( $state->{depth} == 1 )
-	{
-		my $value = $epdata->{$self->name};
-		for(ref($value) eq "ARRAY" ? @$value : $value)
-		{
-			$_ = MIME::Base64::decode_base64( $_ );
-			$_ = $self->thaw( $self->{repository}, $_ );
-		}
-		$epdata->{$self->name} = $value;
-	}
-
-	$self->SUPER::end_element( $data, $epdata, $state );
+	return $self->thaw( $session, MIME::Base64::decode_base64( $self->SUPER::xml_to_epdata_basic( $session, $xml, %opts ) ) );
 }
 
 sub freeze
@@ -156,31 +148,3 @@ sub ordervalue
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

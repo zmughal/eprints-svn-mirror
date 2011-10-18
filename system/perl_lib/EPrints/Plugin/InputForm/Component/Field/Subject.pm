@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Component::Field::Subject
-
-=cut
-
 package EPrints::Plugin::InputForm::Component::Field::Subject;
 
 use EPrints;
@@ -24,15 +18,6 @@ sub new
 	return $self;
 }
 
-sub parse_config
-{
-	my( $self, $config_dom ) = @_;
-
-	$self->SUPER::parse_config( $config_dom );
-	$self->{config}->{citation} = $config_dom->getAttribute( "citation" );
-
-	return 1;
-}
 
 sub update_from_form
 {
@@ -112,8 +97,6 @@ sub render_content
 
 	$self->{expanded} = {};
 	$self->{selected} = {};
-	$self->{whitelist} = undef;
-
 	my @values;
 	if( $field->get_property( "multiple" ) )
 	{
@@ -157,24 +140,41 @@ sub render_content
 	
 	# Render the search box
 
-	$self->{search} = $self->_prepare_search;
+	$self->{search} = undef;
 	
+	if( $session->param( $self->{prefix}."_searchstore" ) )
+	{
+		$self->{search} = $session->param( $self->{prefix}."_searchstore" );
+	}
+
 	my $ibutton = $session->param( $self->{prefix}."_action" );
 	$ibutton = "" unless defined $ibutton;
 
+	if( $ibutton eq "search" )
+	{
+		$self->{search} = $session->param( $self->{prefix}."_searchtext" );
+	}
 	if( $ibutton eq "clear" )
 	{
-		$self->{search}->clear;
+		delete $self->{search};
 	}
 
-	$out->appendChild( $self->_render_search );
-
-	if( !$self->{search}->is_blank )
+	if( $self->{search} eq "" )
 	{
-		my $results = $self->{search}->perform_search;
+		delete $self->{search};
+	}
+	
+	$out->appendChild( $self->_render_search );
+	
+	if( $self->{search} )
+	{
+		my $search_store = $session->render_hidden_field( 
+			$self->{prefix}."_searchstore",
+			$self->{search} );
+		$out->appendChild( $search_store );
 		
-		$self->{whitelist} = {};
-
+		my $results = $self->_do_search;
+		
 		if( !$results->count )
 		{
 			$out->appendChild( $self->html_phrase(
@@ -182,115 +182,51 @@ sub render_content
 		}
 		else
 		{
-			$results->map(sub {
-				(undef, undef, my $subject) = @_;
-
-				foreach my $ancestor ( @{$subject->value( "ancestors" )} )
+			my $whitelist = {};
+			foreach my $subj ( $results->get_records )
+			{
+				foreach my $ancestor ( @{$subj->get_value( "ancestors" )} )
 				{	
-					$self->{whitelist}->{$ancestor} = 1;
+					$whitelist->{$ancestor} = 1;
 				}
-			});
+			}
+			$out->appendChild( $self->_render_subnodes( $self->{top_subj}, 0, $whitelist ) );
 		}
+	}	
+	else
+	{	
+		# render the treeI	
+		$out->appendChild( $self->_render_subnodes( $self->{top_subj}, 0 ) );
 	}
 
-	# if $whitelist is empty $tree will be undef
-	my $tree = $self->_tree( $self->{top_subj}, 0, {} );
-	if( defined $tree )
-	{
-		$out->appendChild( $session->xhtml->tree(
-			$tree->[1], # don't want the root subject
-			prefix => "ep_subjectinput_tree",
-			render_value => sub { $self->_render_node( @_ ) },
-		) );
-	}
 
 	return $out;
 }
 
-sub _render_node
-{
-	my( $self, $subject, $children ) = @_;
-
-	my $session = $self->{session};
-
-	my $frag = $session->make_doc_fragment;
-
-	my $title;
-	if( $self->{config}->{citation} )
-	{
-		$title = $subject->render_citation( $self->{config}->{citation} );
-	}
-	else
-	{
-		$title = $subject->render_description;
-	}
-
-	# clickable
-	if( defined $children )
-	{
-		$title = $session->xml->create_data_element( "a",
-			$title,
-		);
-	}
-
-	# selected
-	if( $self->{selected}->{$subject->id} )
-	{
-		$frag->appendChild( $session->xml->create_data_element( "span",
-			$title,
-			class => "ep_subjectinput_selected",
-		) );
-	}
-	# can be selected
-	elsif( $subject->can_post )
-	{
-		$frag->appendChild( $session->render_button(
-			class=> "ep_subjectinput_add_button",
-			name => join('_', '_internal', $self->{prefix}, $subject->id, 'add'),
-			value => $self->phrase( "add" ) ) );
-		$frag->appendChild( $session->make_text( " " ) );
-		$frag->appendChild( $title );
-	}
-	else
-	{
-		$frag->appendChild( $title );
-	}
-
-	return $frag;
-}
-
-sub _prepare_search
+sub _do_search
 {
 	my( $self ) = @_;
 	my $session = $self->{session};
 	
-	my $dataset = $session->dataset( "subject" );
+	# Carry out search
 
-	my $sconf = $session->config( "datasets", "subject", "search", "simple" );
+	my $subject_ds = $session->get_repository->get_dataset( "subject" );
+	my $searchexp = new EPrints::Search(
+		session=>$session,
+		dataset=>$subject_ds );
 
-	# default search over subject name
-	$sconf = {
-		search_fields => [{
-			id => "q",
-			meta_fields => [qw( name )],
-		}],
-	} if !defined $sconf;
+	$searchexp->add_field(
+	$subject_ds->get_field( "name" ),
+		$self->{search},
+		"IN",
+		"ALL" );
 
-	my $searchexp = $session->plugin( "Search" )->plugins(
-		{
-			dataset => $dataset,
-			prefix => $self->{prefix},
-			filters => [
-				{ meta_fields => [qw( ancestors )], value => $self->{top_subj}->id },
-			],
-			%$sconf,
-		},
-		can_search => "simple/subject",
-	);
+	$searchexp->add_field(
+		$subject_ds->get_field( "ancestors" ),
+		$self->{top_subj}->get_id,
+		"EQ" );
 
-	$searchexp->from_form;
-
-	return $searchexp;
+	return $searchexp->perform_search;
 }
 
 # Params:
@@ -358,10 +294,12 @@ sub _render_search
 	my $field = $self->{config}->{field};
 	my $bar = $self->html_phrase(
 		$field->get_name."_search_bar",
-		input => $self->{search}->render_simple_fields(
-			noenter => 1,
-			size => 40,
-		),
+		input=>$session->render_noenter_input_field( 
+			class=>"ep_form_text",
+			name=>$prefix."_searchtext", 
+			type=>"text", 
+			value=>$self->{search},
+			onKeyPress=>"return EPJS_enter_click( event, '_internal_".$prefix."_search' )" ),
 		search_button=>$session->render_button( 
 			name=>"_internal_".$prefix."_search",
 			id=>"_internal_".$prefix."_search",
@@ -373,39 +311,162 @@ sub _render_search
 	return $bar;
 }
 
-# builds a tree that XHTML can render from the subject tree
-sub _tree
+
+sub _render_subnodes
 {
-	my( $self, $top, $depth, $seen ) = @_;
+	my( $self, $subject, $depth, $whitelist ) = @_;
 
-	my $id = $top->id;
+	my $session = $self->{session};
 
-	# infinite loop protection
-	return if $seen->{$id}++;
+	my $node_id = $subject->get_value( "subjectid" );
 
-	return if defined($self->{whitelist}) && !$self->{whitelist}->{$id};
+	my @children = @{$self->{reverse_map}->{$node_id}};
 
-	my $children = $self->{reverse_map}->{$id};
-	return $top if !@$children;
+	my @filteredchildren;
+	if( defined $whitelist )
+	{
+		foreach( @children )
+		{
+			next unless $whitelist->{$_->get_value( "subjectid" )};
+			push @filteredchildren, $_;
+		}
+	}
+	else
+	{
+		@filteredchildren=@children;
+	}
+	if( scalar @filteredchildren == 0 ) { return $session->make_doc_fragment; }
 
-	my $node = [$top,
-		[ map { $self->_tree( $_, $depth + 1, $seen ) } @$children ],
-		show => (
-			defined($self->{whitelist}) ||
-			$depth < $self->{visdepth} ||
-			$self->{expanded}->{$id}
-		),
-	];
-
-	return $node;
+	my $ul = $session->make_element( "ul", class=>"ep_subjectinput_subjects" );
+	
+	foreach my $child ( @filteredchildren )
+	{
+		my $li = $session->make_element( "li" );
+		$li->appendChild( $self->_render_subnode( $child, $depth+1, $whitelist ) );
+		$ul->appendChild( $li );
+	}
+	
+	return $ul;
 }
 
+
+sub _render_subnode
+{
+	my( $self, $subject, $depth, $whitelist ) = @_;
+
+	my $session = $self->{session};
+
+	my $node_id = $subject->get_value( "subjectid" );
+
+#	if( defined $whitelist && !$whitelist->{$node_id} )
+#	{
+#		return $self->{session}->make_doc_fragment;
+#	}
+
+	my $has_kids = 0;
+	$has_kids = 1 if( scalar @{$self->{reverse_map}->{$node_id}} );
+
+	my $expanded = 0;
+	$expanded = 1 if( $depth < $self->{visdepth} );
+	$expanded = 1 if( defined $whitelist && $whitelist->{$node_id} );
+#	$expanded = 1 if( $self->{expanded}->{$node_id} );
+	$expanded = 0 if( !$has_kids );
+
+	my $prefix = $self->{prefix}."_".$node_id;
+	my $id = "id".$session->get_next_id;
+	
+	my $r_node = $session->make_doc_fragment;
+
+	my $desc = $session->make_element( "span" );
+	$desc->appendChild( $subject->render_description );
+	$r_node->appendChild( $desc );
+	
+	my @classes = (); 
+	
+	if( $self->{selected}->{$node_id} )
+	{
+		push @classes, "ep_subjectinput_selected";
+	}
+
+	my $imagesurl = $session->get_repository->get_conf( "rel_path" );
+
+	if( $has_kids && !defined $whitelist )
+	{
+		my $toggle;
+		$toggle = $self->{session}->make_element( "a", href=>"#", class=>"ep_only_js_inline ep_subjectinput_toggle" );
+
+		my $hide = $self->{session}->make_element( "span", id=>$id."_hide" );
+		$hide->appendChild( $self->{session}->make_element( "img", alt=>"-", src=>"$imagesurl/style/images/minus.png", border=>0 ) );
+		$hide->appendChild( $self->{session}->make_text( " " ) );
+		$hide->appendChild( $subject->render_description );
+		$hide->setAttribute( "class", join( " ", @classes ) );
+		$toggle->appendChild( $hide );
+
+		my $show = $self->{session}->make_element( "span", id=>$id."_show" );
+		$show->appendChild( $self->{session}->make_element( "img", alt=>"+", src=>"$imagesurl/style/images/plus.png", border=>0 ) );
+		$show->appendChild( $self->{session}->make_text( " " ) );
+		$show->appendChild( $subject->render_description );
+		$show->setAttribute( "class", join( " ", @classes ) );
+		$toggle->appendChild( $show );
+
+		push @classes, "ep_no_js";
+		if( $expanded )
+		{
+			$toggle->setAttribute( "onclick", "EPJS_blur(event); EPJS_toggleSlide('${id}_kids',true,'block');EPJS_toggle_type('${id}_hide',true,'inline');EPJS_toggle_type('${id}_show',false,'inline');return false" );
+			$show->setAttribute( "style", "display:none" );
+		}
+		else # not expanded
+		{
+			$toggle->setAttribute( "onclick", "EPJS_blur(event); EPJS_toggleSlide('${id}_kids',false,'block');EPJS_toggle_type('${id}_hide',false,'inline');EPJS_toggle_type('${id}_show',true,'inline');return false" );
+			$hide->setAttribute( "style", "display:none" );
+		}
+
+		$r_node->appendChild( $toggle );
+	}
+	$desc->setAttribute( "class", join( " ", @classes ) );
+	
+	if( !$self->{selected}->{$node_id} && (!defined $whitelist || $whitelist->{$node_id}) )
+	{
+		if( $subject->can_post )
+		{
+			my $add_button = $session->render_button(
+				class=> "ep_subjectinput_add_button",
+				name => "_internal_".$prefix."_add",
+				value => $self->phrase( "add" ) );
+			my $r_node_tmp = $session->make_doc_fragment;
+			$r_node_tmp->appendChild( $add_button ); 
+			$r_node_tmp->appendChild( $session->make_text( " " ) );
+			$r_node_tmp->appendChild( $r_node ); 
+			$r_node = $r_node_tmp;
+		}
+	}
+
+	if( $has_kids )
+	{
+		my $div = $session->make_element( "div", id => $id."_kids" );
+		my $div_inner = $session->make_element( "div", id => $id."_kids_inner" );
+		if( !$expanded && !defined $whitelist ) 
+		{ 
+			$div->setAttribute( "class", "ep_no_js" ); 
+		}
+		$div_inner->appendChild( $self->_render_subnodes( $subject, $depth, $whitelist ) );
+		$div->appendChild( $div_inner );
+		$r_node->appendChild( $div );
+	}
+
+
+	return $r_node;
+}
+	
 sub get_state_params
 {
 	my( $self ) = @_;
 
 	my $params = "";
-	foreach my $id ( $self->{prefix}."_q" )
+	foreach my $id ( 
+ 		$self->{prefix}."_searchstore",
+		$self->{prefix}."_searchtext",
+	)
 	{
 		my $v = $self->{session}->param( $id );
 		next unless defined $v;
@@ -425,31 +486,3 @@ sub get_state_params
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

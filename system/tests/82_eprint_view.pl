@@ -8,7 +8,7 @@ BEGIN { use_ok( "EPrints::ScreenProcessor" ); }
 my $session = EPrints::Test::get_test_session();
 
 # find an example eprint
-my $dataset = $session->dataset( "eprint" );
+my $dataset = $session->get_repository->get_dataset( "eprint" );
 my( $eprintid ) = @{ $dataset->get_item_ids( $session ) };
 
 $session = EPrints::Test::OnlineSession->new( $session, {
@@ -16,14 +16,14 @@ $session = EPrints::Test::OnlineSession->new( $session, {
 	path => "/cgi/users/home",
 	username => "admin",
 	query => {
-		screen => "EPrint::View",
+		screen => "EPrint::View::Editor",
 		eprintid => $eprintid,
 	},
 });
 
 EPrints::ScreenProcessor->process(
 	session => $session,
-	url => $session->config( "base_url" ) . "/cgi/users/home"
+	url => $session->get_repository->get_conf( "base_url" ) . "/cgi/users/home"
 	);
 
 $session->terminate;

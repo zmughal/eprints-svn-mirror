@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::RSS
-
-=cut
-
 package EPrints::Plugin::Export::RSS;
 
 use EPrints::Plugin::Export::Feed;
@@ -24,6 +18,8 @@ sub new
 	$self->{suffix} = ".rss";
 	$self->{mimetype} = "application/rss+xml";
 
+	$self->{number_to_show} = 10;
+
 	return $self;
 }
 
@@ -31,7 +27,7 @@ sub output_list
 {
 	my( $plugin, %opts ) = @_;
 
-	my $list = $opts{list};
+	my $list = $opts{list}->reorder( "-datestamp" );
 
 	my $session = $plugin->{session};
 
@@ -55,22 +51,22 @@ sub output_list
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"link",
-		$session->config( "frontpage" ) ) );
+		$session->get_repository->get_conf( "frontpage" ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"description", 
-		$session->config( "oai","content","text" ) ) );
+		$session->get_repository->get_conf( "oai","content","text" ) ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"pubDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
 		"lastBuildDate", 
-		EPrints::Time::rfc822_datetime() ) );
+		RFC822_time() ) );
 
 	$channel->appendChild( $session->render_data_element(
 		4,
@@ -89,9 +85,8 @@ sub output_list
 	my $seq = $session->make_element( "rdf:Seq" );
 	$items->appendChild( $seq );
 
-	$list->map(sub {
-		my( undef, undef, $eprint ) = @_;
-
+	foreach my $eprint ( $list->get_records( 0, $plugin->{number_to_show} ) )
+	{
 		my $li = $session->make_element( "rdf:li",
 			"rdf:resource"=>$eprint->get_url );
 		$seq->appendChild( $li );
@@ -112,7 +107,7 @@ sub output_list
 			"description",
 			EPrints::Utils::tree_to_utf8( $eprint->render_citation ) ) );
 		$response->appendChild( $item );		
-	});	
+	}	
 
 	my $rssfeed = <<END;
 <?xml version="1.0" encoding="utf-8" ?>
@@ -129,32 +124,11 @@ END
 	return $rssfeed;
 }
 
+use POSIX qw(strftime);
+sub RFC822_time
+{
+	return( strftime( "%a,  %d  %b  %Y  %H:%M:%S  %z",localtime ) );
+}
+
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

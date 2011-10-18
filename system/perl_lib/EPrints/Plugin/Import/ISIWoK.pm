@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Import::ISIWoK
-
-=cut
-
 package EPrints::Plugin::Import::ISIWoK;
 
 use EPrints::Plugin::Import::TextFile;
@@ -20,12 +14,11 @@ sub new
 	$self->{name} = "ISI Web of Knowledge";
 	$self->{visible} = "all";
 	$self->{produce} = [ 'list/eprint' ];
-	$self->{screen} = "Import::ISIWoK";
 
-	if( !EPrints::Utils::require_if_exists( "SOAP::ISIWoK::Lite", "1.05" ) )
+	if( !EPrints::Utils::require_if_exists( "SOAP::ISIWoK" ) )
 	{
 		$self->{visible} = 0;
-		$self->{error} = "Requires SOAP::ISIWoK::Lite 1.05";
+		$self->{error} = "Requires SOAP::ISIWoK";
 	}
 
 	return $self;
@@ -43,12 +36,9 @@ sub input_text_fh
 	my $fh = $opts{fh};
 	my $query = join '', <$fh>;
 
-	my $wok = SOAP::ISIWoK::Lite->new;
+	my $wok = SOAP::ISIWoK->new;
 
-	my $xml = $wok->search( $query,
-		offset => $opts{offset},
-	);
-	$self->{total} = $xml->documentElement->getAttribute( "recordsFound" );
+	my $xml = $wok->search( $query );
 
 	foreach my $rec ($xml->getElementsByTagName( "REC" ))
 	{
@@ -72,9 +62,6 @@ sub xml_to_epdata
 
 	my $node;
 
-	( $node ) = $rec->findnodes( "item/ut" );
-	$epdata->{source} = $node->textContent if $node;
-
 	( $node ) = $rec->findnodes( "item/item_title" );
 	$epdata->{title} = $node->textContent if $node;
 
@@ -87,7 +74,7 @@ sub xml_to_epdata
 	if( $node )
 	{
 		$epdata->{publication} = $node->textContent;
-		$epdata->{ispublished} = "pub";
+		$epdata->{status} = "published";
 	}
 
 	foreach my $node ($rec->findnodes( "item/article_nos/article_no" ))
@@ -156,31 +143,3 @@ sub xml_to_epdata
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

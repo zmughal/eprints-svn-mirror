@@ -1,15 +1,9 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Items
-
-=cut
-
 
 package EPrints::Plugin::Screen::Items;
 
-use EPrints::Plugin::Screen::Listing;
+use EPrints::Plugin::Screen;
 
-@ISA = ( 'EPrints::Plugin::Screen::Listing' );
+@ISA = ( 'EPrints::Plugin::Screen' );
 
 use strict;
 
@@ -29,18 +23,6 @@ sub new
 	$self->{actions} = [qw/ col_left col_right remove_col add_col /];
 
 	return $self;
-}
-
-sub properties_from
-{
-	my( $self ) = @_;
-
-	my $processor = $self->{processor};
-	my $session = $self->{session};
-
-	$processor->{dataset} = $session->dataset( "eprint" );
-
-	$self->SUPER::properties_from();
 }
 
 sub can_be_viewed
@@ -114,6 +96,7 @@ sub action_remove_col
 	$self->{session}->current_user->set_value( "items_fields", \@newlist );
 	$self->{session}->current_user->commit();
 }
+	
 
 sub get_filters
 {
@@ -141,128 +124,95 @@ sub get_filters
 		}
 	}	
 
-	my @l = map { $f[$_] } grep { $_ % 2 == 0 && $f[$_+1] } 0..$#f;
-
-	return (
-		{ meta_fields => [qw( eprint_status )], value => "@l", match => "EQ", merge => "ANY" },
-	);
+	return %{{@f}};
 }
 
-sub render_title
+sub render_links
 {
 	my( $self ) = @_;
 
-	return $self->EPrints::Plugin::Screen::render_title();
-}
+	my $style = $self->{session}->make_element( "style", type=>"text/css" );
+	$style->appendChild( $self->{session}->make_text( ".ep_tm_main { width: 90%; }" ) );
 
-sub perform_search
-{
-	my( $self ) = @_;
-
-	my $processor = $self->{processor};
-	my $search = $processor->{search};
-
-	# dirty hack to pass the internal search through to owned_eprints_list
-	my $list = $self->{session}->current_user->owned_eprints_list( %$search,
-		custom_order => $search->{order}
-	);
-
-	return $list;
+	return $style;
 }
 
 sub render
 {
 	my( $self ) = @_;
 
-	my $repo = $self->{session};
-	my $user = $repo->current_user;
-	my $chunk = $repo->make_doc_fragment;
-	my $imagesurl = $repo->current_url( path => "static", "style/images" );
+	my $session = $self->{session};
 
-	### Get the items owned by the current user
-	my $list = $self->perform_search;
+	my $chunk = $session->make_doc_fragment;
 
-	my $has_eprints = $user->owned_eprints_list()->count > 0;
+	my $user = $session->current_user;
 
-	if( $repo->get_lang->has_phrase( $self->html_phrase_id( "intro" ), $repo ) )
+	if( $session->get_lang->has_phrase( $self->html_phrase_id( "intro" ), $session ) )
 	{
-		my $intro_div_outer = $repo->make_element( "div", class => "ep_toolbox" );
-		my $intro_div = $repo->make_element( "div", class => "ep_toolbox_content" );
+		my $intro_div_outer = $session->make_element( "div", class => "ep_toolbox" );
+		my $intro_div = $session->make_element( "div", class => "ep_toolbox_content" );
 		$intro_div->appendChild( $self->html_phrase( "intro" ) );
 		$intro_div_outer->appendChild( $intro_div );
 		$chunk->appendChild( $intro_div_outer );
 	}
 
-	{
-		my $phraseid = $has_eprints ? "Plugin/Screen/Items:help" : "Plugin/Screen/Items:help_no_items";
-		my %options;
-		if( $repo->get_lang->has_phrase( $phraseid, $repo ) )
-		{
-			$options{session} = $repo;
-			$options{id} = "ep_review_instructions";
-			$options{title} = $self->html_phrase( "help_title" );
-			$options{content} = $repo->html_phrase( $phraseid );
-			$options{collapsed} = 1;
-			$options{show_icon_url} = "$imagesurl/help.gif";
-			my $box = $repo->make_element( "div", style=>"text-align: left" );
-			$box->appendChild( EPrints::Box::render( %options ) );
-			$chunk->appendChild( $box );
-		}
-	}
+	my $imagesurl = $session->get_repository->get_conf( "rel_path" )."/style/images";
+
+	my %options;
+ 	$options{session} = $session;
+	$options{id} = "ep_review_instructions";
+	$options{title} = $session->html_phrase( "Plugin/Screen/Items:help_title" );
+	$options{content} = $session->html_phrase( "Plugin/Screen/Items:help" );
+	$options{collapsed} = 1;
+	$options{show_icon_url} = "$imagesurl/help.gif";
+	my $box = $session->make_element( "div", style=>"text-align: left" );
+	$box->appendChild( EPrints::Box::render( %options ) );
+	$chunk->appendChild( $box );
 
 	$chunk->appendChild( $self->render_action_list_bar( "item_tools" ) );
 
-	my $import_screen = $repo->plugin( "Screen::Import" );
-	$chunk->appendChild( $import_screen->render_import_bar() ) if( defined $import_screen );
+	my $import_screen = $session->plugin( "Screen::Import" );
+	$chunk->appendChild( $import_screen->render_import_bar() );
 
-	if( $has_eprints )
-	{
-		$chunk->appendChild( $self->render_items( $list ) );
-	}
+	my %filters = $self->get_filters;
+	my @l = ();
+	foreach( keys %filters ) { push @l, $_ if $filters{$_}; }
 
-	return $chunk;
-}
+	### Get the items owned by the current user
+	my $ds = $session->get_repository->get_dataset( "eprint" );
 
-sub render_items
-{
-	my( $self, $list ) = @_;
-
-	my $session = $self->{session};
-	my $user = $session->current_user;
-	my $chunk = $session->make_doc_fragment;
-	my $imagesurl = $session->current_url( path => "static", "style/images" );
-	my $ds = $session->dataset( "eprint" );
-
-	my $pref = $self->{id}."/eprint_status";
-	my %filters = @{$session->current_user->preference( $pref ) || [
-		inbox=>1, buffer=>1, archive=>1, deletion=>1
-	]};
-
+	my $list = $session->current_user->owned_eprints_list( filters => [
+		{ meta_fields => [qw( eprint_status )], value => join(" ", @l), match => "EQ", merge => "ANY" },
+		]);
 	my $filter_div = $session->make_element( "div", class=>"ep_items_filters" );
 	foreach my $f ( qw/ inbox buffer archive deletion / )
 	{
-		my $url = URI->new( $session->current_url() );
-		my %q = $self->hidden_bits;
+		my $url = URI->new( $session->current_url( query => 1 ) );
+		my %q = $url->query_form;
+		foreach my $inner_f (keys %filters)
+		{
+			delete $q{"set_show_$inner_f"};
+		}
 		$q{"set_show_$f"} = !$filters{$f};
 		$url->query_form( %q );
-		my $link = $session->render_link( $url );
+		my $a = $session->render_link( $url );
 		if( $filters{$f} )
 		{
-			$link->appendChild( $session->make_element(
+			$a->appendChild( $session->make_element(
 				"img",
 				src=> "$imagesurl/checkbox_tick.png",
 				alt=>"Showing" ) );
 		}
 		else
 		{
-			$link->appendChild( $session->make_element(
+			$a->appendChild( $session->make_element(
 				"img",
 				src=> "$imagesurl/checkbox_empty.png",
 				alt=>"Not showing" ) );
 		}
-		$link->appendChild( $session->make_text( " " ) );
-		$link->appendChild( $session->html_phrase( "eprint_fieldopt_eprint_status_$f" ) );
-		$filter_div->appendChild( $link );
+		$a->appendChild( $session->make_text( " " ) );
+		$a->appendChild( $session->html_phrase( "eprint_fieldopt_eprint_status_$f" ) );
+		$filter_div->appendChild( $a );
 		$filter_div->appendChild( $session->make_text( ". " ) );
 	}
 
@@ -282,7 +232,7 @@ sub render_items
 	if( $len > 1 )
 	{	
 		$final_row = $session->make_element( "tr" );
-		my $imagesurl = $session->config( "rel_path" )."/style/images";
+		my $imagesurl = $session->get_repository->get_conf( "rel_path" )."/style/images";
 		for(my $i=0; $i<$len;++$i )
 		{
 			my $col = $columns->[$i];
@@ -366,11 +316,15 @@ sub render_items
 		$final_row->appendChild( $td );
 	}
 
+	my $offset = ($session->param( "_buffer_offset" ) || 0) + 0;
+	$offset = $list->count - $list->count % 10 if $offset > $list->count;
+
 	# Paginate list
 	my %opts = (
 		params => {
 			screen => "Items",
 		},
+		offset => $offset,
 		columns => [@{$columns}, undef ],
 		above_results => $filter_div,
 		render_result => sub {
@@ -409,7 +363,7 @@ sub render_items
 			my $td = $session->make_element( "td", class=>"ep_columns_cell ep_columns_cell_last", align=>"left" );
 			$tr->appendChild( $td );
 			$td->appendChild( 
-				$self->render_action_list_icons( "eprint_item_actions", { 'eprintid' => $self->{processor}->{eprintid} } ) );
+				$self->render_action_list_icons( "eprint_item_actions", ['eprintid'] ) );
 			delete $self->{processor}->{eprint};
 
 			++$info->{row};
@@ -466,32 +420,3 @@ sub render_items
 
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

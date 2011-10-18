@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -56,7 +61,7 @@ sub get_sql_names
 # parse either ISO or our format and output our value
 sub _build_value
 {
-	my( $self, $value ) = @_;
+	my( $value ) = @_;
 
 	return undef if !defined $value;
 
@@ -81,7 +86,7 @@ sub value_from_sql_row
 
 	return undef if !@parts;
 
-	return $self->_build_value( join(' ', @parts) );
+	return _build_value( join(' ', @parts) );
 }
 
 sub sql_row_from_value
@@ -303,13 +308,13 @@ sub form_value_basic
 	for(qw( year month day hour minute second ))
 	{
 		my $part = $session->param( $basename."_$_" );
-		last if !EPrints::Utils::is_set( $part ) || $part == 0;
+		last if !EPrints::Utils::is_set( $part );
 		push @parts, $part;
 	}
 
 	return undef if !@parts;
 
-	return $self->_build_value( join(' ', @parts) );
+	return _build_value( join(' ', @parts) );
 }
 
 sub get_unsorted_values
@@ -359,8 +364,14 @@ sub get_property_defaults
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{min_resolution} = "second";
 	$defaults{render_res} = "second";
-	$defaults{regexp} = qr/\d\d\d\d(?:-\d\d(?:-\d\d(?:[ T]\d\d(?::\d\d(?::\d\dZ?)?)?)?)?)?/;
 	return %defaults;
+}
+
+sub ordervalue_basic
+{
+	my( $self , $value ) = @_;
+
+	return _build_value( $value );
 }
 
 sub should_reverse_order { return 1; }
@@ -377,6 +388,20 @@ sub render_xml_schema_type
 	$restriction->appendChild( $pattern );
 
 	return $type;
+}
+
+sub set_value
+{
+	my( $self, $dataobj, $value ) = @_;
+
+	if( ref($value) eq "ARRAY" )
+	{
+		return $self->SUPER::set_value( $dataobj, [map { _build_value( $_ ) } @$value] );
+	}
+	else
+	{
+		return $self->SUPER::set_value( $dataobj, _build_value( $value ) );
+	}
 }
 
 =item $datetime = $time->iso_value( $dataobj )
@@ -407,31 +432,3 @@ L<EPrints::MetaField::Date>.
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

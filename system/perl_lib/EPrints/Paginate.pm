@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -127,33 +132,14 @@ sub paginate_list
 	my $n_results = $list->count();
 	my $offset = defined $opts{offset} ? $opts{offset} : ($session->param( $basename."_offset" ) || 0);
 	$offset += 0;
-	my $pagesize = defined $opts{page_size} ? $opts{page_size} : ($session->param( $basename."page_size" ) || 10); # TODO: get default from somewhere?
-	$pagesize += 0;
+	my $pagesize = $opts{page_size} || 10; # TODO: get default from somewhere?
 	my @results = $list->get_records( $offset , $pagesize );
 	my $plast = $offset + $pagesize;
 	$plast = $n_results if $n_results< $plast;
 
 	my %pins;
 
-	# Add params to action urls
-	my $url = URI->new( $session->get_uri );
-	my @param_list;
-	#push @param_list, "_cache=" . $list->get_cache_id; # if cached
-	#my $escexp = $list->{encoded}; # serialised search expression
-	#$escexp =~ s/ /+/g; # not great way...
-	#push @param_list, "_exp=$escexp";
-	if( defined $opts{params} )
-	{
-		my $params = $opts{params};
-		foreach my $key ( keys %$params )
-		{
-			my $value = $params->{$key};
-			push @param_list, $key => $value if defined $value;
-		}
-	}
-	$url->query_form( @param_list );
-
-	my $matches = $session->make_doc_fragment;	
+	my $matches;	
 	if( scalar $n_results > 0 )
 	{
 		# TODO default phrase for item range
@@ -165,32 +151,14 @@ sub paginate_list
 		$numbers{to}->appendChild( $session->make_text( $plast ) );
 		$numbers{n} = $session->make_element( "span", class=>"ep_search_number" );
 		$numbers{n}->appendChild( $session->make_text( $n_results ) );
-		$matches->appendChild( 
-			$session->html_phrase( "lib/searchexpression:results", %numbers )
-			);
-		if( !$opts{page_size} )
-		{
-			$matches->appendChild( $session->make_text( " " ) );
-			my %links;
-			for(10,25,100)
-			{
-				$links{"n_$_"} = $session->render_link( $url . "&${basename}page_size=$_" );
-				$links{"n_$_"}->appendChild( $session->make_text( $_ ) );
-			}
-			$matches->appendChild(
-				$session->html_phrase( "lib/searchexpression:results_page_size", %links )
-				);
-			if( defined $session->param( "${basename}page_size" ) )
-			{
-				$url->query_form( @param_list, $basename."page_size" => $pagesize );
-			}
-		}
+		$matches = $session->html_phrase( "lib/searchexpression:results", %numbers );
 	}
 	else
 	{
 		# override default phrase with opts
-		$matches->appendChild( $session->html_phrase( 
-				"lib/searchexpression:noresults" ) );
+		$matches = 
+			$session->html_phrase( 
+				"lib/searchexpression:noresults" );
 	}
 
 	$pins{above_results} = $opts{above_results};
@@ -203,6 +171,25 @@ sub paginate_list
 	{
 		$pins{below_results} = $session->make_doc_fragment;
 	}
+
+
+	# Add params to action urls
+	my $url = $session->get_uri . "?";
+	my @param_list;
+	#push @param_list, "_cache=" . $list->get_cache_id; # if cached
+	#my $escexp = $list->{encoded}; # serialised search expression
+	#$escexp =~ s/ /+/g; # not great way...
+	#push @param_list, "_exp=$escexp";
+	if( defined $opts{params} )
+	{
+		my $params = $opts{params};
+		foreach my $key ( keys %$params )
+		{
+			my $value = $params->{$key};
+			push @param_list, "$key=$value";
+		}
+	}
+	$url .= join "&", @param_list;
 
 	my @controls; # page controls
 	if( defined $opts{controls_before} )
@@ -450,31 +437,3 @@ sub paginate_list
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

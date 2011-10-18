@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -74,12 +79,18 @@ sub type_info
 {
 	my( $self, $data_type ) = @_;
 
-	if( $data_type eq SQL_TINYINT )
+	if( $data_type eq SQL_BIGINT )
+	{
+		return {
+			TYPE_NAME => "bigint",
+			CREATE_PARAMS => "",
+		};
+	}
+	elsif( $data_type eq SQL_TINYINT )
 	{
 		return {
 			TYPE_NAME => "smallint",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 3,
 		};
 	}
 	# DBD::Pg maps SQL_VARCHAR to text rather than varchar(n)
@@ -88,15 +99,13 @@ sub type_info
 		return {
 			TYPE_NAME => "varchar",
 			CREATE_PARAMS => "max length",
-			COLUMN_SIZE => 255,
 		};
 	}
-	elsif( $data_type eq SQL_LONGVARCHAR || $data_type eq SQL_CLOB )
+	elsif( $data_type eq SQL_LONGVARCHAR )
 	{
 		return {
 			TYPE_NAME => "text",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2**31,
 		};
 	}
 	elsif( $data_type eq SQL_LONGVARBINARY )
@@ -104,12 +113,11 @@ sub type_info
 		return {
 			TYPE_NAME => "bytea",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2**31,
 		};
 	}
 	else
 	{
-		return $self->SUPER::type_info( $data_type );
+		return $self->{dbh}->type_info( $data_type );
 	}
 }
 
@@ -298,31 +306,3 @@ sub sql_LIKE
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

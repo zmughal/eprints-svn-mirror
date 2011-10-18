@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::DC
-
-=cut
-
 package EPrints::Plugin::Export::DC;
 
 # eprint needs magic documents field
@@ -77,11 +71,8 @@ sub convert_dataobj
 {
 	my( $plugin, $eprint ) = @_;
 
-	my $dataset = $eprint->{dataset};
-
 	my @dcdata = ();
-
-	push @dcdata, $plugin->simple_value( $eprint, title => "title" );
+	push @dcdata, [ "title", $eprint->get_value( "title" ) ] if( $eprint->exists_and_set( "title" ) ); 
 
 	# grab the creators without the ID parts so if the site admin
 	# sets or unsets creators to having and ID part it will make
@@ -112,8 +103,8 @@ sub convert_dataobj
 		}
 	}
 
-	push @dcdata, $plugin->simple_value( $eprint, abstract => "description" );
-	push @dcdata, $plugin->simple_value( $eprint, publisher => "publisher" );
+	push @dcdata, [ "description", $eprint->get_value( "abstract" ) ] if( $eprint->exists_and_set( "abstract" ) ); 
+	push @dcdata, [ "publisher", $eprint->get_value( "publisher" ) ] if( $eprint->exists_and_set( "publisher" ) ); 
 
 	if( $eprint->exists_and_set( "editors_name" ) )
 	{
@@ -163,17 +154,17 @@ sub convert_dataobj
 	}
 
 	# Most commonly a DOI or journal link
-	push @dcdata, $plugin->simple_value( $eprint, official_url => "relation" );
+	if( $eprint->exists_and_set( "official_url" ) )
+	{
+		push @dcdata, [ "relation", $eprint->get_value( "official_url" ) ];
+	}
 	
 	# The citation for this eprint
 	push @dcdata, [ "identifier",
 		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ) ];
 
 	# The URL of the abstract page
-	if( $eprint->is_set( "eprintid" ) )
-	{
-		push @dcdata, [ "relation", $eprint->get_url() ];
-	}
+	push @dcdata, [ "relation", $eprint->get_url() ];
 
 	# dc.language not handled yet.
 	# dc.source not handled yet.
@@ -183,70 +174,5 @@ sub convert_dataobj
 	return \@dcdata;
 }
 
-# map eprint values directly into DC equivalents
-sub simple_value
-{
-	my( $self, $eprint, $fieldid, $term ) = @_;
-
-	my @dcdata;
-
-	return () if !$eprint->exists_and_set( $fieldid );
-
-	my $dataset = $eprint->dataset;
-	my $field = $dataset->field( $fieldid );
-
-	if( $field->isa( "EPrints::MetaField::Multilang" ) )
-	{
-		my( $values, $langs ) =
-			map { $_->get_value( $eprint ) }
-			@{$field->property( "fields_cache" )};
-		$values = [$values] if ref($values) ne "ARRAY";
-		$langs = [$langs] if ref($values) ne "ARRAY";
-		foreach my $i (0..$#$values)
-		{
-			push @dcdata, [ $term, $values->[$i], { lang => $langs->[$i] } ];
-		}
-	}
-	elsif( $field->property( "multiple" ) )
-	{
-		push @dcdata, map { 
-			[ $term, $_ ]
-		} @{ $field->get_value( $eprint ) };
-	}
-	else
-	{
-		push @dcdata, [ $term, $field->get_value( $eprint ) ];
-	}
-
-	return @dcdata;
-}
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

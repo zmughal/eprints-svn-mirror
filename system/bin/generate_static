@@ -1,10 +1,12 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
 
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -106,6 +108,7 @@ Output version information and exit.
 
 =back   
 
+__GENERICPOD__
 
 =cut
 
@@ -155,7 +158,7 @@ if( !defined $session )
 }
 
 my $strays = 0;
-foreach my $langid ( @{$session->config( "languages" )} )
+foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 {
 	my @static_dirs = $session->get_static_dirs( $langid );
 
@@ -167,7 +170,7 @@ foreach my $langid ( @{$session->config( "languages" )} )
 		scan_static_dir( $dir, $map );
 	}
 	$session->change_lang( $langid );
-	my $base_target_dir = $session->config( "htdocs_path" )."/$langid";
+	my $base_target_dir = $session->get_repository->get_conf( "htdocs_path" )."/$langid";
 	my $wrote_files = {};
 	foreach my $target ( keys %{$map} )
 	{
@@ -323,32 +326,4 @@ sub copy_xpage { &EPrints::Update::Static::copy_xpage }
 
 # copy_xhtml( $session, $from, $to, $wrote_files )
 sub copy_xhtml { &EPrints::Update::Static::copy_xhtml }
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-License for more details.
-
-You should have received a copy of the GNU General Public License
-along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

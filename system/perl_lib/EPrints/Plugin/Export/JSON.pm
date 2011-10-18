@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::JSON
-
-=cut
-
 package EPrints::Plugin::Export::JSON;
 
 use EPrints::Plugin::Export::TextFile;
@@ -22,7 +16,7 @@ sub new
 	$self->{accept} = [ 'list/*', 'dataobj/*' ];
 	$self->{visible} = "all";
 	$self->{suffix} = ".js";
-	$self->{mimetype} = "application/json; charset=utf-8";
+	$self->{mimetype} = "text/javascript; charset=utf-8";
 	$self->{arguments}->{json} = undef;
 	$self->{arguments}->{jsonp} = undef;
 	$self->{arguments}->{callback} = undef;
@@ -133,9 +127,13 @@ sub _epdata_to_json
 			return "null"; # part of a compound field
 		}
 	
-		if( $epdata =~ /^-?[0-9]*\.?[0-9]+(?:e[-+]?[0-9]+)?$/i )
+		$epdata =~ s/([\r\n])/ /g;
+		$epdata =~ s/ +/ /g;
+		$epdata =~ s/\s*$//;
+	
+		if( $epdata =~ /^[-+]?[0-9]*\.?[0-9]+$/ )
 		{
-			return $pre_pad . ($epdata + 0);
+			return $pre_pad . $epdata;
 		}
 		else
 		{
@@ -161,7 +159,7 @@ sub _epdata_to_json
 		return "" if(
 			$opts{hide_volatile} &&
 			$epdata->isa( "EPrints::DataObj::Document" ) &&
-			$epdata->has_relation( undef, "isVolatileVersionOf" )
+			$epdata->has_related_objects( EPrints::Utils::make_relation( "isVolatileVersionOf" ) )
 		  );
 
 		foreach my $field ($epdata->get_dataset->get_fields)
@@ -181,31 +179,3 @@ sub _epdata_to_json
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

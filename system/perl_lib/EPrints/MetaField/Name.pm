@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -23,11 +28,80 @@ not done
 
 package EPrints::MetaField::Name;
 
-use EPrints::MetaField::Multipart;
-
-@ISA = qw( EPrints::MetaField::Multipart );
-
 use strict;
+use warnings;
+
+BEGIN
+{
+	our( @ISA );
+
+	@ISA = qw( EPrints::MetaField::Text );
+}
+
+use EPrints::MetaField::Text;
+
+# database order
+our @PARTS = qw( family given lineage honourific );
+
+sub get_sql_names
+{
+	my( $self ) = @_;
+
+	return map { $self->get_name() . "_" . $_ } @PARTS;
+}
+
+sub value_from_sql_row
+{
+	my( $self, $session, $row ) = @_;
+
+	my %value;
+	for(@PARTS)
+	{
+		$value{$_} = $self->SUPER::value_from_sql_row( $session, $row );
+	}
+
+	return \%value;
+}
+
+sub sql_row_from_value
+{
+	my( $self, $session, $value ) = @_;
+
+	if( !EPrints::Utils::is_set( $value ) )
+	{
+		return map { undef } @PARTS;
+	}
+
+	for(@$value{@PARTS})
+	{
+		# Avoid NULL!="" name part problems
+		$_ = "" if !defined $_;
+		$_ = $self->SUPER::sql_row_from_value( $session, $_ );
+	}
+
+	return @$value{@PARTS};
+}
+
+sub get_sql_type
+{
+	my( $self, $session ) = @_;
+
+	my @parts = $self->get_sql_names;
+
+	for(@parts)
+	{
+		$_ = $session->get_database->get_column_type(
+			$_,
+			EPrints::Database::SQL_VARCHAR,
+			!$self->get_property( "allow_null" ),
+			$self->get_property( "maxlength" ),
+			undef,
+			$self->get_sql_properties,
+		);
+	}
+
+	return @parts;
+}
 
 # index the family part only...
 sub get_sql_index
@@ -38,22 +112,7 @@ sub get_sql_index
 
 	return ($self->get_name()."_family");
 }
-
-# fix undefined parts which causes uniqueness problems :-(
-sub sql_row_from_value
-{
-	my( $self, $session, $value ) = @_;
-
-	my @row = $self->SUPER::sql_row_from_value( $session, $value );
-
-	for(@row)
-	{
-		$_ = "" if !defined $_;
-	}
-
-	return @row;
-}
-
+	
 sub render_single_value
 {
 	my( $self, $session, $value ) = @_;
@@ -70,7 +129,7 @@ sub render_single_value
 
 sub get_input_bits
 {
-	my( $self ) = @_;
+	my( $self, $session ) = @_;
 
 	my @namebits;
 	unless( $self->get_property( "hide_honourific" ) )
@@ -95,33 +154,38 @@ sub get_input_bits
 
 sub get_basic_input_elements
 {
-	my( $self, $session, $value, $basename, $staff, $object ) = @_;
+	my( $self, $session, $value, $basename, $staff, $obj ) = @_;
 
-	my $grid_row = [];
-
-	foreach my $alias ($self->get_input_bits)
+	my $parts = [];
+	foreach( $self->get_input_bits( $session ) )
 	{
-		my $field = $self->{fields_index}->{$alias};
-		my $part_grid = $field->get_basic_input_elements( 
-					$session, 
-					$value->{$alias}, 
-					$basename."_".$alias, 
-					$staff, 
-					$object );
-		my $top_row = $part_grid->[0];
-		push @{$grid_row}, @{$top_row};
+		my $size = $self->{input_name_cols}->{$_};
+		my $f = $session->make_element( "div" );
+		push @{$parts}, {el=>$f};
+		$f->appendChild( $session->render_noenter_input_field(
+			class => "ep_form_text",
+			name => $basename."_".$_,
+			id => $basename."_".$_,
+			value => $value->{$_},
+			size => $size,
+			maxlength => $self->{maxlength} ) );
+		$f->appendChild( $session->make_element( "div", id=>$basename."_".$_."_billboard" ));
 	}
 
-	return [ $grid_row ];
+	return [ $parts ];
 }
 
 sub get_basic_input_ids
 {
 	my( $self, $session, $basename, $staff, $obj ) = @_;
 
-	return map {
-		join('_', $basename, $_)
-	} $self->get_input_bits;
+	my @ids = ();
+	foreach( $self->get_input_bits( $session ) )
+	{
+		push @ids, $basename."_".$_;
+	}
+
+	return @ids;
 }
 
 sub get_input_col_titles
@@ -129,7 +193,7 @@ sub get_input_col_titles
 	my( $self, $session, $staff ) = @_;
 
 	my @r = ();
-	foreach my $bit ( $self->get_input_bits() )
+	foreach my $bit ( $self->get_input_bits( $session ) )
 	{
 		# deal with some legacy in the phrase id's
 		$bit = "given_names" if( $bit eq "given" );
@@ -138,6 +202,57 @@ sub get_input_col_titles
 	}
 	return \@r;
 }
+
+sub form_value_basic
+{
+	my( $self, $session, $basename ) = @_;
+	
+	my $data = {};
+	foreach( @PARTS )
+	{
+		$data->{$_} = $session->param( $basename."_".$_ );
+		$data->{$_} = '' if !defined $data->{$_};
+	}
+
+	unless( EPrints::Utils::is_set( $data ) )
+	{
+		return( undef );
+	}
+
+	return $data;
+}
+
+sub get_value_label
+{
+	my( $self, $session, $value ) = @_;
+
+	return $self->render_single_value( $session, $value );
+}
+
+sub ordervalue_basic
+{
+	my( $self , $value ) = @_;
+
+	unless( ref($value) =~ m/^HASH/ ) { 
+		EPrints::abort( "EPrints::MetaField::Name::ordervalue_basic called on something other than a hash." );
+	}
+
+	my @a;
+	foreach( @PARTS )
+	{
+		if( defined $value->{$_} )
+		{
+			push @a, $value->{$_};
+		}
+		else
+		{
+			push @a, "";
+		}
+	}
+	return join( "\t" , @a );
+}
+
+
 
 sub split_search_value
 {
@@ -184,11 +299,6 @@ sub get_search_conditions
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
 
-	if( $match eq "SET" )
-	{
-		return $self->SUPER::get_search_conditions( @_[1..$#_] );
-	}
-
 	if( $match eq "EX" )
 	{
 		# not correct yet. Only used for browse-by-name
@@ -205,7 +315,7 @@ sub get_search_conditions
 
 	my $indexmode = "index";
 
-	if( $session->config( "match_start_of_name" ) )
+	if( $session->get_repository->get_conf( "match_start_of_name" ) )
 	{
 		$indexmode = "index_start";
 	}
@@ -310,19 +420,28 @@ sub get_property_defaults
 {
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
-	$defaults{fields} = [
-		{ sub_name => "family", type => "text", maxlength => 64, input_cols => 25, },
-		{ sub_name => "given", type => "text", maxlength => 64, input_cols => 25, },
-		{ sub_name => "lineage", type => "text", maxlength => 10, },
-		{ sub_name => "honourific", type => "text", maxlength => 10, },
-	];
 	$defaults{input_name_cols} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{hide_honourific} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{hide_lineage} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{family_first} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{render_order} = "fg";
-	$defaults{text_index} = 1;
 	return %defaults;
+}
+
+sub get_unsorted_values
+{
+	my( $self, $session, $dataset, %opts ) = @_;
+
+	my $list = $session->get_database->get_values( $self, $dataset );
+
+	return $list;
+
+	#my $out = [];
+	#foreach my $name ( @{$list} )
+	#{
+		#push @{$out}, $name->{family}.', '.$name->{given};
+	#}
+	#return $out;
 }
 
 my $x=<<END;
@@ -449,41 +568,133 @@ sub get_index_codes_basic
 	foreach( EPrints::Index::split_words( $session, $g ) )
 	{
 		next if( $_ eq "" );
-		push @r, "\L$_";
+#		push @r, "given:\L$_";
 		$code.= "[\L$_]";
 	}
 	return( \@r, [$code], [] );
 }	
 
+sub get_values
+{
+	my( $self, $session, $dataset, %opts ) = @_;
+
+	my $langid = $opts{langid};
+	$langid = $session->get_langid unless( defined $langid );
+
+	my $unsorted_values = $self->get_unsorted_values( 
+		$session,
+		$dataset,	
+		%opts );
+
+	my %orderkeys = ();
+	my @values;
+	foreach my $value ( @{$unsorted_values} )
+	{
+		my $v2 = $value;
+		$v2 = {} unless( defined $value );
+		push @values, $v2;
+
+		# uses function _basic because value will NEVER be multiple
+		my $orderkey = $self->ordervalue_basic(
+			$value, 
+			$session, 
+			$langid );
+		$orderkeys{$self->get_id_from_value($session, $v2)} = $orderkey;
+	}
+
+	my @outvalues = sort {$orderkeys{$self->get_id_from_value($session, $a)} cmp $orderkeys{$self->get_id_from_value($session, $b)}} @values;
+	return \@outvalues;
+}
+
+sub get_id_from_value
+{
+	my( $self, $session, $name ) = @_;
+
+	return "NULL" if !defined $name;
+
+	return join(":",
+		map { URI::Escape::uri_escape($_, ":%") }
+		map { defined($_) ? $_ : "NULL" }
+		@{$name}{qw( family given lineage honourific )});
+}
+
+sub get_value_from_id
+{
+	my( $self, $session, $id ) = @_;
+
+	return undef if $id eq "NULL";
+
+	my $name = {};
+	@{$name}{qw( family given lineage honourific )} =
+		map { $_ ne "NULL" ? $_ : undef }
+		map { URI::Escape::uri_unescape($_) }
+		split /:/, $id;
+
+	return $name;
+}
+
+sub to_xml_basic
+{
+	my( $self, $session, $value ) = @_;
+
+	my $r = $session->make_doc_fragment;	
+
+	foreach my $part ( @PARTS )
+	{
+		my $nv = $value->{$part};
+		next unless defined $nv;
+		next unless $nv ne "";
+		my $tag = $session->make_element( $part );
+		$tag->appendChild( $session->make_text( $nv ) );
+		$r->appendChild( $tag );
+	}
+	
+	return $r;
+}
+
+sub xml_to_epdata_basic
+{
+	my( $self, $session, $xml, %opts ) = @_;
+
+	my $value = {};
+	my %valid = map { $_ => 1 } @PARTS;
+	foreach my $node ($xml->childNodes)
+	{
+		next unless EPrints::XML::is_dom( $node, "Element" );
+		my $nodeName = $node->nodeName;
+		if( !exists $valid{$nodeName} )
+		{
+			if( defined $opts{Handler} )
+			{
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:unexpected_element", name => $session->make_text( $node->nodeName ) ) );
+				$opts{Handler}->message( "warning", $session->html_phrase( "Plugin/Import/XML:expected", elements => $session->make_text( "<".join("> <", @PARTS).">" ) ) );
+			}
+			next;
+		}
+		$value->{$nodeName} = EPrints::Utils::tree_to_utf8( scalar $node->childNodes );
+	}
+
+	return $value;
+}
+
+sub render_xml_schema_type
+{
+	my( $self, $session ) = @_;
+
+	my $type = $session->make_element( "xs:complexType", name => $self->get_xml_schema_type );
+
+	my $all = $session->make_element( "xs:all" );
+	$type->appendChild( $all );
+	foreach my $part ( @PARTS )
+	{
+		my $element = $session->make_element( "xs:element", name => $part, type => "xs:string", minOccurs => "0" );
+		$all->appendChild( $element );
+	}
+
+	return $type;
+}
+
 
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

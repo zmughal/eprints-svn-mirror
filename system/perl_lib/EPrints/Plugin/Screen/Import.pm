@@ -1,15 +1,10 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Import
-
-=cut
-
 
 package EPrints::Plugin::Screen::Import;
 
 use EPrints::Plugin::Screen;
 
 use Fcntl qw(:DEFAULT :seek);
+use File::Temp;
 
 our $MAX_ERR_LEN = 1024;
 
@@ -23,7 +18,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{actions} = [qw/ import_from test_data import_data test_upload import_upload /];
+	$self->{actions} = [qw/ import_from test import /];
 
 #	$self->{appears} = [
 #		{
@@ -43,8 +38,6 @@ sub new
 		$self->{post_bulk_import_screen} ||= "Items";
 	}
 
-	$self->{show_stderr} = 1;
-
 	return $self;
 }
 
@@ -54,11 +47,14 @@ sub properties_from
 	
 	$self->SUPER::properties_from;
 
-	my $plugin_id = $self->{session}->param( "format" );
+	my $plugin_id = $self->{session}->param( "plugin_id" );
 
 	# dataset to import into
 	$self->{processor}->{dataset} = $self->{session}->get_repository->get_dataset( "inbox" );
 
+	my $value = $self->{session}->param( "import_documents" );
+	$self->{processor}->{import_documents} = defined $value && $value eq "yes";
+	
 	if( defined $plugin_id )
 	{
 		my $plugin = $self->{session}->plugin(
@@ -66,6 +62,7 @@ sub properties_from
 			session => $self->{session},
 			dataset => $self->{processor}->{dataset},
 			processor => $self->{processor},
+			import_documents => $self->{processor}->{import_documents},
 		);
 		if( !defined $plugin || $plugin->broken )
 		{
@@ -90,96 +87,62 @@ sub can_be_viewed
 	return $self->allow( "create_eprint" );
 }
 
-sub allow_import_from { shift->can_be_viewed }
-sub allow_test_data { shift->can_be_viewed }
-sub allow_import_data { shift->can_be_viewed }
-sub allow_test_upload { shift->can_be_viewed }
-sub allow_import_upload { shift->can_be_viewed }
+sub allow_import_from
+{
+	my( $self ) = @_;
+	return $self->can_be_viewed;
+}
+
+sub allow_test
+{
+	my( $self ) = @_;
+	return $self->can_be_viewed;
+}
+
+sub allow_import
+{
+	my( $self ) = @_;
+	return $self->can_be_viewed;
+}
 
 sub action_import_from
 {
 	my( $self ) = @_;
-
-	my $plugin = $self->{processor}->{plugin};
-	
-	my $screenid = $plugin->param( "screen" );
-	if( defined $screenid )
-	{
-		$self->{processor}->{screenid} = $screenid;
-	}
 }
 
-sub action_test_data
+sub action_test
 {
 	my ( $self ) = @_;
 
-	my $tmpfile = File::Temp->new;
-	syswrite($tmpfile, scalar($self->{repository}->param( "data" )));
-	sysseek($tmpfile, 0, 0);
+	my $tmp_file = $self->_make_tmp_file;
+	return if !defined $tmp_file;
 
-	my $list = $self->run_import( 1, 0, $tmpfile ); # dry run with messages
-	$self->{processor}->{results} = $list;
+	$self->_import( 1, 0, $tmp_file ); # dry run with messages
 }
 
-sub action_test_upload
-{
-	my ( $self ) = @_;
-
-	my $tmpfile = $self->{repository}->get_query->upload( "file" );
-	$tmpfile = *$tmpfile; # CGI file handles aren't proper handles
-	return if !defined $tmpfile;
-
-	my $list = $self->run_import( 1, 0, $tmpfile ); # dry run with messages
-	$self->{processor}->{results} = $list;
-}
-
-sub action_import_data
+sub action_import
 {
 	my( $self ) = @_;
-
-	my $tmpfile = File::Temp->new;
-	syswrite($tmpfile, scalar($self->{repository}->param( "data" )));
-	sysseek($tmpfile, 0, 0);
-
-	my $list = $self->run_import( 0, 0, $tmpfile ); # real run with messages
-	return if !defined $list;
-
-	$self->{processor}->{results} = $list;
-
-	$self->post_import( $list );
-}
-
-sub action_import_upload
-{
-	my( $self ) = @_;
-
-	my $tmpfile = $self->{repository}->get_query->upload( "file" );
-	return if !defined $tmpfile;
-
-	$tmpfile = *$tmpfile; # CGI file handles aren't proper handles
-	return if !defined $tmpfile;
-
-	$self->{processor}->{filename} = $self->{repository}->get_query->param( "file" );
-
-	my $list = $self->run_import( 0, 0, $tmpfile ); # real run with messages
-	return if !defined $list;
-
-	$self->{processor}->{results} = $list;
-
-	$self->post_import( $list );
-}
-
-sub post_import
-{
-	my( $self, $list ) = @_;
 
 	my $processor = $self->{processor};
+
+	my $tmp_file = $self->_make_tmp_file;
+	return if !defined $tmp_file;
+
+	return unless $self->_import( 1, 1, $tmp_file ); # quiet dry run
+	my( $import, $list ) = $self->_import( 0, 0, $tmp_file ); # real run with messages
+
+	return if !defined $list;
 
 	my $n = $list->count;
 
 	if( $n == 1 )
 	{
 		my( $eprint ) = $list->get_records( 0, 1 );
+		# remove the bulk import object
+		$eprint->set_value( "importid", undef );
+		$eprint->commit;
+		$import->remove;
 		# add in eprint/eprintid for backwards compatibility
 		$processor->{dataobj} = $processor->{eprint} = $eprint;
 		$processor->{dataobj_id} = $processor->{eprintid} = $eprint->get_id;
@@ -187,36 +150,83 @@ sub post_import
 	}
 	elsif( $n > 1 )
 	{
+		$processor->{dataobj} = $import;
+		$processor->{dataobj_id} = $import->get_id;
 		$processor->{screenid} = $self->{post_bulk_import_screen};
 	}
 }
 
-sub epdata_to_dataobj
-{
-	my( $self, $epdata, %opts ) = @_;
-
-	$self->{processor}->{count}++;
-			
-	my $dataset = $opts{dataset};
-	if( $dataset->base_id eq "eprint" )
-	{
-		$epdata->{userid} = $self->{repository}->current_user->id;
-		$epdata->{eprint_status} = "inbox";
-	}	
-
-	return undef if $opts{parse_only};
-
-	return $dataset->create_dataobj( $epdata );
-}
-
-sub arguments
+sub _make_tmp_file
 {
 	my( $self ) = @_;
 
-	return ();
+	my $query = $self->{session}->get_query;
+	my $tmp_file;
+	my $import_fh;
+	my $import_data;
+
+	my $filled_in = 0;
+	for(qw( import_filename bulk_import_filename ))
+	{
+		if( EPrints::Utils::is_set( $query->param( $_ ) ) )
+		{
+			$filled_in++;
+			$import_fh = $query->upload( $_ );
+		}
+	}
+
+	for(qw( import_data bulk_import_data import_uri bulk_import_uri ))
+	{
+		if( EPrints::Utils::is_set( $query->param( $_ ) ) )
+		{
+			$filled_in++;
+			$import_data = $query->param( $_ );
+		}
+	}
+
+	# nothing supplied
+	if( $filled_in == 0 )
+	{
+		$self->{processor}->add_message( "error", $self->html_phrase( "nothing_to_import" ) );
+		return undef;
+	}
+	# more than one thing filled in?!
+	elsif( $filled_in > 1 )
+	{
+		$self->{processor}->add_message( "error", $self->html_phrase( "multiple_inputs" ) );
+		return undef;
+	}
+
+	if( defined $import_fh )
+	{
+		# WARNING! CGI creates a "Fh" file object around the uploaded file
+		# handle which does not support read() etc. We'll get around this by
+		# holding the object open and getting the glob (file handle) from the
+		# object.
+		$self->{$import_fh} = $import_fh;
+		$tmp_file = *$import_fh;
+	}
+	else
+	{
+		# Write import records to temp file
+		$tmp_file = File::Temp->new( UNLINK => 1 );
+		$tmp_file->autoflush;
+
+		# Write a Byte Order Mark for utf-8 if the plugin is a TextFile type,
+		# which will cause utf-8 to be read correctly
+		my $plugin = $self->{processor}->{plugin};
+		if( $plugin->isa( "EPrints::Plugin::Import::TextFile" ) )
+		{
+			binmode($tmp_file);
+			print $tmp_file pack("CCC", 0xef, 0xbb, 0xbf);
+		}
+		print $tmp_file $import_data;
+	}
+
+	return $tmp_file;
 }
 
-sub run_import
+sub _import
 {
 	my( $self, $dryrun, $quiet, $tmp_file ) = @_;
 
@@ -226,113 +236,78 @@ sub run_import
 	my $dataset = $self->{processor}->{dataset};
 	my $user = $self->{processor}->{user};
 	my $plugin = $self->{processor}->{plugin};
-	my $show_stderr = $session->config(
-		"plugins",
-		"Screen::Import",
-		"params",
-		"show_stderr"
-		);
-	$show_stderr = $self->{show_stderr} if !defined $show_stderr;
 
-	$self->{processor}->{count} = 0;
+	my $import;
+	if( !$dryrun )
+	{
+		$import = $session->get_repository->get_dataset( "import" )->create_object( $session, {} );
+	}
 
+	my $handler = EPrints::Plugin::Screen::Import::Handler->new(
+		processor => $self->{processor},
+		user => $user,
+		quiet => $quiet,
+		import => $import,
+	);
+
+	$plugin->{Handler} = $handler;
 	$plugin->{parse_only} = $dryrun;
-	$plugin->set_handler( EPrints::CLIProcessor->new(
-		message => sub { !$quiet && $self->{processor}->add_message( @_ ) },
-		epdata_to_dataobj => sub {
-			return $self->epdata_to_dataobj(
-				@_,
-				parse_only => $dryrun,
-			);
-		},
-	) );
 
-	my $err_file = EPrints->system->capture_stderr();
+	my $err_file = File::Temp->new(
+		UNLINK => 1
+	);
+
+	# We'll capture anything from STDERR that an import library may
+	# spew out
+	{
+	# Perl complains about OLD_STDERR being used only once with warnings
+	no warnings;
+	open(OLD_STDERR, ">&STDERR") or die "Failed to save STDERR";
+	}
+	open(STDERR, ">$err_file") or die "Failed to redirect STDERR";
 
 	my @problems;
-
-	my @actions;
-	foreach my $action (@{$plugin->param( "actions" )})
-	{
-		push @actions, $action
-			if scalar($session->param( "action_$action" ));
-	}
 
 	# Don't let an import plugin die() on us
 	my $list = eval {
 		$plugin->input_fh(
-			$self->arguments,
 			dataset=>$dataset,
 			fh=>$tmp_file,
 			user=>$user,
-			filename=>$self->{processor}->{filename},
-			actions=>\@actions,
 		);
 	};
+	push @problems, "Unhandled exception in ".$plugin->{id}.": $@" if $@;
+	push @problems, "Expected EPrints::List" if !defined $list;
 
-	EPrints->system->restore_stderr( $err_file );
+	my $count = $dryrun ? $handler->{parsed} : $handler->{wrote};
 
-	if( $@ )
+	open(STDERR,">&OLD_STDERR") or die "Failed to restore STDERR";
+
+	seek( $err_file, 0, SEEK_SET );
+
+	my $err = "";
+
+	while(<$err_file>)
 	{
-		if( $show_stderr )
-		{
-			push @problems, [
-				"error",
-				$session->phrase( "Plugin/Screen/Import:exception",
-					plugin => $plugin->{id},
-					error => $@,
-				),
-			];
-		}
-		else
-		{
-			$session->log( $@ );
-			push @problems, [
-				"error",
-				$session->phrase( "Plugin/Screen/Import:exception",
-					plugin => $plugin->{id},
-					error => "See Apache error log file",
-				),
-			];
-		}
-	}
-	elsif( !defined $list && !@{$self->{processor}->{messages}} )
-	{
-		push @problems, [
-			"error",
-			$session->phrase( "Plugin/Screen/Import:exception",
-				plugin => $plugin->{id},
-				error => "Plugin returned undef",
-			),
-		];
+		$_ =~ s/\s+$//;
+		next unless length($_);
+		$err .= "$_\n";
+		last if length($err) > $MAX_ERR_LEN;
 	}
 
-	my $count = $self->{processor}->{count};
-
-	my $err;
-	sysread($err_file, $err, $MAX_ERR_LEN);
-	$err =~ s/\n\n+/\n/g;
-
-	if( length($err) && $show_stderr )
+	if( length($err) )
 	{
-		push @problems, [
-			"warning",
-			$session->phrase( "Plugin/Screen/Import:warning",
-				plugin => $plugin->{id},
-				warning => $err,
-			),
-		];
+		push @problems, "Unhandled warning in ".$plugin->{id}.": $err";
 	}
 
-	foreach my $problem (@problems)
+	for(@problems)
 	{
-		my( $type, $message ) = @$problem;
-		$message =~ s/^(.{$MAX_ERR_LEN}).*$/$1 .../s;
-		$message =~ s/\t/        /g; # help _mktext out a bit
-		$message = join "\n", EPrints::DataObj::History::_mktext( $session, $message, 0, 0, 80 );
+		s/^(.{$MAX_ERR_LEN}).*$/$1 .../s;
+		s/\t/        /g; # help _mktext out a bit
+		my @lines = EPrints::DataObj::History::_mktext( $session, $_, 0, 0, 80 );
 		my $pre = $session->make_element( "pre" );
-		$pre->appendChild( $session->make_text( $message ) );
-		$self->{processor}->add_message( $type, $pre );
+		$pre->appendChild( $session->make_text( join( "\n", @lines )));
+		$self->{processor}->add_message( "warning", $pre );
 	}
 
 	my $ok = (scalar(@problems) == 0 and $count > 0);
@@ -341,14 +316,14 @@ sub run_import
 	{
 		if( $ok )
 		{
-			$self->{processor}->add_message( "message", $session->html_phrase(
-				"Plugin/Screen/Import:test_completed", 
+			$self->{processor}->add_message( "message", $self->html_phrase(
+				"test_completed", 
 				count => $session->make_text( $count ) ) ) unless $quiet;
 		}
 		else
 		{
-			$self->{processor}->add_message( "warning", $session->html_phrase( 
-				"Plugin/Screen/Import:test_failed", 
+			$self->{processor}->add_message( "warning", $self->html_phrase( 
+				"test_failed", 
 				count => $session->make_text( $count ) ) );
 		}
 	}
@@ -356,19 +331,19 @@ sub run_import
 	{
 		if( $ok )
 		{
-			$self->{processor}->add_message( "message", $session->html_phrase( 
-				"Plugin/Screen/Import:import_completed", 
+			$self->{processor}->add_message( "message", $self->html_phrase( 
+				"import_completed", 
 				count => $session->make_text( $count ) ) );
 		}
 		else
 		{
-			$self->{processor}->add_message( "warning", $session->html_phrase( 
-				"Plugin/Screen/Import:import_failed", 
+			$self->{processor}->add_message( "warning", $self->html_phrase( 
+				"import_failed", 
 				count => $session->make_text( $count ) ) );
 		}
 	}
 
-	return $list;
+	return( $import, $list );
 }
 
 sub redirect_to_me_url { }
@@ -377,8 +352,61 @@ sub render_title
 {
 	my( $self ) = @_;
 
-	return $self->{session}->html_phrase( "Plugin/Screen/Import:title",
-		input => $self->{processor}->{plugin}->render_name );
+	return $self->html_phrase( "title",
+		input => $self->{session}->make_text( $self->{processor}->{plugin_id} ) );
+}
+
+sub _render_input_data_tab
+{
+	my( $self, $prefix, $plugin ) = @_;
+
+	my $session = $self->{session};
+
+	my $value;
+	my $set = 0;
+
+	my $textarea = $session->make_element(
+		"textarea",
+		name => $prefix."import_data",
+		rows => 10,
+		cols => 50,
+		wrap => "virtual" );
+	$value = $session->param( $prefix."import_data" );
+	if( EPrints::Utils::is_set($value) )
+	{
+		$set = 1;
+		$textarea->appendChild( $session->make_text( $value ) );
+	}
+
+	$value = $session->param( $prefix."import_uri" );
+	my $inputuri = $session->make_element(
+		"input",
+		type => "text",
+		name => $prefix."import_uri",
+		value => $value );
+	$set = 1 if EPrints::Utils::is_set( $value );
+
+	my $fileupload = $session->render_upload_field( $prefix."import_filename" );
+
+	my $phrase_id = $plugin->html_phrase_id( $prefix."input:form" );
+	if( !$session->get_lang->has_phrase( $phrase_id ) )
+	{
+		$phrase_id = $self->html_phrase_id( $prefix."input:form" );
+	}
+
+	my $content = $session->html_phrase(
+		$phrase_id,
+		$prefix.input_text_area => $textarea,
+		$prefix.input_uri => $inputuri,
+		$prefix.input_file_upload => $fileupload,
+	);
+
+	return {
+		id => $prefix."input_tab",
+		title => $self->html_phrase( $prefix."input:title" ),
+		content => $content,
+		set => $set,
+	};
 }
 
 sub render
@@ -388,106 +416,108 @@ sub render
 	my $session = $self->{session};
 	my $plugin = $self->{processor}->{plugin};
 
-	my @labels;
-	my @panels;
+	my $page = $session->make_doc_fragment;
 
-	push @labels, $self->html_phrase( "data" );
-	push @panels, $self->render_import_form;
+	# Preamble
+	my $imagesurl = $session->get_repository->get_conf( "rel_path" )."/style/images";
 
-	push @labels, $self->html_phrase( "upload" );
-	push @panels, $self->render_upload_form;
+	my $box = $session->make_element( "div", style=>"text-align: left" );
+	$page->appendChild( $box );
+	$box->appendChild( EPrints::Box::render( 
+ 		session => $session,
+		id => "ep_review_instructions",
+		title => $session->html_phrase( "Plugin/Screen/Items:help_title" ),
+		content => $self->html_phrase( "intro" ),
+		collapsed => 1,
+		show_icon_url => "$imagesurl/help.gif",
+	) );
 
-	return $session->xhtml->tabs( \@labels, \@panels );
-}
+	my $form = $session->render_form( "post" );
+	$page->appendChild( $form );
+	# add hidden values
+	$form->appendChild( $session->render_hidden_field( "screen", $self->{processor}->{screenid} ) );
+	$form->appendChild( $session->render_hidden_field( "plugin_id", $self->{processor}->{plugin_id} ) );
 
-sub render_actions
-{
-	my( $self ) = @_;
+	my @tabs;
+	my $default_tab = 0;
 
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
-	my $plugin = $self->{processor}->{plugin};
-
-	my $ul = $self->{session}->make_element( "ul",
-		style => "list-style-type: none"
-	);
-
-	foreach my $action (sort @{$plugin->param( "actions" )})
+	# build a list of tabs containing the available data input methods
+	if( $plugin->can_produce( "dataobj/eprint" ) )
 	{
-		my $li = $xml->create_element( "li" );
-		$ul->appendChild( $li );
-		my $action_id = "action_$action";
-		my $checkbox = $xml->create_element( "input",
-			type => "checkbox",
-			name => $action_id,
-			id => $action_id,
-			value => "yes",
-			checked => "yes",
-		);
-		$li->appendChild( $checkbox );
-		my $label = $xml->create_element( "label",
-			for => $action_id,
-		);
-		$li->appendChild( $label );
-		$label->appendChild( $plugin->html_phrase( $action_id ) );
+		push @tabs, $self->_render_input_data_tab( "", $plugin );
+		$default_tab = $#tabs if $tabs[$#tabs]->{set};
+	}
+	if( $plugin->can_produce( "list/eprint" ) )
+	{
+		push @tabs, $self->_render_input_data_tab( "bulk_", $plugin );
+		$default_tab = $#tabs if $tabs[$#tabs]->{set};
 	}
 
-	return $ul->hasChildNodes ? $ul : $xml->create_document_fragment;
-}
+	# with no tabs just render a toolbox
+	if( @tabs == 1 )
+	{
+		# unused title
+		EPrints::XML::dispose( $tabs[0]->{title} );
+		$form->appendChild( $session->render_toolbox( undef, $tabs[0]->{content} ) );
+	}
+	# render tabbed input
+	elsif( @tabs > 1 )
+	{
+		# render the input tabs
+		my $id_prefix = "import_data_input";
 
-sub render_import_form
-{
-	my( $self ) = @_;
+		$form->appendChild( $session->render_tabs(
+			id_prefix => $id_prefix,
+			current => $tabs[$default_tab]->{id},
+			tabs => [map { $_->{id} } @tabs],
+			labels => {map { $_->{id} => $_->{title} } @tabs},
+			links => {map { $_->{id} => "" } @tabs},
+			) );
 
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
+		# panel that all the tab content sits in
+		my $panel = $session->make_element( "div",
+			id => "${id_prefix}_panels",
+			class => "ep_tab_panel",
+		);
+		$form->appendChild( $panel );
 
-	my $div = $xml->create_element( "div", class => "ep_block" );
+		# populate each of the panels
+		foreach my $tab (@tabs)
+		{
+			my $view_div = $session->make_element( "div",
+				id => "${id_prefix}_panel_".$tab->{id},
+			);
+			if( $tab ne $tabs[$default_tab] )
+			{
+				$view_div->setAttribute( "style", "display: none" );
+			}
+			$view_div->appendChild( $tab->{content} );
 
-	my $form = $div->appendChild( $self->{processor}->screen->render_form );
-	$form->appendChild(EPrints::MetaField->new(
-			name => "data",
-			type => "longtext",
-			repository => $repo,
-		)->render_input_field(
-			$repo,
-			scalar($repo->param( "data" )),
-		) );
-	$form->appendChild( $self->render_actions );
-	$form->appendChild( $repo->render_action_buttons(
-		test_data => $repo->phrase( "Plugin/Screen/Import:action_test_data" ),
-		import_data => $repo->phrase( "Plugin/Screen/Import:action_import_data" ),
-		_order => [qw( test_data import_data )],
-	) );
+			$panel->appendChild( $view_div );
+		}
+	}
 
-	return $div;
-}
+	if( $session->get_repository->get_conf( "enable_web_imports" ) )
+	{
+		$form->appendChild( $session->make_element( "br" ) );
+		my $importfiles = $session->render_input_field( type=>"checkbox", name=>"import_documents", value=>"yes", class=>"ep_form_checkbox", id=>"import_documents" );
+		if( $self->{processor}->{import_documents} )
+		{
+			$importfiles->setAttribute( "checked", "yes" );
+		}
+		$importfiles->appendChild( $session->make_element( "label", 
+			for => "import_documents",
+		) )->appendChild( $self->html_phrase( "import_documents" ) );
+		$form->appendChild( $session->render_toolbox( undef, $importfiles ) );
+	}
 
-sub render_upload_form
-{
-	my( $self ) = @_;
+	$form->appendChild( $session->render_action_buttons( 
+		_class => "ep_form_button_bar",
+		test => $self->phrase( "action:test:title" ), 
+		import => $self->phrase( "action:import:title" ),
+		_order => [qw( test import )] ) );
 
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-	my $xhtml = $repo->xhtml;
-
-	my $div = $xml->create_element( "div", class => "ep_block" );
-
-	my $form = $div->appendChild( $self->{processor}->screen->render_form );
-	$form->appendChild( $xhtml->input_field(
-		file => undef,
-		type => "file"
-		) );
-	$form->appendChild( $self->render_actions );
-	$form->appendChild( $repo->render_action_buttons(
-		test_upload => $repo->phrase( "Plugin/Screen/Import:action_test_upload" ),
-		import_upload => $repo->phrase( "Plugin/Screen/Import:action_import_upload" ),
-		_order => [qw( test_upload import_upload )],
-	) );
-
-	return $div;
+	return $page;
 }
 
 sub _vis_level
@@ -503,7 +533,6 @@ sub _get_import_plugins
 
 	my %opts =  (
 			type=>"Import",
-			is_advertised => 1,
 #			can_produce=>"list/eprint",
 			is_visible=>$self->_vis_level,
 	);
@@ -565,7 +594,7 @@ sub render_import_bar
 		}
 	}
 
-	my $select = $session->make_element( "select", name=>"format" );
+	my $select = $session->make_element( "select", name=>"plugin_id" );
 	foreach my $optname ( sort keys %{$options} )
 	{
 		$select->appendChild( $options->{$optname} );
@@ -584,16 +613,6 @@ sub render_import_bar
 					button => $button ));
 
 	return $form;
-}
-
-sub hidden_bits
-{
-	my( $self ) = @_;
-
-	return(
-		$self->SUPER::hidden_bits,
-		format => scalar($self->{repository}->param( "format" )),
-	);
 }
 
 package EPrints::Plugin::Screen::Import::Handler;
@@ -618,55 +637,28 @@ sub message
 	}
 }
 
-sub epdata_to_dataobj
+sub parsed
 {
-	my( $self, $epdata, %opts ) = @_;
+	my( $self, $epdata ) = @_;
 
 	$self->{parsed}++;
+}
 
-	return if $self->{dryrun};
-
-	my $dataset = $opts{dataset};
-	if( $dataset->base_id eq "eprint" )
-	{
-		$epdata->{userid} = $self->{user}->id;
-		$epdata->{eprint_status} = "inbox";
-	}	
+sub object
+{
+	my( $self, $dataset, $dataobj ) = @_;
 
 	$self->{wrote}++;
 
-	return $dataset->create_dataobj( $epdata );
+	if( $dataset->confid eq "eprint" )
+	{
+		$dataobj->set_value( "userid", $self->{user}->get_id );
+		if( defined $self->{import} )
+		{
+			$dataobj->set_value( "importid", $self->{import}->get_id );
+		}
+		$dataobj->commit;
+	}	
 }
 
-sub parsed { }
-sub object { }
-
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

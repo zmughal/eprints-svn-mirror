@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -29,7 +34,7 @@ web page.
 
 =head2 Searching for Eprints
 
-	$ds = $session->dataset( "archive" );
+	$ds = $session->get_repository->get_dataset( "archive" );
 
 	$searchexp = EPrints::Search->new(
 		satisfy_all => 1,
@@ -182,6 +187,10 @@ so force certain search parameters on the user.
 An optional parameter of describe=>0 can be set to supress the filter
 being mentioned in the description of the search.
 
+=item for_web
+
+Internal use. Indicates this search object is going to be used to build
+a webpage or read and process results via CGI.
 =back
 
 =cut
@@ -193,7 +202,7 @@ being mentioned in the description of the search.
 	"custom_order", "keep_cache", 	"cache_id", 	
 	"prefix", 	"defaults", 	"filters", 
 	"search_fields","show_zero_results", "show_help",
-	"limit",
+	"limit",	"for_web",
 );
 
 sub new
@@ -248,7 +257,7 @@ END
 
 	# Arrays for the Search::Field objects
 	$self->{searchfields} = [];
-	$self->{filtersmap} = {};
+	$self->{filterfields} = {};
 	# Map for MetaField names -> corresponding EPrints::Search::Field objects
 	$self->{searchfieldmap} = {};
 
@@ -276,15 +285,29 @@ END
 			$show_help = $fielddata->{show_help};
 		}
 
-		my %opts = %$fielddata;
-		$opts{value} = delete $opts{default}
-			if exists $opts{default};
+		my $match = $fielddata->{match};
+		my $merge = $fielddata->{merge};
+		if( $self->{for_web} )
+		{
+			if( !defined $match )
+			{
+				$match = $meta_fields[0]->default_web_search_match_code();
+			}
+			if( !defined $merge )
+			{
+				$merge = $meta_fields[0]->default_web_search_merge_code();
+			}
+		}
 
 		# Add a reference to the list
-		$self->add_field( %opts,
-			fields => \@meta_fields,
-			show_help => $show_help,
-		);
+		my $sf = $self->add_field( 
+			\@meta_fields, 
+			$fielddata->{default},
+			$match,
+			$merge,
+			$fielddata->{id},
+			0,
+			$show_help );
 	}
 	$self->{filters} = [] unless defined $self->{filters};
 	my @filters = @{$self->{filters}};
@@ -299,15 +322,14 @@ END
 	EPrints::Utils::field_from_config_string( $self->{dataset}, $fieldname );
 		}
 	
-		my %opts = %$filterdata;
-		$opts{value} = delete $opts{default}
-			if exists $opts{default};
-
 		# Add a reference to the list
-		my $sf = $self->add_field( %opts,
-			fields => \@meta_fields,
-			filter => 1,
-			);
+		my $sf = $self->add_field(
+			\@meta_fields, 
+			$filterdata->{value},
+			$filterdata->{match},
+			$filterdata->{merge},
+			$filterdata->{id},
+			1 );
 		$sf->set_include_in_description( $filterdata->{describe} );
 	}
 
@@ -352,17 +374,9 @@ sub from_cache
 ######################################################################
 =pod
 
-=item $searchfield = $searchexp->add_field( %opts )
+=item $searchfield = $searchexp->add_field( $metafields, $value, $match, $merge, $id, $filter, $show_help )
 
-	fields - one or more fields to search over
-	match - match type
-	merge - merge type
-	value - value to match against (for EX matches, NULL = is_null!)
-	id - search field id, if not the name of the first field
-	filter - is filter-type
-	show_help - show help in search input
-
-Adds a new search in $fields which is either a single L<EPrints::MetaField>
+Adds a new search in $metafields which is either a single L<EPrints::MetaField>
 or a list of fields in an array ref with default $value. If a search field
 already exists, the value of that field is replaced with $value.
 
@@ -372,41 +386,43 @@ already exists, the value of that field is replaced with $value.
 
 sub add_field
 {
-	my( $self, @args ) = @_;
-
-	# old-style argument list
-	my %opts = @args % 2 == 0 ? @args : ();
-	if( !exists($opts{fields}) )
-	{
-		@opts{qw( fields value match merge id filter show_help )} = @args;
-	}
-	$opts{prefix} = $self->{prefix} if !exists $opts{prefix};
-	$opts{repository} = $self->{session};
-	$opts{dataset} = $self->{dataset} if !exists $opts{dataset};
-	my $filter = delete $opts{filter};
+	my( $self, $metafields, $value, $match, $merge, $id, $filter, $show_help ) = @_;
 
 	# metafields may be a field OR a ref to an array of fields
 
 	# Create a new searchfield
-	my $searchfield = EPrints::Search::Field->new( %opts );
+	my $searchfield = EPrints::Search::Field->new( 
+					$self->{session},
+					$self->{dataset},
+					$metafields,
+					$value,
+					$match,
+					$merge,
+					$self->{prefix},
+					$id,
+					$show_help );
 
-	$self->_add_field( $searchfield, $filter );
+	my $sf_id = $searchfield->get_id();
+	unless( defined $self->{searchfieldmap}->{$sf_id} )
+	{
+		push @{$self->{searchfields}}, $sf_id;
+	}
+	# Put it in the name -> searchfield map
+	# (possibly replacing an old one)
+	$self->{searchfieldmap}->{$sf_id} = $searchfield;
+
+	if( $filter )
+	{
+		$self->{filtersmap}->{$sf_id} = $searchfield;
+	}
 
 	return $searchfield;
 }
 
-sub _add_field
-{
-	my( $self, $sf, $filter ) = @_;
 
-	push @{$self->{searchfields}}, $sf->get_id
-		if !exists $self->{searchfieldmap}->{$sf->get_id};
 
-	$self->{searchfieldmap}->{$sf->get_id} = $sf;
-	$self->{filtersmap}->{$sf->get_id} = $sf if $filter;
-}
-
-=begin InternalDoc
+######################################################################
+=for InternalDoc
 
 =item $searchfield = $searchexp->get_searchfield( $sf_id )
 
@@ -414,8 +430,6 @@ Return a L<EPrints::Search::Field> belonging to this Search with
 the given id. 
 
 Return undef if not searchfield of that ID belongs to this search. 
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -526,28 +540,30 @@ sub serialise
 	push @parts, $self->{satisfy_all}?1:0;
 	push @parts, $self->{custom_order};
 	push @parts, $self->{dataset}->id();
-	my( @fields, @filters );
+	# This inserts an "-" field which we use to spot the join between
+	# the properties and the fields, so in a pinch we can add a new 
+	# property in a later version without breaking when we upgrade.
+	push @parts, "-";
+	my $search_field;
+	my @filters = ();
 	foreach my $sf_id (sort @{$self->{searchfields}})
 	{
-		my $fieldstring = $self->get_searchfield( $sf_id )->serialise;
-		next if !defined $fieldstring;
-		if( $self->{filtersmap}->{$sf_id} )
+		my $search_field = $self->get_searchfield( $sf_id );
+		my $fieldstring = $search_field->serialise();
+		next unless( defined $fieldstring );
+                if( $self->{filtersmap}->{$sf_id} )
 		{
 			push @filters, $fieldstring;
 		}
 		else
 		{
-			push @fields, $fieldstring;
+			push @parts, $fieldstring;
 		}
 	}
-	# This inserts an "-" field which we use to spot the join between
-	# the properties and the fields, so in a pinch we can add a new 
-	# property in a later version without breaking when we upgrade.
-	push @parts,
-		"-",
-		(@fields ? @fields : ''),
-		"-",
-		(@filters ? @filters : '');
+	if( scalar @filters )
+	{
+		push @parts, "-", @filters;
+	}
 	my @escapedparts;
 	foreach( @parts )
 	{
@@ -592,23 +608,25 @@ sub from_string
 #	$self->{allow_blank} = $parts[0];
 #	$self->{dataset} = $self->{session}->get_repository->get_dataset( $parts[3] ); 
 
-	foreach( split /\|/ , $field_string )
+	my $sf_data = {};
+	if( defined $field_string )
 	{
-		my $sf = EPrints::Search::Field->unserialise(
-			repository => $self->{session},
-			dataset => $self->{dataset},
-			string => $_ );
-		next if !defined $sf; # bad serialisation
+		foreach( split /\|/ , $field_string )
+		{
+			my $data = EPrints::Search::Field->unserialise( $_ );
+			$sf_data->{$data->{"id"}} = $data;	
+		}
+	}
 
-		my $id = $sf->get_id;
-
-		# not an existing field
-		next if !defined $self->{searchfieldmap}->{$id};
-
-		# don't override filters
-		next if $self->{filtersmap}->{$id};
-
-		$self->_add_field( $sf );
+	foreach my $sf ( $self->get_non_filter_searchfields )
+	{
+		my $data = $sf_data->{$sf->get_id};
+		$self->add_field( 
+			$sf->get_fields(), 
+			$data->{"value"},
+			$data->{"match"},
+			$data->{"merge"},
+			$sf->get_id() );
 	}
 }
 
@@ -633,25 +651,34 @@ sub from_string_raw
 
 	foreach( split /\|/ , $field_string )
 	{
-		my $sf = EPrints::Search::Field->unserialise(
-			repository => $self->{session},
-			dataset => $self->{dataset},
-			string => $_,
-		);
-		EPrints->abort( "Failed to unserialise search field from '$_'" )
-			if !defined $sf;
-		$self->_add_field( $sf );
+		my $data = EPrints::Search::Field->unserialise( $_ );
+		my $fields = [];
+		foreach my $fname ( split( "/", $data->{rawid} ) )
+		{
+                        push @{$fields}, EPrints::Utils::field_from_config_string( $self->{dataset}, $fname );
+		}
+		$self->add_field( 
+			$fields,
+			$data->{"value"},
+			$data->{"match"},
+			$data->{"merge"},
+			$data->{"id"}, );
 	}
 	foreach( split /\|/ , $filter_string )
 	{
-		my $sf = EPrints::Search::Field->unserialise(
-			repository => $self->{session},
-			dataset => $self->{dataset},
-			string => $_,
-		);
-		EPrints->abort( "Failed to unserialise filter field from '$_'" )
-			if !defined $sf;
-		$self->_add_field( $sf, 1 );
+		my $data = EPrints::Search::Field->unserialise( $_ );
+		my $fields = [];
+		foreach my $fname ( split( "/", $data->{rawid} ) )
+		{
+                        push @{$fields}, EPrints::Utils::field_from_config_string( $self->{dataset}, $fname );
+		}
+		my $sf = $self->add_field( 
+			$fields,
+			$data->{"value"},
+			$data->{"match"},
+			$data->{"merge"},
+			$data->{"id"}, 
+			1, );
 		$sf->set_include_in_description( 0 );
 	}
 
@@ -871,7 +898,7 @@ sub render_conditions_description
 	my( $self ) = @_;
 
 	my @bits = ();
-	foreach my $sf ( $self->get_non_filter_searchfields )
+	foreach my $sf ( $self->get_searchfields )
 	{
 		next unless( $sf->is_set );
 		next unless( $sf->get_include_in_description );
@@ -1083,7 +1110,6 @@ sub perform_search
 			encoded => $self->serialise,
 			cache_id => $self->{cache_id}, 
 			searchexp => $self,
-			order => $self->{custom_order},
 		);
 	}
 
@@ -1122,7 +1148,6 @@ sub perform_search
 		ids => $unsorted_matches, 
 		cache_id => (defined $cachemap ? $cachemap->get_id : undef ),
 		searchexp => $self,
-		order => $self->{custom_order},
 	);
 
 	$self->{cache_id} = $results->get_cache_id;
@@ -1130,23 +1155,6 @@ sub perform_search
 	return $results;
 }
 
-=item $ids_map = $searchexp->perform_distinctby( $fields )
-
-Perform a DISTINCT on $fields to find all unique ids by value.
-
-=cut
-
-sub perform_distinctby
-{
-	my( $self, $fields ) = @_;
-
-	# we don't do any caching of DISTINCT BY
-	return $self->get_conditions->process_distinctby( 
-			session => $self->{session},
-			dataset => $self->{dataset},
-			fields => $fields,
-		);
-}
 
 =item ($values, $counts) = $searchexp->perform_groupby( $field )
 
@@ -1244,7 +1252,24 @@ sub get_ids_by_field_values
 {
 	my( $self, $field ) = @_;
 
-	return $self->process_distinctby( [$field] );
+	my @filters = @{$self->{filters}};
+
+	foreach my $sf_id ( keys %{$self->{searchfieldmap}} )
+	{
+		my $sf = $self->{searchfieldmap}->{$sf_id};
+		push @filters, {
+			fields => $sf->get_fields,
+			value => $sf->get_value,
+		};
+	}
+
+	my $counts = $field->get_ids_by_value(
+		$self->{session},
+		$self->{dataset},
+		filters => \@filters
+	);
+
+	return $counts;
 }
 
 
@@ -1259,32 +1284,4 @@ sub get_ids_by_field_values
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

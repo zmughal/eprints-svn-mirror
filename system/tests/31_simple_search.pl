@@ -8,7 +8,7 @@ BEGIN { use_ok( "EPrints::ScreenProcessor" ); }
 my $session = EPrints::Test::get_test_session();
 
 # find an example eprint
-my $dataset = $session->dataset( "eprint" );
+my $dataset = $session->get_repository->get_dataset( "eprint" );
 my( $eprintid ) = @{ $dataset->get_item_ids( $session ) };
 
 $session = EPrints::Test::OnlineSession->new( $session, {
@@ -21,12 +21,14 @@ $session = EPrints::Test::OnlineSession->new( $session, {
 	},
 });
 
+my $sconf = $session->get_repository->get_conf( "search", "simple" );
+
 EPrints::ScreenProcessor->process( 
 	session => $session, 
-	url => $session->config( "perl_url" )."/search/simple",
-	screenid => "Search",
-	searchid => "simple",
-	dataset => $session->dataset( "archive" ),
+	url => $session->get_repository->get_conf( "perl_url" )."/search/simple",
+	sconf => $sconf,
+	template => $sconf->{template},
+	screenid => "Public::EPrintSearch",
 );
 
 #print STDERR $session->test_get_stdout;

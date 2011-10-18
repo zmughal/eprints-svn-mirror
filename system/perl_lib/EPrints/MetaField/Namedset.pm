@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -89,57 +94,7 @@ sub get_property_defaults
 
 sub get_search_group { return 'set'; }
 
-=item $ov = $field->ordervalue_basic( $value, $session, $langid )
-
-Return $value as an order value that will be cmp().
-
-For Namedset this returns the values in the order they are given in the named set.
-
-=cut
-
-sub ordervalue_basic
-{
-	my( $self, $value, $session, $langid ) = @_;
-
-	my @types = $self->tags( $session );
-	foreach my $i (0..$#types)
-	{
-		return sprintf("%06d", $i)
-			if $types[$i] eq $value;
-	}
-
-	# this will always come after any known values
-	return $value;
-}
 
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

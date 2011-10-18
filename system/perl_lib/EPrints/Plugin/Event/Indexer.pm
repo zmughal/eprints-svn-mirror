@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Event::Indexer
-
-=cut
-
 package EPrints::Plugin::Event::Indexer;
 
 @ISA = qw( EPrints::Plugin::Event );
@@ -13,6 +7,12 @@ use strict;
 sub index
 {
 	my( $self, $dataobj, @fieldnames ) = @_;
+
+	if( !defined $dataobj )
+	{
+		Carp::carp "Expected dataobj argument";
+		return 0;
+	}
 
 	my $dataset = $dataobj->get_dataset;
 
@@ -30,30 +30,36 @@ sub index_all
 {
 	my( $self, $dataobj ) = @_;
 
+	if( !defined $dataobj )
+	{
+		Carp::carp "Expected dataobj argument";
+		return 0;
+	}
+
 	my $dataset = $dataobj->get_dataset;
 
 	return $self->_index_fields( $dataobj, [$dataset->get_fields] );
 }
 
-sub removed
+sub index_fulltext 
 {
-	my( $self, $datasetid, $id ) = @_;
+	my( $self, $dataobj ) = @_;
 
-	my $dataset = $self->{session}->dataset( $datasetid );
-	return if !defined $dataset;
-
-	my $rc = $self->{session}->run_trigger( EPrints::Const::EP_TRIGGER_INDEX_REMOVED,
-		dataset => $dataset,
-		id => $id,
-	);
-	return if defined $rc && $rc eq EPrints::Const::EP_TRIGGER_DONE;
-
-	foreach my $field ($dataset->fields)
+	if( !defined $dataobj )
 	{
-		EPrints::Index::remove( $self->{session}, $dataset, $id, $field->name );
+		Carp::carp "Expected dataobj argument";
+		return 0;
 	}
 
-	return;
+	my $dataset = $dataobj->get_dataset;
+
+	my $field = EPrints::MetaField->new( 
+				dataset => $dataset, 
+				name => "_fulltext_",
+				multiple => 1,
+				type => "fulltext" );
+
+	return $self->_index_fields( $dataobj, [$field] );
 }
 
 sub _index_fields
@@ -63,18 +69,9 @@ sub _index_fields
 	my $session = $self->{session};
 	my $dataset = $dataobj->get_dataset;
 
-	my $rc = $session->run_trigger( EPrints::Const::EP_TRIGGER_INDEX_FIELDS,
-		dataobj => $dataobj,
-		fields => $fields,
-	);
-	return if defined $rc && $rc eq EPrints::Const::EP_TRIGGER_DONE;
-
-	EPrints::Index::remove( $session, $dataset, $dataobj->get_id,
-		[map { $_->name } @$fields]
-	);
-
 	foreach my $field (@$fields)
 	{
+		EPrints::Index::remove( $session, $dataset, $dataobj->get_id, $field->get_name );
 		next unless( $field->get_property( "text_index" ) );
 
 		my $value = $field->get_value( $dataobj );
@@ -83,35 +80,7 @@ sub _index_fields
 		EPrints::Index::add( $session, $dataset, $dataobj->get_id, $field->get_name, $value );
 	}
 
-	return;
+	return 1;
 }	
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

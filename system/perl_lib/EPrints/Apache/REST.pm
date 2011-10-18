@@ -1,15 +1,14 @@
-=head1 NAME
-
-EPrints::Apache::REST
-
-=cut
-
 ######################################################################
 #
 # EPrints::Apache::REST
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2009 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -552,14 +551,7 @@ sub send_xml
 	binmode( *STDOUT, ":utf8" );
 		
 	$repository->send_http_header( "content_type"=>"text/xml; charset=UTF-8" );
-
-	# the dataobj XML generator now includes the XML header. This isn't ideal, but
-	# it's a quick way to ensure we only send one.
-	if( substr( $xmldata,0,5 ) ne "<?xml" )
-	{
-		print "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
-	}
-
+	print "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
 	print $xmldata;
 
 	return DONE;
@@ -694,7 +686,7 @@ sub get_field_xml
 	return DONE unless allow_priv( $rights_object->dataset->confid."/rest/get", $repository, $rights_object );
 
 	my $v = $object->get_value( $field->get_name );
-	my $xml_dom = $field->to_xml( $v, show_empty=>1 );
+	my $xml_dom = $field->to_xml( $repository, $v, $object->dataset, show_empty=>1 );
 	my $xml_str = EPrints::XML::to_string( $xml_dom );
 	return send_xml( $repository, $xml_str."\n" );
 }
@@ -763,32 +755,4 @@ sub put_field_txt
 # end of GET and PUT methods
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

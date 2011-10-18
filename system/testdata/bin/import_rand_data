@@ -1,7 +1,4 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
 
 #-d:DProf
 
@@ -14,16 +11,6 @@ use lib "$FindBin::Bin/../../perl_lib";
 #  __LICENSE__
 #
 ######################################################################
-
-=head1 NAME
-
-import_rand_data - import random eprint data records
-
-=head1 SYNOPSIS
-
-import_rand_data <repoid> [dataset] [count]
-
-=cut
 
 use EPrints;
 use strict;
@@ -55,7 +42,7 @@ GetOptions(
 EPrints::Utils::cmd_version( "import_test_data" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
-pod2usage( 2 ) if( scalar @ARGV < 1 ); 
+#pod2usage( 2 ) if( scalar @ARGV != 1 ); 
 
 my $noise = 1;
 $noise = 0 if( $quiet );
@@ -74,7 +61,6 @@ sub Text::Lorem::name {
 
 # generate standard lorems, then add some exotic UTF-8 stuff
 $lorem->{wordlist} = $lorem->generate_wordlist();
-binmode(\*DATA, ":utf8");
 push @{$lorem->{wordlist}}, map { split /\s+/, $_ } <DATA>;
 
 # nb. This syntax is subject to change in future versions.
@@ -90,7 +76,7 @@ $total ||= 1000;
 
 # Basic data
 our @TYPES = @{$session->get_repository->{types}->{eprint}};
-our @SUBJECTS = @{read_subjects( $session, "subjects" )};
+our @SUBJECTS = @{read_subjects( $session )};
 our @PUBLICATIONS;
 for(1..100)
 {
@@ -99,43 +85,7 @@ for(1..100)
 
 my $datapath = $EPrints::SystemSettings::conf->{base_path}."/testdata/data";
 
-our @DOCUMENTS = (
-	{
-		format => "application/pdf",
-		language => "en",
-		security => "public",
-		main => "paper.pdf",
-		files => [ {
-			filename => "paper.pdf",
-			filesize => "12174",
-			url => "file:$datapath/paper.pdf",
-		} ],
-	},
-	{
-		format => "image/jpeg",
-		language => "en",
-		security => "public",
-		main => "picture.jpg",
-		files => [ {
-			filename => "picture.jpg",
-			filesize => "7927",
-			url => "file:$datapath/picture.jpg",
-		} ],
-	},
-	{
-		format => "text/plain",
-		language => "en",
-		security => "public",
-		main => "text.txt",
-		files => [ {
-			filename => "text.txt",
-			filesize => "35",
-			url => "file:$datapath/text.txt",
-		} ],
-	},
-);
-
-my $ds = $session->dataset( $datasetid );
+my $ds = $session->get_repository->get_dataset( $datasetid );
 
 $session->get_repository->{config}->{enable_file_imports} = 1;
 $session->get_repository->{config}->{enable_web_imports} = 1;
@@ -156,7 +106,17 @@ for(1..$total)
 		date => rand_date(),
 		refereed => "TRUE",
 		publication => rand_publication(),
-		documents => rand_documents(),
+		documents => [ {
+			format => "application/pdf",
+			language => "en",
+			security => "public",
+			main => "paper.pdf",
+			files => [ {
+				filename => "paper.pdf",
+				filesize => "12174",
+				url => "file:$datapath/paper.pdf",
+			} ],
+		} ],
 	};
 	$session->get_database->begin;
 	my $eprint = $ds->create_object( $session, $data );
@@ -230,35 +190,16 @@ sub rand_date
 
 sub read_subjects
 {
-	my( $session, $id ) = @_;
+	my( $session ) = @_;
 
-	my $ds = $session->dataset( "subject" );
+	my $ds = $session->get_repository->get_dataset( "subject" );
 
-	my $root = $ds->dataobj( $id );
-
-	my $subjects = $root->get_subjects();
-
-	return[
-		map { $_->[0] } @$subjects
-	];
+	return $ds->get_item_ids( $session );
 }
 
 sub rand_publication
 {
 	return $PUBLICATIONS[int(rand(@PUBLICATIONS))];
-}
-
-sub rand_documents
-{
-	my @docs = (0..$#DOCUMENTS);
-	for(my $i = @docs; --$i; ) {
-		my $j = int rand ($i+1);
-		next if $i == $j;
-		@docs[$i,$j] = @docs[$j,$i];
-	}
-	@docs = @docs[0..int(rand($#DOCUMENTS))];
-
-	return [@DOCUMENTS[@docs]];
 }
 
 =pod

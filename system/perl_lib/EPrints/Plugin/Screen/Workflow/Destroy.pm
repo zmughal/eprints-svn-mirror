@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Workflow::Destroy
-
-=cut
-
 package EPrints::Plugin::Screen::Workflow::Destroy;
 
 @ISA = ( 'EPrints::Plugin::Screen::Workflow' );
@@ -71,51 +65,23 @@ sub action_cancel
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{screenid} = $self->view_screen;
+	$self->{processor}->{screenid} = "Workflow::View";
 }
 
 sub action_remove
 {
 	my( $self ) = @_;
 
+	$self->{processor}->{screenid} = "Listing";
+
 	if( !$self->{processor}->{dataobj}->remove )
 	{
 		$self->{processor}->add_message( "message", $self->html_phrase( "item_not_removed" ) );
-		$self->{processor}->{screenid} = $self->view_screen;
+		$self->{processor}->{screenid} = "Workflow::View";
 		return;
 	}
 
 	$self->{processor}->add_message( "message", $self->html_phrase( "item_removed" ) );
-
-	$self->{processor}->{screenid} = $self->listing_screen;
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

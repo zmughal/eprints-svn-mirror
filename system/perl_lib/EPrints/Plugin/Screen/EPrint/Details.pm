@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::EPrint::Details
-
-=cut
-
 package EPrints::Plugin::Screen::EPrint::Details;
 
 our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
@@ -19,35 +13,11 @@ sub new
 	$self->{appears} = [
 		{
 			place => "eprint_view_tabs",
-			position => 200,
+			position => 100,
 		},
 	];
 
-	my $session = $self->{session};
-	if( $session )
-	{
-		$self->{title} = $session->make_element( "span" );
-		$self->{title}->appendChild( $self->SUPER::render_tab_title );
-	}
-
 	return $self;
-}
-
-sub DESTROY
-{
-	my( $self ) = @_;
-
-	if( $self->{title} )
-	{
-		$self->{session}->xml->dispose( $self->{title} );
-	}
-}
-
-sub render_tab_title
-{
-	my( $self ) = @_;
-
-	return $self->{title};
 }
 
 sub can_be_viewed
@@ -230,8 +200,6 @@ sub render
 		}
 	}
 
-	my $has_problems = 0;
-
 	my $edit_screen = $session->plugin(
 		"Screen::".$self->edit_screen_id,
 		processor => $self->{processor} );
@@ -241,22 +209,20 @@ sub render
 			cellpadding => "3" );
 	$page->appendChild( $table );
 
-	foreach my $stage_id ($self->workflow->get_stage_ids, "")
+	foreach my $stage ($self->workflow->get_stage_ids, "")
 	{
-		my $unspec = $stages{$stage_id}->{unspec};
-		next if $stages{$stage_id}->{count} == 0;
-
-		my $stage = $self->workflow->get_stage( $stage_id );
+		my $unspec = $stages{$stage}->{unspec};
+		next if $stages{$stage}->{count} == 0;
 
 		my( $tr, $th, $td );
 
-		my $rows = $stages{$stage_id}->{rows};
+		my $rows = $stages{$stage}->{rows};
 
 		my $url = URI->new( $session->current_url );
 		$url->query_form(
 			screen => $self->edit_screen_id,
 			eprintid => $eprint->id,
-			stage => $stage_id
+			stage => $stage
 		);
 
 		$tr = $session->make_element( "tr" );
@@ -265,13 +231,13 @@ sub render
 
 		$tr->appendChild( $th );
 
-		if( $stage_id eq "" )
+		if( $stage eq "" )
 		{
 			$th->appendChild( $self->html_phrase( "other" ) );
 		}
 		else
 		{
-			my $title = $session->html_phrase( "metapage_title_$stage_id" );
+			my $title = $session->html_phrase( "metapage_title_$stage" );
 			my $table_inner = $session->make_element( "table", style=>'width:100%' );
 			my $tr_inner = $session->make_element( "tr" );
 			my $td_inner_1 = $session->make_element( "td", style=>'text-align:left;margin-right:1em' );
@@ -283,23 +249,17 @@ sub render
 			{
 				my $td_inner_2  = $session->make_element( "td",style=>'text-align:right;font-size:80%' );
 				$tr_inner->appendChild( $td_inner_2 );
-				$td_inner_2->appendChild( $self->render_edit_button( $stage_id ) );
+				$td_inner_2->appendChild( $self->render_edit_button( $stage ) );
 			}
 		}
 
-		if( $stage_id ne "" )
+		if( $stage ne "" )
 		{
 			$tr = $session->make_element( "tr" );
 			$table->appendChild( $tr );
 			$td = $session->make_element( "td", colspan => 2 );
 			$tr->appendChild( $td );
-			my @problems = $stage->validate( $self->{processor} );
-			if( @problems )
-			{
-				$has_problems = 1;
-				$td->appendChild(
-					$self->render_stage_warnings( $stage, @problems ) );
-			}
+			$td->appendChild( $self->render_stage_warnings( $stage ) );
 		}
 
 		foreach $tr (@$rows)
@@ -307,7 +267,7 @@ sub render
 			$table->appendChild( $tr );
 		}
 
-		if( $stage_id ne "" && $unspec->hasChildNodes )
+		if( $stage ne "" && $unspec->hasChildNodes )
 		{
 			$table->appendChild( $session->render_row(
 				$session->html_phrase( "lib/dataobj:unspecified" ),
@@ -318,12 +278,6 @@ sub render
 		$table->appendChild( $tr );
 		$td = $session->make_element( "td", colspan => 2, style=>'height: 1em' );
 		$tr->appendChild( $td );
-	}
-
-	if( $has_problems )
-	{
-		my $span = $self->{title};
-		$span->setAttribute( style => "padding-left: 20px; background: url('".$session->current_url( path => "static", "style/images/warning-icon.png" )."') no-repeat;" );
 	}
 
 	return $page;
@@ -353,10 +307,16 @@ sub render_edit_button
 
 sub render_stage_warnings
 {
-	my( $self, $stage, @problems ) = @_;
+	my( $self, $stage_id ) = @_;
 
 	my $session = $self->{session};
 
+	my $stage = $self->workflow->get_stage( $stage_id );
+
+	my @problems = $stage->validate( $self->{processor} );
+
+	return $session->make_doc_fragment if !scalar @problems;
+ 
 	my $ul = $session->make_element( "ul" );
 	foreach my $problem ( @problems )
 	{
@@ -379,31 +339,3 @@ sub workflow
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

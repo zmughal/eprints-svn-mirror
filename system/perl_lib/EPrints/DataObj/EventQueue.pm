@@ -2,7 +2,7 @@ package EPrints::DataObj::EventQueue;
 
 =head1 NAME
 
-EPrints::DataObj::EventQueue - scheduler/indexer event queue
+EPrints::DataObj::EventQueue - Scheduler queue
 
 =head1 FIELDS
 
@@ -12,13 +12,21 @@ EPrints::DataObj::EventQueue - scheduler/indexer event queue
 
 A unique id for this event.
 
+=item datestamp
+
+The date/time the event was created.
+
 =item hash
 
 A unique hash for this event.
 
-=item cleanup
+=item unique
 
-If set to true removes this event once it has finished. Defaults to true.
+If set to true only one event of this type (pluginid/action/params) is allowed to be running.
+
+=item oneshot
+
+If set to true removes this event once it has finished by success or failure.
 
 =item priority
 
@@ -32,6 +40,14 @@ The event should not be executed before this time.
 
 The event was last touched at this time.
 
+=item due_time
+
+Do not start this event if we have gone beyond due_time.
+
+=item repetition
+
+Repetition number of seconds will be added to start_time until it is greater than now and a new event created, when this event is completed.
+
 =item status
 
 The status of this event.
@@ -42,7 +58,7 @@ The user (if any) that was responsible for creating this event.
 
 =item description
 
-A human-readable description of this event (or error).
+A human-readable description of this event.
 
 =item pluginid
 
@@ -64,15 +80,26 @@ Parameters to pass to the action (a text serialisation).
 
 use strict;
 
+use constant {
+	INTERNAL_ERROR => 0,
+	SUCCESS => 1,
+	IS_LOCKED => 2,
+	BAD_PARAMETERS => 3,
+};
+
 sub get_system_field_info
 {
 	return (
 		{ name=>"eventqueueid", type=>"counter", sql_counter=>"eventqueueid", required=>1 },
-		{ name=>"hash", type=>"id", sql_index=>1, },
-		{ name=>"cleanup", type=>"boolean", default_value=>"TRUE", },
+		{ name=>"datestamp", type=>"timestamp", required=>1, },
+		{ name=>"hash", type=>"text", sql_index=>1, },
+		{ name=>"unique", type=>"boolean", },
+		{ name=>"oneshot", type=>"boolean", },
 		{ name=>"priority", type=>"int", },
 		{ name=>"start_time", type=>"timestamp", required=>1, },
 		{ name=>"end_time", type=>"time", },
+		{ name=>"due_time", type=>"time", },
+		{ name=>"repetition", type=>"int", sql_index=>0, },
 		{ name=>"status", type=>"set", options=>[qw( waiting inprogress success failed )], default_value=>"waiting", },
 		{ name=>"userid", type=>"itemref", datasetid=>"user", },
 		{ name=>"description", type=>"longtext", },
@@ -90,23 +117,7 @@ sub create_unique
 
 	$dataset ||= $session->dataset( $class->get_dataset_id );
 
-	my $event = $class->new_from_hash( $session, $data, $dataset );
-	return undef if defined $event;
-
-	return $class->create_from_data( $session, $data, $dataset );
-}
-
-=item $event = EPrints::DataObj::EventQueue->new_from_hash( $repo, $epdata [, $dataset ] )
-
-Returns the event that corresponds to the hash of the data provided in $epdata.
-
-=cut
-
-sub new_from_hash
-{
-	my( $class, $session, $data, $dataset ) = @_;
-
-	$dataset ||= $session->dataset( $class->get_dataset_id );
+	$data->{unique} = "TRUE";
 
 	my $md5 = Digest::MD5->new;
 	$md5->add( $data->{pluginid} );
@@ -115,26 +126,24 @@ sub new_from_hash
 		if EPrints::Utils::is_set( $data->{params} );
 	$data->{hash} = $md5->hexdigest;
 
-	return $dataset->search(
+	my $results = $dataset->search(
 		filters => [
 			{ meta_fields => [qw( hash )], value => $data->{hash} },
-		],
-		limit => 1
-	)->item( 0 );
+			{ meta_fields => [qw( status )], value => "waiting inprogress", match => "EQ", merge => "ANY" },
+		]);
+	my $count = $results->count;
+
+	if( $count > 0 )
+	{
+		return undef;
+	}
+
+	return $class->create_from_data( $session, $data, $dataset );
 }
 
 =item $ok = $event->execute()
 
 Execute the action this event describes.
-
-The return from the L<EPrints::Plugin::Event> plugin action is treated as:
-
-	undef - equivalent to HTTP_OK
-	HTTP_OK - action succeeded, event is removed if cleanup is TRUE
-	HTTP_RESET_CONTENT - action succeeded, event is set 'waiting'
-	HTTP_NOT_FOUND - action failed, event is removed if cleanup is TRUE
-	HTTP_LOCKED - action failed, event is re-scheduled for 10 minutes time
-	HTTP_INTERNAL_SERVER_ERROR - action failed, event is 'failed' and kept
 
 =cut
 
@@ -151,59 +160,35 @@ sub execute
 	# completed at
 	$self->set_value( "end_time", EPrints::Time::get_iso_timestamp() );
 
-	if( $rc == EPrints::Const::HTTP_LOCKED )
-	{
-		my $start_time = $self->value( "start_time" );
-		if( defined $start_time )
-		{
-			$start_time = EPrints::Time::datetime_utc(
-				EPrints::Time::split_value( $start_time )
-			);
-		}
-		$start_time = time() if !defined $start_time;
-		$start_time += 10 * 60; # try again in 10 minutes time
-		$self->set_value( "start_time",
-			EPrints::Time::iso_datetime( $start_time )
-		);
-		$self->set_value( "status", "waiting" );
-		$self->commit;
-	}
-	elsif( $rc == EPrints::Const::HTTP_RESET_CONTENT )
+	if( $rc == IS_LOCKED )
 	{
 		$self->set_value( "status", "waiting" );
 		$self->commit;
 	}
-	elsif( $rc == EPrints::Const::HTTP_INTERNAL_SERVER_ERROR )
+	# BAD_PARAMETERS probably means the object has gone away, which is ok
+	elsif( $rc == SUCCESS || $rc == BAD_PARAMETERS )
 	{
-		$self->set_value( "status", "failed" );
-		$self->commit();
-	}
-	# OK or NOT_FOUND, which is ok
-	else
-	{
-		if(
-			$rc != EPrints::Const::HTTP_OK &&
-			$rc != EPrints::Const::HTTP_NOT_FOUND
-		  )
-		{
-			$self->message( "warning", $self->{session}->xml->create_text_node( "Unrecognised result code (check your action return): $rc" ) );
-		}
-		if( !$self->is_set( "cleanup" ) || $self->value( "cleanup" ) eq "TRUE" )
+		if( !$self->is_set( "oneshot" ) || $self->value( "oneshot" ) eq "TRUE" )
 		{
 			$self->remove();
 		}
 		else
 		{
-			if( $rc == EPrints::Const::HTTP_OK )
+			if( $rc == SUCCESS )
 			{
 				$self->set_value( "status", "success" );
 			}
-			else # NOT_FOUND
+			else # BAD_PARAMETERS
 			{
 				$self->set_value( "status", "failed" );
 			}
 			$self->commit;
 		}
+	}
+	elsif( $rc == INTERNAL_ERROR )
+	{
+		$self->set_value( "status", "failed" );
+		$self->commit();
 	}
 
 	return $rc;
@@ -216,21 +201,19 @@ sub _execute
 	my $session = $self->{session};
 	my $xml = $session->xml;
 
-	my $plugin = $session->plugin( $self->value( "pluginid" ),
-		event => $self,
-	);
+	my $plugin = $session->plugin( $self->value( "pluginid" ) );
 	if( !defined $plugin )
 	{
 		# no such plugin
 		$self->message( "error", $xml->create_text_node( $self->value( "pluginid" )." not available" ) );
-		return EPrints::Const::HTTP_INTERNAL_SERVER_ERROR;
+		return INTERNAL_ERROR;
 	}
 
 	my $action = $self->value( "action" );
 	if( !$plugin->can( $action ) )
 	{
 		$self->message( "error", $xml->create_text_node( "'$action' not available on ".ref($plugin) ) );
-		return EPrints::Const::HTTP_INTERNAL_SERVER_ERROR;
+		return INTERNAL_ERROR;
 	}
 
 	my $params = $self->value( "params" );
@@ -249,13 +232,13 @@ sub _execute
 			if( !defined $dataset )
 			{
 				$self->message( "error", $xml->create_text_node( "Bad parameters: No such dataset '$1'" ) );
-				return EPrints::Const::HTTP_NOT_FOUND;
+				return BAD_PARAMETERS;
 			}
 			$param = $dataset->dataobj( $2 );
 			if( !defined $param )
 			{
 				$self->message( "error", $xml->create_text_node( "Bad parameters: No such item '$2' in dataset '$1'" ) );
-				return EPrints::Const::HTTP_NOT_FOUND;
+				return BAD_PARAMETERS;
 			}
 			my $locked = 0;
 			if( $param->isa( "EPrints::DataObj::EPrint" ) )
@@ -270,20 +253,20 @@ sub _execute
 			if( $locked )
 			{
 				$self->message( "warning", $xml->create_text_node( $param->get_dataset->base_id.".".$param->id." is locked" ) );
-				return EPrints::Const::HTTP_LOCKED;
+				return IS_LOCKED;
 			}
 		}
 	}
 
-	my $rc = eval { $plugin->$action( @params ) };
+	eval { $plugin->$action( @params ) };
 	if( $@ )
 	{
 		$self->message( "error", $xml->create_text_node( "Error during execution: $@" ) );
 		$self->set_value( "description", $@ );
-		return EPrints::Const::HTTP_INTERNAL_SERVER_ERROR;
+		return INTERNAL_ERROR;
 	}
 
-	return defined($rc) ? $rc : EPrints::Const::HTTP_OK;
+	return 1;
 }
 
 =item $event->message( $type, $xhtml )
@@ -308,31 +291,3 @@ sub message
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

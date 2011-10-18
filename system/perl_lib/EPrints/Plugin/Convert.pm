@@ -36,6 +36,8 @@ To allow for simpler local configuration Convert plugins should use SystemSettin
 use strict;
 use warnings;
 
+use EPrints::TempDir;
+use EPrints::SystemSettings;
 use EPrints::Utils;
 
 our @ISA = qw/ EPrints::Plugin /;
@@ -53,12 +55,14 @@ Create a new plugin object using OPTIONS (should only be called by L<EPrints::Se
 
 sub new
 {
-	my( $class, %params ) = @_;
+	my( $class, %opts ) = @_;
 
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 0;
+	my $self = $class->SUPER::new( %opts );
 
-	return $class->SUPER::new( %params );
+	$self->{name} = "Base convert plugin";
+	$self->{visible} = "all";
+
+	return $self;
 }
 
 ######################################################################
@@ -76,22 +80,6 @@ sub render_name
 	my( $plugin ) = @_;
 
 	return $plugin->{session}->make_text( $plugin->{name} );
-}
-
-sub matches
-{
-	my( $self, $test, $param ) = @_;
-
-	if( $test eq "is_visible" )
-	{
-		return $self->is_visible( $param );
-	}
-	if( $test eq "is_advertised" )
-	{
-		return $self->param( "advertise" ) == $param;
-	}
-
-	return $self->SUPER::matches( $test, $param );
 }
 
 ######################################################################
@@ -119,9 +107,22 @@ sub is_visible
 	return 1;
 }
 
+=item $repository = $p->get_repository
+
+Returns the current respository
+
+=cut
+
+sub get_repository
+{
+	my( $plugin ) = @_;
+	
+	return $plugin->{ "session" }->get_repository;
+}
+
 =pod
 
-=item %types = $p->can_convert( $doc, [$type], [%params] )
+=item %types = $p->can_convert( $doc )
 
 Returns a hash of types that this plugin can convert the document $doc to. The key is the type. The value is a hash ref containing:
 
@@ -149,10 +150,10 @@ A value between 0 and 1 representing the 'quality' or confidence in this convers
 
 sub can_convert
 {
-	my ($plugin, $doc, $type, %params) = @_;
+	my ($plugin, $doc, $type) = @_;
 	
 	my $session = $plugin->{ "session" };
-	my @ids = $session->plugin_list( type => 'Convert', %params );
+	my @ids = $session->plugin_list( type => 'Convert' );
 
 	my %types;
 	for(@ids)
@@ -192,19 +193,17 @@ sub export
 
 =pod
 
-=item $doc = $p->convert( $eprint, $doc, $type [, $epdata ] )
+=item $doc = $p->convert( $eprint, $doc, $type )
 
 Convert $doc to format $type (as returned by can_convert). Stores the resulting $doc in $eprint, and returns the new document or undef on failure.
-
-Optionally initialise the new document with $epdata. Specifying 'files' in $epdata will cause the converted file content to be discarded.
 
 =cut
 
 sub convert
 {
-	my ($plugin, $eprint, $doc, $type, $epdata) = @_;
+	my ($plugin, $eprint, $doc, $type) = @_;
 
-	my $dir = File::Temp->newdir( "ep-convertXXXXX", TMPDIR => 1 );
+	my $dir = EPrints::TempDir->new( "ep-convertXXXXX", UNLINK => 1);
 
 	my @files = $plugin->export( $dir, $doc, $type );
 	unless( @files ) {
@@ -226,31 +225,23 @@ sub convert
 			$session->get_repository->log( "Error reading from $dir/$filename: $!" );
 			next;
 		}
-		$session->run_trigger( EPrints::Const::EP_TRIGGER_MEDIA_INFO,
-			filepath => "$dir/$filename",
-			filename => $filename,
-			epdata => my $media_info = {}
-		);
 		push @filedata, {
 			filename => $filename,
 			filesize => (-s "$dir/$filename"),
 			url => "file://$dir/$filename",
-			mime_type => $media_info->{mime_type},
 			_content => $fh,
 		};
 		# file is closed after object creation
 		push @handles, $fh;
 	}
 
-	my $doc_ds = $session->dataset( "document" );
+	my $doc_ds = $session->get_repository->get_dataset( "document" );
 	my $new_doc = $doc_ds->create_object( $session, { 
 		files => \@filedata,
 		main => $main_file,
 		eprintid => $eprint->get_id,
 		_parent => $eprint,
-		format => "other",
-		mime_type => $filedata[0]->{mime_type},
-		security => $doc->value( "security" ),
+		format => $type,
 		formatdesc => $plugin->{name} . ' conversion from ' . $doc->get_type . ' to ' . $type,
 		relation => [{
 			type => EPrints::Utils::make_relation( "isVersionOf" ),
@@ -258,9 +249,7 @@ sub convert
 		},{
 			type => EPrints::Utils::make_relation( "isVolatileVersionOf" ),
 			uri => $doc->internal_uri(),
-		}],
-		%{$epdata||{}},
-	} );
+		}] } );
 
 	for(@handles)
 	{
@@ -273,6 +262,14 @@ sub convert
 		return ();
 	}
 
+	$new_doc->set_value( "security", $doc->get_value( "security" ) );
+
+	$doc->add_object_relations(
+			$new_doc,
+			EPrints::Utils::make_relation( "hasVersion" ) => undef,
+			EPrints::Utils::make_relation( "hasVolatileVersion" ) => undef,
+		);
+
 	return wantarray ? ($new_doc) : $new_doc;
 }
 
@@ -281,31 +278,3 @@ sub convert
 __END__
 
 =back
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

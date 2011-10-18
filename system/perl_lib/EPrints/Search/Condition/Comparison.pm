@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -59,7 +64,7 @@ sub _logic_time
 
 	my @parts = split( /[-: TZ]/, $self->{params}->[0] );
 	my $nparts = scalar @parts;
-	if( !$self->{field}->isa( "EPrints::MetaField::Time" ) && $nparts > 3 )
+	if( $self->{field}->isa( "EPrints::MetaField::Date" ) && $nparts > 3 )
 	{
 		$nparts = 3;
 	}
@@ -109,21 +114,6 @@ sub joins
 		if( !$self->{field}->get_property( "multiple" ) )
 		{
 			return ();
-		}
-		elsif( $self->{field}->isa( "EPrints::MetaField::Compound" ) )
-		{
-			my @joins;
-			foreach my $f (@{$self->{field}->property( "fields_cache" )})
-			{
-				my $table = $f->{dataset}->get_sql_sub_table_name( $f );
-				push @joins, {
-					type => "inner",
-					table => $table,
-					alias => "$prefix$table",
-					key => $self->dataset->get_key_field->get_sql_name,
-				};
-			}
-			return @joins;
 		}
 		else
 		{
@@ -191,44 +181,6 @@ sub logic
 		}
 		return "(".join(") AND (", @logic).")";
 	}
-	elsif( $field->isa( "EPrints::MetaField::Compound" ) )
-	{
-		my @logic;
-		my $prev_table;
-		foreach my $f (@{$self->{field}->property( "fields_cache" )})
-		{
-			local $self->{field} = $f;
-			my $table = $prefix . $self->table;
-			if( $f->property( "multiple" ) )
-			{
-				if( $prev_table )
-				{
-					push @logic, sprintf("%s %s %s",
-						$db->quote_identifier( $prev_table, "pos" ),
-						"=",
-						$db->quote_identifier( $table, "pos" ) );
-				}
-				$prev_table = $table;
-			}
-			push @logic, sprintf("%s %s %s",
-					$db->quote_identifier( $table, $f->get_sql_name ),
-					$self->{op},
-					$db->quote_value( $self->{params}->[0]->{$f->property( "sub_name" )} ) );
-		}
-		return "(".join(") AND (", @logic).")";
-	}
-	elsif( $field->isa( "EPrints::MetaField::Multipart" ) )
-	{
-		my @logic;
-		for($field->parts)
-		{
-			push @logic, sprintf("%s %s %s",
-				$db->quote_identifier( $table, "$sql_name\_$_" ),
-				$self->{op},
-				$db->quote_value( $self->{params}->[0]->{$_} ) );
-		}
-		return "(".join(") AND (", @logic).")";
-	}
 	elsif( $field->isa( "EPrints::MetaField::Date" ) )
 	{
 		return $self->_logic_time( %opts, table => $table );
@@ -250,31 +202,3 @@ sub logic
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

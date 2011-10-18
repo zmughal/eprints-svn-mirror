@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Admin::Phrases
-
-=cut
-
 package EPrints::Plugin::Screen::Admin::Phrases;
 
 @ISA = ( 'EPrints::Plugin::Screen' );
@@ -71,7 +65,7 @@ sub export
 
 	my( $message, $error_level ) = $self->write_phrase;
 
-	my $file = $session->config( "config_path" )."/lang/".$session->get_lang->{id}."/phrases/zz_webcfg.xml";
+	my $file = $session->get_repository->get_conf( "config_path" )."/lang/".$session->get_lang->{id}."/phrases/zz_webcfg.xml";
 
 	my $phraseid = $session->param( "phraseid" );
 	my $info = $session->get_lang->get_phrase_info( $phraseid, $session );
@@ -119,7 +113,7 @@ sub write_phrase
 	my $phrase = $session->param( "phrase" );
 	return unless defined $phrase;
 
-	my $file = $session->config( "config_path" )."/lang/".$lang->{id}."/phrases/zz_webcfg.xml";
+	my $file = $session->get_repository->get_conf( "config_path" )."/lang/".$lang->{id}."/phrases/zz_webcfg.xml";
 
 	my $info = $lang->get_phrase_info( $phraseid, $session );
 
@@ -130,7 +124,7 @@ sub write_phrase
 		$reload = 0;
 	}
 
-	my $lib_path = $session->config( "lib_path" );
+	my $lib_path = $session->get_repository->get_conf( "lib_path" );
 
 	# check the phrase is valid XML
 	my $phrase_xml_str = "<?xml version='1.0' encoding='utf-8' standalone='no' ?>
@@ -290,9 +284,6 @@ sub render_style
 	border: solid 1px #66c;
 	padding: 3px;
 }
-.ep_phraseedit_ref {
-	border: dashed 1px #c66;
-}
 .ep_phraseedit_null {
 	background-color: #ccf;
 }
@@ -348,7 +339,7 @@ sub render
 
 	my $session = $self->{session};
 
-	my $file = $session->config( "config_path" )."/lang/".$session->get_lang->{id}."/phrases/zz_webcfg.xml";
+	my $file = $session->get_repository->get_conf( "config_path" )."/lang/".$session->get_lang->{id}."/phrases/zz_webcfg.xml";
 
 	my $f = $session->make_doc_fragment;
 	
@@ -376,16 +367,18 @@ sub render
 			$session->get_lang->get_phrase_ids( 1 );
 	}
 
+	my $script = $session->make_element( "script", type=>"text/javascript" );
 	my $ep_save_phrase = EPrints::Utils::js_string( $self->phrase( "save" ) );
 	my $ep_reset_phrase = EPrints::Utils::js_string( $self->phrase( "reset" ) );
 	my $ep_cancel_phrase = EPrints::Utils::js_string( $self->phrase( "cancel" ) );
-	$f->appendChild( $session->make_javascript( <<EOJ ) );
+	$script->appendChild( $session->make_text( <<EOJ ) );
 var ep_phraseedit_phrases = {
 	save: $ep_save_phrase,
 	reset: $ep_reset_phrase,
 	cancel: $ep_cancel_phrase
 };
 EOJ
+	$f->appendChild( $script );	
 
 	my $table = $session->make_element( "table", id=>"ep_phraseedit_table" );
 	my $tr = $session->make_element( "tr" );
@@ -463,19 +456,8 @@ sub render_row
 	my $phraseid = $phrase->{phraseid};
 	my $src = $phrase->{src};
 
-	my $xml = $phrase->{xml};
-	my %seen = ($phrase->{phraseid} => 1);
-	while($xml->can( "hasAttribute" ) && $xml->hasAttribute( "ref" ))
-	{
-		my $info = $session->get_lang->get_phrase_info( $xml->getAttribute( "ref" ), $session );
-		last if !defined $info;
-		last if $seen{$info->{phraseid}};
-		$seen{$info->{phraseid}} = 1;
-		$xml = $info->{xml};
-	}
-
 	my $string = "";
-	foreach my $node ($xml->childNodes)
+	foreach my $node ($phrase->{xml}->childNodes)
 	{
 		$string .= EPrints::XML::to_string( $node );
 	}
@@ -500,10 +482,6 @@ sub render_row
 
 	# phrase editing widget
 	$div = $session->make_element( "div", id => "ep_phraseedit_$phraseid", class => "ep_phraseedit_widget", onclick => "ep_phraseedit_edit(this, ep_phraseedit_phrases);" );
-	if( $xml ne $phrase->{xml} )
-	{
-		$div->setAttribute( class => "ep_phraseedit_widget ep_phraseedit_ref" );
-	}
 	$td->appendChild( $div );
 	$div->appendChild( $session->make_text( $string ) );
 
@@ -527,7 +505,7 @@ sub render_new_phrase
 	
 	my $add_div = $session->make_element( "div", id=>"ep_phraseedit_addbar" );
 	my $form = $session->render_form( "get",
-		$session->config( "rel_cgipath" )."/users/home" );
+		$session->get_repository->get_conf( "rel_cgipath" )."/users/home" );
 	$form->appendChild( $self->render_hidden_bits );
 	$form->appendChild(
 		$session->render_noenter_input_field( 
@@ -552,32 +530,4 @@ sub render_new_phrase
 
 ######################################################################
 =pod
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 
