@@ -34,7 +34,7 @@ sub file_name {
 }
 
 sub read_rules {
-    my ($fh, $rules, $RE, $debug) = @_;
+    my ($fh, $rules, $RE, $debug, $self) = @_;
     my $line;
     while ($line = <$fh>) {
 	next if $line =~ /^#/ ;
@@ -67,8 +67,8 @@ sub read_rules {
 	    if( $debug > 0 ) {
 		print "Opening included file $file\n";
 	    }
-		my $path = $file =~ /^\// ? $file : "$Text::Scigen::DATA_PATH/$file";
-		open(my $inc_fh, "<", $file)
+		my $path = $self->_find( $file );
+		open(my $inc_fh, "<:utf8", $path)
 			or die( "Couldn't open included file $path" );
 	    &read_rules( $inc_fh, $rules, undef, $debug );
 	    next; # we don't want to have .include itself be a rule

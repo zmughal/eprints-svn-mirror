@@ -14,6 +14,6 @@ BEGIN { use_ok('Text::Scigen') };
 # its man page ( perldoc Test::More ) for help writing this test script.
 
 my $scigen = Text::Scigen->new(
-	filename => "scirules.in",
+	filename => "talkrules.in",
 );
 ok(defined($scigen->generate( "SCI_TITLE" )));
