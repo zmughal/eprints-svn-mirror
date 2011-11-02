@@ -90,7 +90,7 @@ sub main
 		],
 	);
 	if ($list->count gt 0 and $list2->count gt 0) {
-		$list->union($list2);
+		$list = $list->union($list2);
 	} elsif ($list->count eq 0 and $list2->count gt 0) {
 		$list = $list2;
 	} elsif ($list->count eq 0) {
