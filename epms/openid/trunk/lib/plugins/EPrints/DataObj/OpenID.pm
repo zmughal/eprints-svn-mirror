@@ -107,7 +107,7 @@ sub cleanup
 	my $now = time();
 
 	$repo->dataset( $class->get_dataset_id )->search(
-		filters => [{ meta_fields => [qw( expires )], value => "-$now" }]
+		filters => [{ meta_fields => [qw( expires )], value => "..$now" }]
 	)->map(sub { $_[2]->remove });
 }
 

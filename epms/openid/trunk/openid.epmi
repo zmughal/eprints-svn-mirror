@@ -14,17 +14,17 @@
         </file>
         <file>
           <filename>plugins/EPrints/DataObj/OpenID.pm</filename>
-          <mime_type>text/plain</mime_type>
-          <hash>96ce7da9c16f43514d653b4e2f8d62fa</hash>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>6686a433c663127f0b0e8152216c6c94</hash>
           <hash_type>MD5</hash_type>
-          <filesize>5579</filesize>
+          <filesize>5580</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Screen/Login/OpenID.pm</filename>
-          <mime_type>text/plain</mime_type>
-          <hash>60c0213bf39a0af45628332921cbb543</hash>
+          <mime_type>application/x-not-regular-file</mime_type>
+          <hash>21531a9448523a5a373208898c865062</hash>
           <hash_type>MD5</hash_type>
-          <filesize>9842</filesize>
+          <filesize>9876</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Screen/Register/OpenID.pm</filename>
@@ -49,7 +49,6 @@
         </file>
       </files>
       <format>other</format>
-      <main>workflows/user/openid.xml</main>
       <content>install</content>
     </document>
     <document>
@@ -62,12 +61,12 @@
           <filesize>110336</filesize>
         </file>
       </files>
-      <format>image/png</format>
+      <format>image</format>
       <main>static/images/epm/openid.png</main>
       <content>coverimage</content>
     </document>
   </documents>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
   <creators>
     <item>
       <name>
@@ -78,6 +77,8 @@
     </item>
   </creators>
   <title>OpenID Registration and Authentication</title>
-  <description>Allows users to register and login using the OpenID protocol. OpenID authentication is supported by a variety of services and buttons are included for &quot;Google&quot; and &quot;Yahoo&quot;.</description>
+  <description>Allows users to register and login using the OpenID protocol. OpenID authentication is supported by a variety of services and buttons are included for &quot;Google&quot; and &quot;Yahoo&quot;.
+
+You must install IO::Socket::SSL or Crypt::SSLeay.</description>
   <icon>images/epm/openid.png</icon>
 </epm>
