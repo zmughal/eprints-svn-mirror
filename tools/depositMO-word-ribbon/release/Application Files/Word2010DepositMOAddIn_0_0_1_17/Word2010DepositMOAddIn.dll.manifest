@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<asmv1:assembly xsi:schemaLocation="urn:schemas-microsoft-com:asm.v1 assembly.adaptive.xsd" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:co.v2="urn:schemas-microsoft-com:clickonce.v2" xmlns="urn:schemas-microsoft-com:asm.v2" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:co.v1="urn:schemas-microsoft-com:clickonce.v1">
+  <asmv1:assemblyIdentity name="Word2010DepositMOAddIn.dll" version="0.0.1.17" publicKeyToken="40f3307a008dfa43" language="neutral" processorArchitecture="msil" type="win32" />
+  <description xmlns="urn:schemas-microsoft-com:asm.v1">DepositMO SWORD 2 author add-in</description>
+  <application />
+  <entryPoint>
+    <co.v1:customHostSpecified />
+  </entryPoint>
+  <trustInfo>
+    <security>
+      <applicationRequestMinimum>
+        <PermissionSet Unrestricted="true" ID="Custom" SameSite="site" />
+        <defaultAssemblyRequest permissionSetReference="Custom" />
+      </applicationRequestMinimum>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <!--
+          UAC Manifest Options
+          If you want to change the Windows User Account Control level replace the 
+          requestedExecutionLevel node with one of the following.
+
+        <requestedExecutionLevel  level="asInvoker" uiAccess="false" />
+        <requestedExecutionLevel  level="requireAdministrator" uiAccess="false" />
+        <requestedExecutionLevel  level="highestAvailable" uiAccess="false" />
+
+         If you want to utilize File and Registry Virtualization for backward 
+         compatibility then delete the requestedExecutionLevel node.
+    -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentOS>
+      <osVersionInfo>
+        <os majorVersion="5" minorVersion="1" buildNumber="2600" servicePackMajor="0" />
+      </osVersionInfo>
+    </dependentOS>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Windows.CommonLanguageRuntime" version="4.0.30319.0" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Office.Tools" version="10.0.0.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Office.Tools.Common" version="10.0.0.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Office.Tools.v4.0.Framework" version="10.0.0.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Office.Tools.Word" version="10.0.0.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.VisualStudio.Tools.Applications.Runtime" version="10.0.0.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="stdole" version="7.0.3300.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Microsoft.Office.Tools.Common.v4.0.Utilities.dll" size="32664">
+      <assemblyIdentity name="Microsoft.Office.Tools.Common.v4.0.Utilities" version="10.0.0.0" publicKeyToken="B03F5F7F11D50A3A" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <dsig:DigestValue>CtnCtseaMyfROIGe0ENdGO6arHg=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="SwordHandler.dll" size="25088">
+      <assemblyIdentity name="SwordHandler" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <dsig:DigestValue>CukGv7Z/Gcty25cggQnGhKnQxuk=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Word2010DepositMOAddIn.dll" size="82944">
+      <assemblyIdentity name="Word2010DepositMOAddIn" version="1.0.0.1" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <dsig:DigestValue>/M3ZLAQRWBDZDx4ROCFx8LeAAYQ=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <vstav3:addIn xmlns:vstav3="urn:schemas-microsoft-com:vsta.v3">
+    <vstav3:entryPointsCollection>
+      <vstav3:entryPoints>
+        <vstav3:entryPoint class="uk.ac.soton.ses.Word2010DepositMOAddIn.Word2010DepositMOAddIn">
+          <assemblyIdentity name="Word2010DepositMOAddIn" version="1.0.0.1" language="neutral" processorArchitecture="msil" />
+        </vstav3:entryPoint>
+      </vstav3:entryPoints>
+    </vstav3:entryPointsCollection>
+    <vstav3:update enabled="true">
+      <vstav3:expiration maximumAge="7" unit="days" />
+    </vstav3:update>
+    <vstav3:application>
+      <vstov4:customizations xmlns:vstov4="urn:schemas-microsoft-com:vsto.v4">
+        <vstov4:customization>
+          <vstov4:appAddIn application="Word" loadBehavior="3" keyName="Word2010DepositMOAddIn">
+            <vstov4:friendlyName>Word2010DepositMOAddIn</vstov4:friendlyName>
+            <vstov4:description>DepositMO SWORD 2 author add-in</vstov4:description>
+          </vstov4:appAddIn>
+        </vstov4:customization>
+      </vstov4:customizations>
+    </vstav3:application>
+  </vstav3:addIn>
+<publisherIdentity name="CN=SANDBOX\Administrator" issuerKeyHash="b6e0a3e288e495eef458252affb244ac5fb70b5e" /><Signature Id="StrongNameSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>6zLEgyog7jQ7BTRWL4dLKVzwomY=</DigestValue></Reference></SignedInfo><SignatureValue>ONZpVUMVK17U85tYaI9RtSxJec8bfkverjFDyxR5SSRCmW0AzacFu4od220R8m15N7iUwY3ygRXAqWX33MJ9JdrXTNiGvgT1qk5bzhMXP3WX3L0RrZxSe/ATu45p58O+4r8Qq4Th3eW+PCycCZiGHxDpBJX10QQ8XdDaMO90N8w=</SignatureValue><KeyInfo Id="StrongNameKeyInfo"><KeyValue><RSAKeyValue><Modulus>twylEXzDPHRdqWIy/bwvQ7b6VoEIjgJpGqtfIrE5hsxM6iNQDdyPQN/IJRLraih/XYKlwXNRGaBPX85hGqH79tyiX/pdfq5twfdDip2QF5r9xMRvdiQT7aKOXSTt+PPo+sXYhyYyiqBRpM3iu4yEAwmQuYgOP0eYdVGZKAf3Uy0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><msrel:RelData xmlns:msrel="http://schemas.microsoft.com/windows/rel/2005/reldata"><r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:as="http://schemas.microsoft.com/windows/pki/2005/Authenticode"><r:grant><as:ManifestInformation Hash="66a2f05c294b872f5634053b34ee202a83c432eb" Description="" Url=""><as:assemblyIdentity name="Word2010DepositMOAddIn.dll" version="0.0.1.17" publicKeyToken="40f3307a008dfa43" language="neutral" processorArchitecture="msil" type="win32" /></as:ManifestInformation><as:SignedBy /><as:AuthenticodePublisher><as:X509SubjectName>CN=SANDBOX\Administrator</as:X509SubjectName></as:AuthenticodePublisher></r:grant><r:issuer><Signature Id="AuthenticodeSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>zBAGp3c89pFyzf2yzWJ+HNSiCgw=</DigestValue></Reference></SignedInfo><SignatureValue>i1FmDVdxLQbAQrD5gCwQw+/tKfT8GHM5p5EEP3q1Rhi1ZdHKJPjip7aouqRL/beHeYfOk88Ez06QcuZCL92ieq5frnepybIypdfqzHEn6aoqKJKIj4q8uQlbE7Ugh9AyZg0O2wpv4XExhDIOuwSk9x6PhcnUQ3B6KjFKzr7/+gU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>twylEXzDPHRdqWIy/bwvQ7b6VoEIjgJpGqtfIrE5hsxM6iNQDdyPQN/IJRLraih/XYKlwXNRGaBPX85hGqH79tyiX/pdfq5twfdDip2QF5r9xMRvdiQT7aKOXSTt+PPo+sXYhyYyiqBRpM3iu4yEAwmQuYgOP0eYdVGZKAf3Uy0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIB7TCCAVagAwIBAgIQE8QePmahBKxLHyLAZ7YhnTANBgkqhkiG9w0BAQUFADA1MTMwMQYDVQQDHioAUwBBAE4ARABCAE8AWABcAEEAZABtAGkAbgBpAHMAdAByAGEAdABvAHIwHhcNMTEwMjAxMDgzOTI1WhcNMTIwMjAxMTQzOTI1WjA1MTMwMQYDVQQDHioAUwBBAE4ARABCAE8AWABcAEEAZABtAGkAbgBpAHMAdAByAGEAdABvAHIwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALcMpRF8wzx0XaliMv28L0O2+laBCI4CaRqrXyKxOYbMTOojUA3cj0DfyCUS62oof12CpcFzURmgT1/OYRqh+/bcol/6XX6ubcH3Q4qdkBea/cTEb3YkE+2ijl0k7fjz6PrF2IcmMoqgUaTN4ruMhAMJkLmIDj9HmHVRmSgH91MtAgMBAAEwDQYJKoZIhvcNAQEFBQADgYEArW6LxRsNvw3ZdREMSwzkHwNZAQ9EvyHuX8ukw1DHaZcp5IUyHx1ChIceAPAygHjFG7tTCzdolvuMz/E/+E1FFhmICzXsiD3pluRcsDJnoJXZfUo/918zWRy67/HLPRNfaSZZn7ydhUhAI/zjW1b3Tt6r4HKo9WGmWLUpuYARF48=</X509Certificate></X509Data></KeyInfo></Signature></r:issuer></r:license></msrel:RelData></KeyInfo></Signature></asmv1:assembly>
