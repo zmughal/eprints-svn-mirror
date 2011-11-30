@@ -152,39 +152,52 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00118"></a>00118 <span class="comment">         * Note that these are not exhaustive and subject to change until the spec is finalised</span>
 <a name="l00119"></a>00119 <span class="comment">         */</span>
 <a name="l00120"></a>00120 
-<a name="l00124"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a471dae35c77f7264764fb7e61acd9cfe">00124</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> EditMediaHref { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathValue(<span class="stringliteral">@&quot;/entry/link[@rel=&quot;&quot;edit-media&quot;&quot;]/@href&quot;</span>); } }
-<a name="l00125"></a>00125 
-<a name="l00129"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a378cc45a3d02b6a91f58ca0c7a88e166">00129</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> EditHref { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathValue(<span class="stringliteral">@&quot;/entry/link[@rel=&quot;&quot;edit&quot;&quot;]/@href&quot;</span>); } }
-<a name="l00130"></a>00130 
-<a name="l00134"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#aa909e1f6fd2bd56f7845f7b10cef1f82">00134</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> ContentsHref { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathValue(<span class="stringliteral">@&quot;/atom:entry/atom:link[@rel=&quot;&quot;contents&quot;&quot;]/@href&quot;</span>); } }
-<a name="l00135"></a>00135 
-<a name="l00139"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a29dd5db71fe62568fc957a6aa012bf24">00139</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomId { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">@&quot;/entry/id&quot;</span>); } }            
-<a name="l00140"></a>00140 
-<a name="l00144"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a342b7034d062be53e6345c6a8b0a08d6">00144</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomTitle { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:title&quot;</span>); } }
-<a name="l00145"></a>00145 
-<a name="l00149"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a27126854a5e6f22581105e2aaf0f9cc2">00149</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomGenerator { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:generator&quot;</span>); } }
-<a name="l00150"></a>00150 
-<a name="l00154"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a9e24232952c355e8c659594e572b927a">00154</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomGeneratorUri { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:generator/@uri&quot;</span>); } }
-<a name="l00155"></a>00155 
-<a name="l00159"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a125475e47f70f6d555928e75e0528527">00159</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomGeneratorVersion { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:generator/@version&quot;</span>); } }
-<a name="l00160"></a>00160 
-<a name="l00164"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a805de73dba8c9fcdf4d10785c9cf62f0">00164</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomSummary { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:summary/@type&quot;</span>); } }
-<a name="l00165"></a>00165 
-<a name="l00169"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a1ad1da5b0d6cb23ec79dfbf283b272be">00169</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomContentType { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:content/@type&quot;</span>); } }
-<a name="l00170"></a>00170 
-<a name="l00174"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#ae2d3f2a633a3dd4cef80fe35c0f0739c">00174</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomContentSrc { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:content/@src&quot;</span>); } }
-<a name="l00175"></a>00175 
-<a name="l00179"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a1252273cda0afb9cb25df209cc277382">00179</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> SwordTreatment { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/sword:treatment&quot;</span>); } }
-<a name="l00180"></a>00180 
-<a name="l00184"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a0fb2e145b37ac728bb355ee1e7fba67a">00184</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> SwordPackaging { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/sword:packaging&quot;</span>); } }
-<a name="l00185"></a>00185 
-<a name="l00189"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a93cc44e2bbf14dab9e988fb976b84a44">00189</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> SwordNoop { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/sword:noOp&quot;</span>); } }
-<a name="l00190"></a>00190 
-<a name="l00194"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a9660221d02c3efa4fdf810a1abc009ee">00194</a>         <span class="keyword">public</span> DateTime AtomUpdated { <span class="keyword">get</span> { <span class="keywordflow">return</span> DateTime.Parse(this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:updated&quot;</span>)); } }
-<a name="l00195"></a>00195 
-<a name="l00199"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#ac1c690f91fec83db23e4d1b6fa0dc409">00199</a>         <span class="keyword">public</span> DateTime AtomPublished { <span class="keyword">get</span> { <span class="keywordflow">return</span> DateTime.Parse(this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:published&quot;</span>)); } }
-<a name="l00200"></a>00200     }
-<a name="l00201"></a>00201 }
+<a name="l00124"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a471dae35c77f7264764fb7e61acd9cfe">00124</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> EditMediaHref { 
+<a name="l00125"></a>00125             <span class="keyword">get</span> 
+<a name="l00126"></a>00126             {
+<a name="l00127"></a>00127                 <span class="comment">// DSpace will have the type set here</span>
+<a name="l00128"></a>00128                 <span class="keywordtype">string</span> returnValue = this.GetXPathValue(<span class="stringliteral">@&quot;/atom:entry/atom:link[@rel=&quot;&quot;edit-media&quot;&quot; and @type=&quot;&quot;application/atom+xml; type=feed&quot;&quot;]/@href&quot;</span>);
+<a name="l00129"></a>00129 
+<a name="l00130"></a>00130                 <span class="keywordflow">if</span> (returnValue == null)
+<a name="l00131"></a>00131                 {
+<a name="l00132"></a>00132                     <span class="comment">// EPrints won&#39;t care</span>
+<a name="l00133"></a>00133                     returnValue = this.GetXPathValue(<span class="stringliteral">@&quot;/atom:entry/atom:link[@rel=&quot;&quot;edit-media&quot;&quot;]/@href&quot;</span>);
+<a name="l00134"></a>00134                 }
+<a name="l00135"></a>00135                 <span class="keywordflow">return</span> returnValue;
+<a name="l00136"></a>00136             } 
+<a name="l00137"></a>00137         }
+<a name="l00138"></a>00138 
+<a name="l00142"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a378cc45a3d02b6a91f58ca0c7a88e166">00142</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> EditHref { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathValue(<span class="stringliteral">@&quot;/atom:entry/atom:link[@rel=&quot;&quot;edit&quot;&quot;]/@href&quot;</span>); } }
+<a name="l00143"></a>00143 
+<a name="l00147"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#aa909e1f6fd2bd56f7845f7b10cef1f82">00147</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> ContentsHref { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathValue(<span class="stringliteral">@&quot;/atom:entry/atom:link[@rel=&quot;&quot;contents&quot;&quot;]/@href&quot;</span>); } }
+<a name="l00148"></a>00148 
+<a name="l00152"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a29dd5db71fe62568fc957a6aa012bf24">00152</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomId { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">@&quot;/atom:entry/id&quot;</span>); } }            
+<a name="l00153"></a>00153 
+<a name="l00157"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a342b7034d062be53e6345c6a8b0a08d6">00157</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomTitle { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:title&quot;</span>); } }
+<a name="l00158"></a>00158 
+<a name="l00162"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a27126854a5e6f22581105e2aaf0f9cc2">00162</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomGenerator { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:generator&quot;</span>); } }
+<a name="l00163"></a>00163 
+<a name="l00167"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a9e24232952c355e8c659594e572b927a">00167</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomGeneratorUri { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:generator/@uri&quot;</span>); } }
+<a name="l00168"></a>00168 
+<a name="l00172"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a125475e47f70f6d555928e75e0528527">00172</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomGeneratorVersion { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:generator/@version&quot;</span>); } }
+<a name="l00173"></a>00173 
+<a name="l00177"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a805de73dba8c9fcdf4d10785c9cf62f0">00177</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomSummary { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:summary/@type&quot;</span>); } }
+<a name="l00178"></a>00178 
+<a name="l00182"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a1ad1da5b0d6cb23ec79dfbf283b272be">00182</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomContentType { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:content/@type&quot;</span>); } }
+<a name="l00183"></a>00183 
+<a name="l00187"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#ae2d3f2a633a3dd4cef80fe35c0f0739c">00187</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> AtomContentSrc { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:content/@src&quot;</span>); } }
+<a name="l00188"></a>00188 
+<a name="l00192"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a1252273cda0afb9cb25df209cc277382">00192</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> SwordTreatment { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/sword:treatment&quot;</span>); } }
+<a name="l00193"></a>00193 
+<a name="l00197"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a0fb2e145b37ac728bb355ee1e7fba67a">00197</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> SwordPackaging { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/sword:packaging&quot;</span>); } }
+<a name="l00198"></a>00198 
+<a name="l00202"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a93cc44e2bbf14dab9e988fb976b84a44">00202</a>         <span class="keyword">public</span> <span class="keywordtype">string</span> SwordNoop { <span class="keyword">get</span> { <span class="keywordflow">return</span> this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/sword:noOp&quot;</span>); } }
+<a name="l00203"></a>00203 
+<a name="l00207"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#a9660221d02c3efa4fdf810a1abc009ee">00207</a>         <span class="keyword">public</span> DateTime AtomUpdated { <span class="keyword">get</span> { <span class="keywordflow">return</span> DateTime.Parse(this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:updated&quot;</span>)); } }
+<a name="l00208"></a>00208 
+<a name="l00212"></a><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_atom_reader.html#ac1c690f91fec83db23e4d1b6fa0dc409">00212</a>         <span class="keyword">public</span> DateTime AtomPublished { <span class="keyword">get</span> { <span class="keywordflow">return</span> DateTime.Parse(this.GetXPathText(<span class="stringliteral">&quot;/atom:entry/atom:published&quot;</span>)); } }
+<a name="l00213"></a>00213     }
+<a name="l00214"></a>00214 }
 </pre></div></div>
 </div>
 <!--- window showing the filter options -->
@@ -201,7 +214,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Wed Jun 15 2011 08:14:20 for Word 2010 DepositMO plugin - API reference and source guide by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Nov 29 2011 16:57:43 for Word 2010 DepositMO plugin - API reference and source guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

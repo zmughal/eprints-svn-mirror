@@ -325,7 +325,7 @@ Static Private Attributes</h2></td></tr>
 <p>Creates an empty container on the initialised repository. </p>
 <dl class="return"><dt><b>Returns:</b></dt><dd>The address of the new empty container</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00379">379</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00381">381</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00276">uk.ac.soton.ses.SwordClientHandlerTests.TestCreateContainer()</a>.</p>
 
@@ -361,12 +361,13 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>The address of the new empty container</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00389">389</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00391">391</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             HttpWebRequest wr = this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a3de286f71c510cf85f1e6e093f1979fb" title="Creates a web request instance to the target URI, adding in basic authorisation from the username and...">GetBasicAuthAtomWebRequest</a>(endpoint);
             wr.Method = <span class="stringliteral">&quot;POST&quot;</span>;
             wr.ContentType = <span class="stringliteral">&quot;application/atom+xml&quot;</span>;
+            wr.Headers.Add(<span class="stringliteral">&quot;In-Progress&quot;</span>, <span class="stringliteral">&quot;true&quot;</span>);
             <span class="keywordtype">string</span> emptyAtom = <span class="stringliteral">@&quot;&lt;?xml version=&quot;&quot;1.0&quot;&quot; encoding=&quot;&quot;utf-8&quot;&quot; ?&gt;</span>
 <span class="stringliteral">             &lt;entry xmlns=&quot;&quot;http://www.w3.org/2005/Atom&quot;&quot; /&gt;&quot;</span>;
             wr.ContentLength = (long)emptyAtom.Length;
@@ -414,7 +415,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00608">608</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00613">613</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00124">uk.ac.soton.ses.SwordClientHandlerTests.TestDelete()</a>.</p>
 
@@ -482,6 +483,8 @@ Static Private Attributes</h2></td></tr>
             <span class="comment">// should the default be to extract media, or ignore it?</span>
             wr.Headers.Add(<span class="stringliteral">&quot;X-Extract-Media&quot;</span>, <a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a73b47f940f995590abe3530d99972375" title="Should media be extracted by default, or ignored? Note that this is going into a header so it should ...">EXTRACT_MEDIA</a>);
             wr.Headers.Add(<span class="stringliteral">&quot;X-Override-Metadata&quot;</span>, <span class="stringliteral">&quot;true&quot;</span>);
+            <span class="comment">//wr.Headers.Add(&quot;Metadata-Relevant&quot;, &quot;true&quot;);</span>
+            wr.Headers.Add(<span class="stringliteral">&quot;In-Progress&quot;</span>, <span class="stringliteral">&quot;true&quot;</span>);
             this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a5de096e263959293cbeae7b18a28fc1c" title="Writes the file in filename to the web request wr.">WriteFileToRequest</a>(docxFilename, wr);
 
             <span class="keywordflow">return</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#af8f6fb35429f2ce4c60ee210da173ce8" title="Gets the location of the response from the provided HttpWebRequest">GetResponseLocation</a>(wr); <span class="comment">//this.GetXmlResponse(wr);</span>
@@ -517,7 +520,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00540">540</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00545">545</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00190">uk.ac.soton.ses.SwordClientHandlerTests.TestDepositEprintsXml()</a>.</p>
 
@@ -555,7 +558,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00551">551</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00556">556</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">return</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a465adaa0ef9f6b6def2a49b66eca4d15" title="Deposits the XML document in the supplied filename to the initialised endpoint with the supplied X-Pa...">DepositXml</a>(xmlFileName, <a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#ae5151720040713916b0eb8c2b640de63" title="EP2 packaging header value.">EP2_PACKAGING</a>);
@@ -599,7 +602,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00577">577</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00582">582</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {            
             HttpWebRequest wr = this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a3de286f71c510cf85f1e6e093f1979fb" title="Creates a web request instance to the target URI, adding in basic authorisation from the username and...">GetBasicAuthAtomWebRequest</a>(this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a64864c6788f03c793c360a22213f608b" title="The main repository endpoint.">_endpoint</a>);            
@@ -664,7 +667,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00563">563</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00568">568</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             XmlDocument xmlDocument = <span class="keyword">new</span> XmlDocument();
@@ -710,7 +713,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00520">520</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00525">525</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {         
             FileInfo fi = <span class="keyword">new</span> FileInfo(zipFileName);            
@@ -753,7 +756,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00508">508</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00513">513</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00182">uk.ac.soton.ses.SwordClientHandlerTests.TestDepositZipToEprint()</a>.</p>
 
@@ -872,7 +875,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom XML document</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00431">431</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00434">434</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00200">uk.ac.soton.ses.SwordClientHandlerTests.TestGetInfo()</a>.</p>
 
@@ -912,7 +915,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Location string</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00416">416</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00419">419</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordtype">string</span> location = null;
@@ -1024,7 +1027,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00690">690</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00695">695</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">return</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a2710ceb77df367ab00b0a38fd8608c57" title="List all records at the endpoint, by calling endpoint/id/records (LIST_RECORD_PATH).">ListRecords</a>(<span class="keyword">false</span>);
@@ -1072,7 +1075,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00624">624</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00629">629</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_deposit_m_o_repository_control_8cs_source.html#l00314">uk.ac.soton.ses.Word2010DepositMOAddIn.DepositMORepositoryControl.DumpListingToLog()</a>, and <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00210">uk.ac.soton.ses.SwordClientHandlerTests.TestList()</a>.</p>
 
@@ -1181,9 +1184,9 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd></dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00360">360</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00362">362</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
-<p>References <a class="el" href="_sword_atom_reader_8cs_source.html#l00134">uk.ac.soton.ses.SwordAtomReader.ContentsHref</a>.</p>
+<p>References <a class="el" href="_sword_atom_reader_8cs_source.html#l00124">uk.ac.soton.ses.SwordAtomReader.EditMediaHref</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             XmlDocument response = this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#ae858efe4c9e1bf559f8f6003b581686b" title="Gets information about the ePrint at the provided URI.">GetEprintInfo</a>(containerUri);
@@ -1192,11 +1195,11 @@ Static Private Attributes</h2></td></tr>
             SwordAtomReader sar = <span class="keyword">new</span> SwordAtomReader(response);
             <span class="keywordflow">if</span> (sar == null) <span class="keywordflow">return</span> null;
 
-            <span class="keywordtype">string</span> contentsHref = sar.ContentsHref;
-            Debug.WriteLine(<span class="stringliteral">&quot;Contents href is {0}&quot;</span>, contentsHref);
-            <span class="keywordflow">if</span> (String.IsNullOrEmpty(contentsHref)) <span class="keywordflow">return</span> null;
+            <span class="keywordtype">string</span> editMediaHref = sar.EditMediaHref;
+            Debug.WriteLine(<span class="stringliteral">&quot;Edit media href is {0}&quot;</span>, editMediaHref);
+            <span class="keywordflow">if</span> (String.IsNullOrEmpty(editMediaHref)) <span class="keywordflow">return</span> null;
 
-            <span class="keywordflow">return</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a0232754a219d1c6d958af13777f229aa" title="Deposits the .docx from the supplied filename to the supplied endpoint with the supplied content type...">DepositDocxToContents</a>(docxFilename, contentType, contentsHref);
+            <span class="keywordflow">return</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a0232754a219d1c6d958af13777f229aa" title="Deposits the .docx from the supplied filename to the supplied endpoint with the supplied content type...">DepositDocxToContents</a>(docxFilename, contentType, editMediaHref);
         }
 </pre></div></p>
 
@@ -1322,7 +1325,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd></dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00324">324</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00326">326</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_deposit_m_o_repository_control_8cs_source.html#l00143">uk.ac.soton.ses.Word2010DepositMOAddIn.DepositMORepositoryControl._SubmitDocument()</a>, and <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00137">uk.ac.soton.ses.SwordClientHandlerTests.TestPutToDocument()</a>.</p>
 
@@ -1364,7 +1367,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd></dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00342">342</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00344">344</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordtype">string</span> container = this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#ababdd5115fe9213fb1b2dbb71112356a" title="Creates an empty container on the initialised repository.">CreateContainer</a>(this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a64864c6788f03c793c360a22213f608b" title="The main repository endpoint.">_endpoint</a>);
@@ -1417,7 +1420,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00445">445</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00448">448</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p>Referenced by <a class="el" href="_deposit_m_o_repository_control_8cs_source.html#l00143">uk.ac.soton.ses.Word2010DepositMOAddIn.DepositMORepositoryControl._SubmitDocument()</a>, <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00131">uk.ac.soton.ses.SwordClientHandlerTests.TestPutOnly()</a>, and <a class="el" href="_sword_client_handler_tests_8cs_source.html#l00137">uk.ac.soton.ses.SwordClientHandlerTests.TestPutToDocument()</a>.</p>
 
@@ -1471,7 +1474,7 @@ Static Private Attributes</h2></td></tr>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>Atom response</dd></dl>
 
-<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00458">458</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
+<p>Definition at line <a class="el" href="_sword_client_handler_8cs_source.html#l00461">461</a> of file <a class="el" href="_sword_client_handler_8cs_source.html">SwordClientHandler.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {                     
             HttpWebRequest wr = this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a3de286f71c510cf85f1e6e093f1979fb" title="Creates a web request instance to the target URI, adding in basic authorisation from the username and...">GetBasicAuthAtomWebRequest</a>(endpoint);
@@ -1482,6 +1485,8 @@ Static Private Attributes</h2></td></tr>
             wr.ContentLength = fi.Length;
             wr.Headers.Add(<span class="stringliteral">&quot;X-Extract-Media&quot;</span>, <span class="stringliteral">&quot;true&quot;</span>);
             wr.Headers.Add(<span class="stringliteral">&quot;X-Override-Metadata&quot;</span>, <span class="stringliteral">&quot;true&quot;</span>);
+            <span class="comment">//wr.Headers.Add(&quot;Metadata-Relevant&quot;, &quot;true&quot;);</span>
+            wr.Headers.Add(<span class="stringliteral">&quot;In-Progress&quot;</span>, <span class="stringliteral">&quot;true&quot;</span>);
             this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_sword_client_handler.html#a5de096e263959293cbeae7b18a28fc1c" title="Writes the file in filename to the web request wr.">WriteFileToRequest</a>(documentFileName, wr);
             HttpWebResponse response = null;
             <span class="keywordflow">try</span>
@@ -1851,7 +1856,7 @@ Static Private Attributes</h2></td></tr>
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Wed Jun 15 2011 08:14:20 for Word 2010 DepositMO plugin - API reference and source guide by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Nov 29 2011 16:57:43 for Word 2010 DepositMO plugin - API reference and source guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

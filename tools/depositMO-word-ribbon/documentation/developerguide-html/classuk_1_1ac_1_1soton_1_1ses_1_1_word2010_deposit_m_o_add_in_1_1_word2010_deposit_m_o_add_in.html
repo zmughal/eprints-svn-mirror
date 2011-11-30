@@ -150,7 +150,7 @@ Private Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">bool&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a8285f84e15f8b201b63bf180c3b46700">NeedsFill</a> (string MemberName)</td></tr>
 <tr><td colspan="2"><h2><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">string&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a64ca0563fc22564430ee3fc50aa7d1ed">defaultEndpoint</a> = &quot;http://depositmo.eprints.org/id/contents&quot;</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">string&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a64ca0563fc22564430ee3fc50aa7d1ed">defaultEndpoint</a> = &quot;&quot;</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The default endpoint for new controls (could be "").  <a href="#a64ca0563fc22564430ee3fc50aa7d1ed"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">string&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#ab46c8fc6213cf1ed5d6ad04c20563a2b">defaultUsername</a> = &quot;&quot;</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The default username for new controls (could be "").  <a href="#ab46c8fc6213cf1ed5d6ad04c20563a2b"></a><br/></td></tr>
@@ -184,7 +184,7 @@ Static Private Attributes</h2></td></tr>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <p>Entry point for the Microsoft Word 2010 DepositMO add-in. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00030">30</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00031">31</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 <hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="a7d0ee28b92d647a2f23e195907c844dd"></a><!-- doxytag: member="uk::ac::soton::ses::Word2010DepositMOAddIn::Word2010DepositMOAddIn::Word2010DepositMOAddIn" ref="a7d0ee28b92d647a2f23e195907c844dd" args="(global::Microsoft.Office.Tools.Word.ApplicationFactory factory, global::System.IServiceProvider serviceProvider)" -->
 <div class="memitem">
@@ -246,7 +246,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00163">163</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00164">164</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a0d372e8cc98924cd8d916b1374965f1d" title="Internal log buffer.">log</a>.Add(message);
@@ -276,7 +276,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Adds a new repository control panel to the list and adds it to the custom task panes group. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00306">306</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00307">307</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {         
             <span class="keywordflow">if</span> (this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a1674f95a0718cc4f839fd77202e861d1">Application</a>.Documents.Count == 0)
@@ -288,9 +288,19 @@ Static Private Attributes</h2></td></tr>
 
             <span class="keywordflow">foreach</span> (CustomTaskPane ctp <span class="keywordflow">in</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#ac789222cb5841f9396dd22d1fe272a55">CustomTaskPanes</a>)
             {
-                <span class="keywordflow">if</span> (ctp != null &amp;&amp; ctp.Window != null &amp;&amp; ctp.Control != null &amp;&amp; !ctp.Control.Disposing &amp;&amp; ctp.Window == <span class="keyword">this</span>.Application.ActiveWindow)
+                <span class="keywordflow">try</span>
                 {
-                    <span class="comment">// we already have a control for this task pane so don&#39;t continue to add a new one</span>
+                    <span class="keywordflow">if</span> (ctp != null &amp;&amp; ctp.Window != null &amp;&amp; ctp.Control != null &amp;&amp; !ctp.Control.Disposing &amp;&amp; ctp.Window == <span class="keyword">this</span>.Application.ActiveWindow)
+                    {
+                        <span class="comment">// we already have a control for this task pane so don&#39;t continue to add a new one</span>
+                        <span class="keywordflow">return</span>;
+                    }
+                }
+                <span class="keywordflow">catch</span> (COMException cex)
+                {
+                    this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#af08808fa527ffa5a1d1b0e10cf699e19" title="Logs the message message to Word&amp;#39;s status bar, any debug tracers and the log string list on this ...">LogMessage</a>(<span class="stringliteral">&quot;Could not check for taskpane addition; full COM exception follows:&quot;</span>);
+                    this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#af08808fa527ffa5a1d1b0e10cf699e19" title="Logs the message message to Word&amp;#39;s status bar, any debug tracers and the log string list on this ...">LogMessage</a>(cex.ToString());
+                    this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#af08808fa527ffa5a1d1b0e10cf699e19" title="Logs the message message to Word&amp;#39;s status bar, any debug tracers and the log string list on this ...">LogMessage</a>(<span class="stringliteral">&quot;You may wish to restart Microsoft Word&quot;</span>);
                     <span class="keywordflow">return</span>;
                 }
             }        
@@ -329,7 +339,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00336">336</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00347">347</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="comment">// add a new repository control when a new document has been created</span>
@@ -406,7 +416,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Decrements the thread count. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00109">109</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00110">110</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             lock (<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a6a2d4e30c0155ee018390209354cd9f2" title="Lock object for threading.">lockobj</a>)
@@ -488,7 +498,7 @@ Static Private Attributes</h2></td></tr>
 <p>Gets the properties of the active document. </p>
 <dl class="return"><dt><b>Returns:</b></dt><dd></dd></dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00073">73</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00074">74</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">return</span> (Core.DocumentProperties)Globals.Word2010DepositMOAddIn.Application.ActiveDocument.BuiltInDocumentProperties;
@@ -515,7 +525,7 @@ Static Private Attributes</h2></td></tr>
 <p>Returns a formatted string containing the current pending submission summary. </p>
 <dl class="return"><dt><b>Returns:</b></dt><dd></dd></dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00122">122</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00123">123</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">return</span> String.Format(<span class="stringliteral">&quot;{0} submission{1} currently active&quot;</span>, this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a7bd76f4c640b82c8e2e87dcd09044fae" title="Gets the number of active submission threads.">SubmissionThreadCount</a>, (this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a7bd76f4c640b82c8e2e87dcd09044fae" title="Gets the number of active submission threads.">SubmissionThreadCount</a> == 1) ? <span class="stringliteral">&quot;&quot;</span> : <span class="stringliteral">&quot;s&quot;</span>);
@@ -545,7 +555,7 @@ Static Private Attributes</h2></td></tr>
 <p><p>TODO: add some size management here </p>
 </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00176">176</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00177">177</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">return</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a0d372e8cc98924cd8d916b1374965f1d" title="Internal log buffer.">log</a>.ToArray();
@@ -571,7 +581,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Increments the thread count. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00097">97</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00098">98</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             lock (<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a6a2d4e30c0155ee018390209354cd9f2" title="Lock object for threading.">lockobj</a>)
@@ -758,7 +768,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Required method for Designer support - do not modify the contents of this method with the code editor. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00368">368</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00379">379</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             this.Startup += <span class="keyword">new</span> System.EventHandler(<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a959a4c287a5d0f365f921bca792a4655" title="Called when the plug-in is started.">ThisAddIn_Startup</a>);
@@ -828,7 +838,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00215">215</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00216">216</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">if</span> (textBox.InvokeRequired)
@@ -878,7 +888,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00151">151</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00152">152</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             Globals.Word2010DepositMOAddIn.Application.StatusBar = message;
@@ -906,7 +916,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>For every task pane that can be made invisible, make it invisible. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00239">239</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00240">240</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">foreach</span> (CustomTaskPane c <span class="keywordflow">in</span> this.<a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#ac789222cb5841f9396dd22d1fe272a55">CustomTaskPanes</a>)
@@ -939,7 +949,7 @@ Static Private Attributes</h2></td></tr>
 <p>Makes each available task pane and any child controls visible, and shows the associated control. </p>
 <p>Also cleans up task panes where the child control is null. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00255">255</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00256">256</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="comment">// make all of the custom task panes visible, along with their controls</span>
@@ -1062,7 +1072,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00188">188</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00189">189</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordflow">if</span> (textBox.InvokeRequired)
@@ -1203,7 +1213,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00352">352</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00363">363</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="keywordtype">string</span> statusText = <span class="stringliteral">&quot;Shutting down DepositMO plugin&quot;</span>;
@@ -1251,7 +1261,7 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00288">288</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00289">289</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 <p><div class="fragment"><pre class="fragment">        {
             <span class="comment">// when the addin is started, create a new repository control</span>
@@ -1305,7 +1315,7 @@ Static Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">string <a class="el" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a64ca0563fc22564430ee3fc50aa7d1ed">uk.ac.soton.ses.Word2010DepositMOAddIn.Word2010DepositMOAddIn.defaultEndpoint</a> = &quot;http://depositmo.eprints.org/id/contents&quot;<code> [private]</code></td>
+          <td class="memname">string <a class="el" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a64ca0563fc22564430ee3fc50aa7d1ed">uk.ac.soton.ses.Word2010DepositMOAddIn.Word2010DepositMOAddIn.defaultEndpoint</a> = &quot;&quot;<code> [private]</code></td>
         </tr>
       </table>
 </div>
@@ -1313,7 +1323,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>The default endpoint for new controls (could be ""). </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00036">36</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00037">37</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1330,7 +1340,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>The default password for new controls (could be ""). </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00046">46</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00047">47</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1347,7 +1357,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>The default username for new controls (could be ""). </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00041">41</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00042">42</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1364,7 +1374,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Lock object for threading. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00082">82</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00083">83</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1381,7 +1391,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Internal log buffer. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00144">144</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00145">145</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1398,7 +1408,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Maximum number of lines to store in the internal log buffer. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00133">133</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00134">134</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1435,7 +1445,7 @@ Static Private Attributes</h2></td></tr>
 <div class="fragment"><pre class="fragment"><a class="code" href="classuk_1_1ac_1_1soton_1_1ses_1_1_word2010_deposit_m_o_add_in_1_1_word2010_deposit_m_o_add_in.html#a340cd6c3ca4c38dc5703aa30a86cd924" title="Maximum number of lines to store in the internal log buffer.">MAX_LOG_LINES</a>
 </pre></div><p>. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00139">139</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00140">140</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1452,7 +1462,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>A list of all the repository controls the addin deals with. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00067">67</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00068">68</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1469,7 +1479,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>The number of active submission threads. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00087">87</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00088">88</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1502,7 +1512,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Gets or sets the default endpoint. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00051">51</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00052">52</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1519,7 +1529,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Gets or sets the default password. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00061">61</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00062">62</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1536,7 +1546,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Gets or sets the default username. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00056">56</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00057">57</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1553,7 +1563,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Gets the number of active submission threads. </p>
 
-<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00092">92</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
+<p>Definition at line <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html#l00093">93</a> of file <a class="el" href="_word2010_deposit_m_o_add_in_8cs_source.html">Word2010DepositMOAddIn.cs</a>.</p>
 
 </div>
 </div>
@@ -1576,7 +1586,7 @@ Static Private Attributes</h2></td></tr>
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Wed Jun 15 2011 08:14:21 for Word 2010 DepositMO plugin - API reference and source guide by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Nov 29 2011 16:57:43 for Word 2010 DepositMO plugin - API reference and source guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

@@ -308,6 +308,8 @@ namespace uk.ac.soton.ses
             // should the default be to extract media, or ignore it?
             wr.Headers.Add("X-Extract-Media", EXTRACT_MEDIA);
             wr.Headers.Add("X-Override-Metadata", "true");
+            //wr.Headers.Add("Metadata-Relevant", "true");
+            wr.Headers.Add("In-Progress", "true");
             this.WriteFileToRequest(docxFilename, wr);
 
             return this.GetResponseLocation(wr); //this.GetXmlResponse(wr);
@@ -365,11 +367,11 @@ namespace uk.ac.soton.ses
             SwordAtomReader sar = new SwordAtomReader(response);
             if (sar == null) return null;
 
-            string contentsHref = sar.ContentsHref;
-            Debug.WriteLine("Contents href is {0}", contentsHref);
-            if (String.IsNullOrEmpty(contentsHref)) return null;
+            string editMediaHref = sar.EditMediaHref;
+            Debug.WriteLine("Edit media href is {0}", editMediaHref);
+            if (String.IsNullOrEmpty(editMediaHref)) return null;
 
-            return this.DepositDocxToContents(docxFilename, contentType, contentsHref);
+            return this.DepositDocxToContents(docxFilename, contentType, editMediaHref);
         }
 
         /// <summary>
@@ -391,6 +393,7 @@ namespace uk.ac.soton.ses
             HttpWebRequest wr = this.GetBasicAuthAtomWebRequest(endpoint);
             wr.Method = "POST";
             wr.ContentType = "application/atom+xml";
+            wr.Headers.Add("In-Progress", "true");
             string emptyAtom = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
              <entry xmlns=""http://www.w3.org/2005/Atom"" />";
             wr.ContentLength = (long)emptyAtom.Length;
@@ -465,6 +468,8 @@ namespace uk.ac.soton.ses
             wr.ContentLength = fi.Length;
             wr.Headers.Add("X-Extract-Media", "true");
             wr.Headers.Add("X-Override-Metadata", "true");
+            //wr.Headers.Add("Metadata-Relevant", "true");
+            wr.Headers.Add("In-Progress", "true");
             this.WriteFileToRequest(documentFileName, wr);
             HttpWebResponse response = null;
             try

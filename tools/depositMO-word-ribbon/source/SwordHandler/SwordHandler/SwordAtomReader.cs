@@ -121,12 +121,25 @@ namespace uk.ac.soton.ses
         /// <summary>
         /// Edit media href
         /// </summary>
-        public string EditMediaHref { get { return this.GetXPathValue(@"/entry/link[@rel=""edit-media""]/@href"); } }
+        public string EditMediaHref { 
+            get 
+            {
+                // DSpace will have the type set here
+                string returnValue = this.GetXPathValue(@"/atom:entry/atom:link[@rel=""edit-media"" and @type=""application/atom+xml; type=feed""]/@href");
+
+                if (returnValue == null)
+                {
+                    // EPrints won't care
+                    returnValue = this.GetXPathValue(@"/atom:entry/atom:link[@rel=""edit-media""]/@href");
+                }
+                return returnValue;
+            } 
+        }
 
         /// <summary>
         /// Edit href
         /// </summary>
-        public string EditHref { get { return this.GetXPathValue(@"/entry/link[@rel=""edit""]/@href"); } }
+        public string EditHref { get { return this.GetXPathValue(@"/atom:entry/atom:link[@rel=""edit""]/@href"); } }
 
         /// <summary>
         /// Contents href
@@ -136,7 +149,7 @@ namespace uk.ac.soton.ses
         /// <summary>
         /// Atom ID
         /// </summary>
-        public string AtomId { get { return this.GetXPathText(@"/entry/id"); } }            
+        public string AtomId { get { return this.GetXPathText(@"/atom:entry/id"); } }            
 
         /// <summary>
         /// Atom title

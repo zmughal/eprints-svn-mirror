@@ -21,6 +21,7 @@ using Microsoft.Office.Tools;
 using System.Diagnostics;
 using System;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace uk.ac.soton.ses.Word2010DepositMOAddIn
 {
@@ -33,7 +34,7 @@ namespace uk.ac.soton.ses.Word2010DepositMOAddIn
         /// <summary>
         /// The default endpoint for new controls (could be "")
         /// </summary>
-        private string defaultEndpoint = "http://depositmo.eprints.org/id/contents";
+        private string defaultEndpoint = "";
 
         /// <summary>
         /// The default username for new controls (could be "")
@@ -314,9 +315,19 @@ namespace uk.ac.soton.ses.Word2010DepositMOAddIn
 
             foreach (CustomTaskPane ctp in this.CustomTaskPanes)
             {
-                if (ctp != null && ctp.Window != null && ctp.Control != null && !ctp.Control.Disposing && ctp.Window == this.Application.ActiveWindow)
+                try
                 {
-                    // we already have a control for this task pane so don't continue to add a new one
+                    if (ctp != null && ctp.Window != null && ctp.Control != null && !ctp.Control.Disposing && ctp.Window == this.Application.ActiveWindow)
+                    {
+                        // we already have a control for this task pane so don't continue to add a new one
+                        return;
+                    }
+                }
+                catch (COMException cex)
+                {
+                    this.LogMessage("Could not check for taskpane addition; full COM exception follows:");
+                    this.LogMessage(cex.ToString());
+                    this.LogMessage("You may wish to restart Microsoft Word");
                     return;
                 }
             }        
