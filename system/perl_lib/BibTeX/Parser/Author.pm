@@ -156,7 +156,7 @@ sub split {
 		my @von_last_parts = split /\s+/, $parts[0];
 		my $von;
 		# von part are lowercase words
-		while ( lc($von_last_parts[0]) eq $von_last_parts[0] ) {
+		while ( @von_last_parts && lc($von_last_parts[0]) eq $von_last_parts[0] ) {
 			$von .= $von ? ' ' . shift @von_last_parts : shift @von_last_parts;
 		}
 		return _nbsp($parts[1], $von, join(" ", @von_last_parts), undef);
@@ -164,7 +164,7 @@ sub split {
 		my @von_last_parts = split /\s+/, $parts[0];
 		my $von;
 		# von part are lowercase words
-		while ( lc($von_last_parts[0]) eq $von_last_parts[0] ) {
+		while ( @von_last_parts && lc($von_last_parts[0]) eq $von_last_parts[0] ) {
 			$von .= $von ? ' ' . shift @von_last_parts : shift @von_last_parts;
 		}
 		return _nbsp($parts[2], $von, join(" ", @von_last_parts), $parts[1]);
