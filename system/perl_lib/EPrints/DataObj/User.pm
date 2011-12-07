@@ -1564,7 +1564,19 @@ sub get_privs
 		}
 
 		foreach my $priv ( @{$privmap{$role}} ) 
-		{ 
+		{
+			# EPrints Services/tmb 2010-03-22 fix for http://trac.eprints.org/trac/ticket/3754
+			if( $priv =~ m/^\+(.*)$/ )
+			{
+				$self->{".privs"}->{$1} = 1;
+				next;
+			}
+			if( $priv =~ m/^-(.*)$/ )
+			{
+				delete $self->{".privs"}->{$1};
+				next;
+			}
+			# EPrints Services/tmb end
 			$self->{".privs"}->{$priv} = 1;
 		}
 	}
