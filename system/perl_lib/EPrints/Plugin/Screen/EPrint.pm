@@ -191,7 +191,6 @@ sub uncache_workflow
 
 	delete $self->{session}->{id_counter};
 	delete $self->{processor}->{workflow};
-	delete $self->{processor}->{workflow_staff};
 }
 
 sub render_blister

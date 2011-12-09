@@ -568,6 +568,7 @@ sub remove_utf8
 
 	return "" unless defined $text;
 
+	$text = Encode::decode_utf8($text); # stringify $text
 	$text = Encode::encode("iso-8859-1", $text, Encode::FB_DEFAULT);
 
 	return $text;
