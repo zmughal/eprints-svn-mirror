@@ -174,6 +174,9 @@ sub _read_stages
 		{
 			EPrints::abort( $self->description." - <element> definition has no name attribute.\n".$element->toString );
 		}
+
+		next unless defined $self->{stage_number}->{$stage_id};
+
 		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self, $stage_id );
 		foreach my $field_id ( $self->{stages}->{$stage_id}->get_fields_handled )
 		{
@@ -319,7 +322,7 @@ sub update_from_form
 	return if $quiet;
 
 	# Deposit performs a full validation, so don't repeat any warnings here
-	return if $new_stage eq 'deposit';
+	return if defined $new_stage && $new_stage eq 'deposit';
 
 	my @problems = $stage_obj->validate( $processor );
 
@@ -434,7 +437,7 @@ sub link_problem_xhtml
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $class = $node->getAttribute( "class" );
-		if( $class=~m/^ep_problem_field:(.*)$/ )
+		if( $class && $class=~m/^ep_problem_field:(.*)$/ )
 		{
 			my $stage = $self->{field_stages}->{$1};
 			return if( !defined $stage );
