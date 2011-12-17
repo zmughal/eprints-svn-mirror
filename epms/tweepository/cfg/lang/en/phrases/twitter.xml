@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+
+    <epp:phrase id="tweetstream:workflow:stage:default:title">Parameters</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_hashtags_ncols">Max Hashtags</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_target_urls_ncols">Max URLs</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_top_tweetees">Top Tweetees</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_top_tweetees_count">Count</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_top_tweetees_tweetee">Tweetee</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_tweetees_ncols">Max Tweetees</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_tweets">Tweets</epp:phrase> 
+    <epp:phrase id="TweetStream/export_menu"><p>Export the feed as: <epc:pin name="export_list"/></p></epp:phrase>
+    <epp:phrase id="DataObj::Tweet::error_text_-1">A number of unharvested tweets may have appeared in the stream at this point.</epp:phrase>
+
+    <epp:phrase id="tweetstream_fieldname_highest_twitterid">Highest ID</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_from_users">Top Tweeters</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_from_users_count">Tweet Count</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_from_users_from_user">Tweeter</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_from_users_profile_image_url">Avatar</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_hashtags">Top Hashtags</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_hashtags_count">Hashtag Count</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_hashtags_hashtag">Hashtag</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_target_urls">Top Links</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_target_urls_count">Link Count</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_top_target_urls_target_url">Link</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_frequency_period">Period</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_frequency_values">Tweet Count</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_frequency_values_label">Label</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_frequency_values_value">Count</epp:phrase>
+    <epp:phrase id="tweetstream_fieldopt_frequency_period_daily">Daily</epp:phrase>
+    <epp:phrase id="tweetstream_fieldopt_frequency_period_weekly">Weekly</epp:phrase>
+    <epp:phrase id="tweetstream_fieldopt_frequency_period_monthly">Montly</epp:phrase>
+    <epp:phrase id="tweetstream_fieldopt_frequency_period_yearly">Yearly</epp:phrase>
+
+
+    <epp:phrase id="DataObj::Tweet/unshown_items">...and <epc:pin name="n"/> more tweets...</epp:phrase>
+    <epp:phrase id="datasetname_tweetstream">Twitter Feed</epp:phrase>
+    <epp:phrase id="datasethelp_tweetstream">Archive a stream of tweets based on a search term.</epp:phrase> 
+    <epp:phrase id="tweetstream_fieldname_datestamp">Date Created</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_newborn">Before First Update</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_newest_tweets">Latest Tweets</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_oldest_tweets">Oldest Tweets</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_rendered_tweetlist">Tweets</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_tweet_count">Number of Tweets</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_expiry_date">Expiry Date</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_lastmod">Last Modified Date</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_public">Publicly Visible</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_search_string">Search String</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_tweetstreamid">ID</epp:phrase>
+    <epp:phrase id="tweetstream_fieldname_userid">Userid</epp:phrase>
+    <epp:phrase id="datasetname_tweet">Tweet</epp:phrase>
+    <epp:phrase id="tweet_fieldname_created_at">Created At</epp:phrase>
+    <epp:phrase id="tweet_fieldname_from_user">From User</epp:phrase>
+    <epp:phrase id="tweet_fieldname_hashtags">Hashtags</epp:phrase>
+    <epp:phrase id="tweet_fieldname_iso_language_code">Language</epp:phrase>
+    <epp:phrase id="tweet_fieldname_json_source">JSON Source</epp:phrase>
+    <epp:phrase id="tweet_fieldname_profile_image_url">Profile Image URL</epp:phrase>
+    <epp:phrase id="tweet_fieldname_source">Source</epp:phrase>
+    <epp:phrase id="tweet_fieldname_target_urls">Expanded URLs</epp:phrase>
+    <epp:phrase id="tweet_fieldname_text">Text</epp:phrase>
+    <epp:phrase id="tweet_fieldname_text_enriched">Enriched Text</epp:phrase>
+    <epp:phrase id="tweet_fieldname_tweetid">ID in EPrints</epp:phrase>
+    <epp:phrase id="tweet_fieldname_tweetees">Tweetees</epp:phrase>
+    <epp:phrase id="tweet_fieldname_twitterid">Twitter ID</epp:phrase>
+    <epp:phrase id="tweet_fieldname_url_redirects">URL Redirects</epp:phrase>
+    <epp:phrase id="tweet_fieldname_url_redirects_redirects_to">To</epp:phrase>
+    <epp:phrase id="tweet_fieldname_url_redirects_url">From</epp:phrase>
+
+</epp:phrases>
