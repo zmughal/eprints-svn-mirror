@@ -78,9 +78,9 @@
         <file>
           <filename>plugins/EPrints/Plugin/Event/UpdateTweetStreams.pm</filename>
           <mime_type>application/x-not-regular-file</mime_type>
-          <hash>fbde1244cfba3fb6cd59f68b4fa1c76e</hash>
+          <hash>90cec847f4cb9af495783f47435cc4fb</hash>
           <hash_type>MD5</hash_type>
-          <filesize>8847</filesize>
+          <filesize>9590</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Event/enrich_tweets.pl</filename>

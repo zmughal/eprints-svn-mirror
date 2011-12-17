@@ -36,6 +36,11 @@ sub action_update_tweetstreams
 	my $ua = LWP::UserAgent->new;
 	my $nosort = 0;
 
+#cache the IDs of all items created in this session
+#that way, when we find one that wasn't created in this session
+#we know we've gone back far enough
+	my $created_this_session = {};
+
 	ITEM: while ( scalar @queue ) #future development -- test API limits too
 	{
 		#prioritise by date, but have some parallelisation
@@ -53,7 +58,19 @@ sub action_update_tweetstreams
 		#query Twitter API
 		my $url = URI->new( $api_url );
 		$url->query_form( %{$current_item->{search_params}} );
-		my $response = $ua->get($url);
+		my $response;
+
+		#twitter gets bogged down sometimes
+		#retry when it's a 503 (or other 500) response code
+		for (1..5)
+		{
+			$response = $ua->get($url);
+
+			my $code = $response->code;
+
+			last unless $code >=500; #500 codes indicate server issues.
+			sleep 10;
+		}
 
 		my $json_tweets;
 		if ($response->is_success)
@@ -107,8 +124,12 @@ sub action_update_tweetstreams
 
 			$self->{log_data}->{tweets_processed}++; #global count
 			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{earliest_seen} = $tweet->{created_at}; #keep updating this as we walk backwards, though it
-			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{latest_seen} = $tweet->{created_at}
-				unless $self->{log_data}->{tweetstreams}->{$current_item->{id}}->{latest_seen}; #only store the first instance -- it will be the most recent
+			#only need to set these once
+			if (!$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{latest_seen})
+			{
+				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{latest_seen} = $tweet->{created_at};
+				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{search_string} = $current_item->{search_params}->{q};
+			}
 
 			$update_finished = 0;
 			if (!$current_item->{search_params}->{max_id})
@@ -129,6 +150,8 @@ sub action_update_tweetstreams
 						tweetstreams => $current_item->{tweetstreamids},
 					} 
 				);
+				$created_this_session->{$tweet->{id}} = 1;
+
 				$self->{log_data}->{tweets_created}++; #global_count
 				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{tweets_created}++;
 			}
@@ -136,12 +159,15 @@ sub action_update_tweetstreams
 			#add and log if it isn't the last from the previous update.
 			else
 			{
-				#compare $current_item->{tweetstreams} to $tweetobj->value('tweetstreams').
+				#compare $current_item->{tweetstreams} to $tweetobj->value('tweetstreams') if the tweetobj wasn't created in this session
 				#If they differ, then at least one of the tweetstreams needs to have this tweet added to it.
 				#If they're identical, then we've gone back as far as we need to go.
 				if (
-					join(',',sort(@{$current_item->{tweetstreamids}})) eq
-					join(',',sort(@{$tweetobj->value('tweetstreams')}))
+					!$created_this_session->{$tweetobj->value('twitterid')} and
+					(
+						join(',',sort(@{$current_item->{tweetstreamids}})) eq
+						join(',',sort(@{$tweetobj->value('tweetstreams')}))
+					)
 				)
 				{
 					$update_finished = 1;
@@ -153,7 +179,7 @@ sub action_update_tweetstreams
 				}
 			}
 
-			#only the first in the update doesn't have a following tweet
+			#only the first in the update (id = max_id) doesn't have a following tweet
 			#this will also set the flag on the first item from the previous update.
 			if ($current_item->{search_params}->{max_id} != $tweet->{id})
 			{
@@ -201,7 +227,7 @@ sub generate_log_string
 	push @r, $l->{tweets_created} . " tweets created";
 	push @r, (scalar keys %{$l->{tweetstreams}}) . " tweetstreams updated:";
 
-	foreach my $ts_id (keys %{$l->{tweetstreams}})
+	foreach my $ts_id (sort keys %{$l->{tweetstreams}})
 	{
 		my $ts = $l->{tweetstreams}->{$ts_id};
 
@@ -211,9 +237,9 @@ sub generate_log_string
 		my $earliest = $ts->{earliest_seen} ? $ts->{earliest_seen} : 'unknown';
 		my $latest = $ts->{latest_seen} ? $ts->{latest_seen} : 'unknown';
 
-		push @r, "\t$ts_id:";
+		push @r, "\t$ts_id: " . $ts->{search_string};
 		push @r, "\t\t$new created";
-		push @r, "\t\t$added existing tweets added (stream overlap)";
+		push @r, "\t\t$added existing tweets added (stream overlap or page shifting)";
 		push @r, "\t\tFrom: $earliest";
 		push @r, "\t\tTo:   $latest";
 		push @r, "\t\tCompleted with status: $end";
@@ -221,7 +247,7 @@ sub generate_log_string
 	}
 
 	my $end = $l->{end_state} ? $l->{end_state} : 'No Known Errors';
-	push @r, "Complete with status: " . $l->{end_state};
+	push @r, "Complete with status: " . $end;
 
 	return join("\n",@r);
 }
