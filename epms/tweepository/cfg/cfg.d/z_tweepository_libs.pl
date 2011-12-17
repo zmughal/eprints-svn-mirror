@@ -2,6 +2,7 @@ $c->{plugins}{"Export::TweetStream::JSON"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::CSV"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::HTML"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreams"}{params}{disable} = 0;
+$c->{plugins}{"Event::EnrichTweets"}{params}{disable} = 0;
 $c->{plugins}{"Screen::EPMC::tweepository"}{params}{disable} = 0;
 
 #set up the datasets
@@ -29,12 +30,14 @@ $c->add_dataset_field( 'tweet', { name=>"json_source", type=>"storable", require
 #extracted tweet metadata
 $c->add_dataset_field( 'tweet', { name=>"text", type=>"text" }, );
 $c->add_dataset_field( 'tweet', { name=>"from_user", type=>"text", render_value => 'EPrints::DataObj::Tweet::render_from_user' }, );
+$c->add_dataset_field( 'tweet', { name=>"from_user_id", type=>"bigint" }, );
 $c->add_dataset_field( 'tweet', { name=>"profile_image_url", type=>"url", render_value => 'EPrints::DataObj::Tweet::render_profile_image_url' }, );
 $c->add_dataset_field( 'tweet', { name=>"iso_language_code", type=>"text" }, );
 $c->add_dataset_field( 'tweet', { name=>"source", type=>"text" }, );
 $c->add_dataset_field( 'tweet', { name=>"created_at", type=>"time"}, );
 
 #value added extraction and enrichment
+$c->add_dataset_field( 'tweet', { name=>"text_is_enriched", type=>"boolean" }, );
 $c->add_dataset_field( 'tweet', { name=>"text_enriched", type=>"longtext", render_value => 'EPrints::DataObj::Tweet::render_text_enriched' }, );
 $c->add_dataset_field( 'tweet', { name=>"tweetees", type=>"text", multiple=>1 }, );
 $c->add_dataset_field( 'tweet', { name=>"hashtags", type=>"text", multiple=>1 }, );
@@ -75,8 +78,6 @@ $c->add_dataset_field( 'tweetstream', { name=>"tweet_count", type=>'bigint', vol
 $c->add_dataset_field( 'tweetstream', { name=>"oldest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );
 $c->add_dataset_field( 'tweetstream', { name=>"newest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );
 $c->add_dataset_field( 'tweetstream', { name=>"rendered_tweetlist", virtual=> 1, type=>"int", render_value => 'EPrints::DataObj::TweetStream::render_tweet_list' }, );
-#a flag to prevent a digest being done on commit before the tweetstream is updated
-$c->add_dataset_field( 'tweetstream', { name=>"newborn", type=>"boolean"}, );
 #digest information store anything that appears more than once.
 $c->add_dataset_field( 'tweetstream', { 
 	name => "top_hashtags", type=>"compound", multiple=>1,
@@ -348,10 +349,10 @@ sub commit
 		{
 			$self->process_json;
 		}
-		$self->enrich_text; #note that this function also sets target_urls and url_redirects
 		$self->set_value('tweetees', $self->tweetees);
 		$self->set_value('hashtags', $self->hashtags);
 		$self->set_value('newborn', 'FALSE');
+		$self->set_value('text_is_enriched', 'FALSE');
 	}
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
@@ -497,7 +498,7 @@ sub process_json
 	my $tweet_data = $self->get_value('json_source');
 
 	#pull the data out and stick it in metafields
-	foreach my $fieldname (qw/ text from_user profile_image_url iso_language_code source /)
+	foreach my $fieldname (qw/ text from_user from_user_id profile_image_url iso_language_code source /)
 	{
 		if ($tweet_data->{$fieldname})
 		{
@@ -538,7 +539,7 @@ sub hashtags
 
 sub enrich_text
 {
-        my ($self) = @_;
+        my ($self, $uri_cache) = @_;
 
         my $message = $self->get_value('text');
         return unless $message;
@@ -554,8 +555,22 @@ sub enrich_text
 
                 my $target_uri = $orig_uri;
 
-		my $response = $ua->head($uri);
-		my @redirects = $response->redirects;
+		my @redirects;
+		my $response;
+
+		if ($uri_cache->{$uri})
+		{
+			@redirects = @{$uri_cache->{$uri}->{redirects}};
+			$response = $uri_cache->{$uri}->{response};
+		}
+		else
+		{
+			$response = $ua->head($uri);
+			@redirects = $response->redirects;
+
+			$uri_cache->{$uri}->{redirects} = \@redirects;
+			$uri_cache->{$uri}->{response} = $response;
+		}
 
 		if (scalar @redirects)
 		{
@@ -603,6 +618,8 @@ sub enrich_text
         }
 	$self->set_value('url_redirects', $redirects);
 	$self->set_value('target_urls', \@URLs);
+
+	$self->set_value('text_is_enriched', 'TRUE');
 }
 
 sub render_li
@@ -693,6 +710,8 @@ sub render_text_enriched
 {
         my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
 
+	return $object->render_value('text') unless $value; #enrich_text may not have been called
+
 	my $xml = $session->xml;
 
 	my $text_span = $xml->create_element('span', class=>'text', id=>'tweet-'.$object->get_value('twitterid'));
@@ -701,7 +720,7 @@ sub render_text_enriched
 	my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".$value."</fragment>" ); };
 #	my $doc = eval { EPrints::XML::parse_xml_string( "<fragment>".decode_entities($value)."</fragment>" ); };
 
-	if( $@ or not $value)
+	if( $@ )
 	{
 		$session->get_repository->log( "Error rendering text_enriched on tweet " . $object->get_id . " for text:\n\t$value\nError:\n\t$@" );
 
@@ -1077,11 +1096,7 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	$self->set_value('newborn', 'TRUE') if !$self->is_set('newborn');
-
 	$self->update_triggers();
-
-	$self->generate_tweet_digest if $self->value('newborn') eq 'FALSE';
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -1279,6 +1294,7 @@ sub csv_cols
 	[
 		{ fieldname => "twitterid", ncols => 1 },
 		{ fieldname => "from_user", ncols => 1 },
+		{ fieldname => "from_user_id", ncols => 1 },
 		{ fieldname => "created_at", ncols => 1 },
 		{ fieldname => "text", ncols => 1 },
 		{ fieldname => "profile_image_url", ncols => 1 },

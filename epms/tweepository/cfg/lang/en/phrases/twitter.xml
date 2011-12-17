@@ -53,6 +53,7 @@
     <epp:phrase id="datasetname_tweet">Tweet</epp:phrase>
     <epp:phrase id="tweet_fieldname_created_at">Created At</epp:phrase>
     <epp:phrase id="tweet_fieldname_from_user">From User</epp:phrase>
+    <epp:phrase id="tweet_fieldname_from_user_id">From User ID</epp:phrase>
     <epp:phrase id="tweet_fieldname_hashtags">Hashtags</epp:phrase>
     <epp:phrase id="tweet_fieldname_iso_language_code">Language</epp:phrase>
     <epp:phrase id="tweet_fieldname_json_source">JSON Source</epp:phrase>
