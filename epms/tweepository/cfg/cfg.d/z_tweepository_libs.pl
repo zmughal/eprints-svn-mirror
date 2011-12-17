@@ -73,7 +73,6 @@ $c->add_dataset_field( 'tweetstream', { name=>"tweetstreamid", type=>"counter", 
 $c->add_dataset_field( 'tweetstream', { name=>"userid", type=>"itemref", datasetid=>"user", required=>1 }, );
 $c->add_dataset_field( 'tweetstream', { name=>"search_string", type=>"text", required=>"yes" }, );
 $c->add_dataset_field( 'tweetstream', { name=>"expiry_date", type=>"date", required=>"yes" }, );
-$c->add_dataset_field( 'tweetstream', { name=>"highest_twitterid", type=>'bigint', volatile=>1}, );
 $c->add_dataset_field( 'tweetstream', { name=>"tweet_count", type=>'bigint', volatile=>1}, );
 $c->add_dataset_field( 'tweetstream', { name=>"oldest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );
 $c->add_dataset_field( 'tweetstream', { name=>"newest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );
@@ -539,7 +538,7 @@ sub hashtags
 
 sub enrich_text
 {
-        my ($self, $uri_cache) = @_;
+        my ($self, $uri_cache, $log_data) = @_;
 
         my $message = $self->get_value('text');
         return unless $message;
@@ -562,6 +561,8 @@ sub enrich_text
 		{
 			@redirects = @{$uri_cache->{$uri}->{redirects}};
 			$response = $uri_cache->{$uri}->{response};
+
+			$log_data->{url_cache_lookups}++ if $log_data;
 		}
 		else
 		{
@@ -570,6 +571,8 @@ sub enrich_text
 
 			$uri_cache->{$uri}->{redirects} = \@redirects;
 			$uri_cache->{$uri}->{response} = $response;
+
+			$log_data->{url_follows}++ if $log_data;
 		}
 
 		if (scalar @redirects)
@@ -1115,22 +1118,13 @@ sub generate_tweet_digest
 {
 	my ($self) = @_;
 
-	my $tweets = $self->tweets; #
+	my $tweets = $self->tweets; 
 	my $tweet_count = $tweets->count;
 
 	if ($tweets->count)
 	{
 		$self->set_value('tweet_count', $tweet_count);
-
-		my $latest_tweet = $tweets->item( $tweets->count - 1 );
-		$self->set_value('highest_twitterid', $latest_tweet->value('twitterid'));
 	}
-
-	#from user
-#	my $sql = "se
-
-
-
 
 	if ($tweet_count)
 	{
@@ -1160,12 +1154,9 @@ sub generate_tweet_digest
 		'counter' => {},
 		'extra_data' => {},
 		'muliplicity_counts' => {}, #for CSV export, let's find out how multiple the multiple fields are.
-		'highest_id' => 0,
 	};
 
 	$tweets->map(\&EPrints::DataObj::TweetStream::_generate_tweet_digest_data, $digest_data);
-
-	$self->set_value('highest_twitterid', $digest_data->{highest_id});
 
 	#top counts
 	foreach my $top_val_name (qw/ from_user hashtag target_url tweetee /)
@@ -1222,7 +1213,6 @@ sub _generate_tweet_digest_data
 
 #we should be able to just read this from the database
 	my $twitterid = $tweet->get_value('twitterid');
-	$digest_data->{highest_id} = $twitterid if $twitterid > $digest_data->{highest_id};
 
 #accumulate data
 	foreach my $top_val_name (qw/ from_users hashtags target_urls tweetees /)
@@ -1444,14 +1434,6 @@ sub remove
 	return( $success );
 }
 
-
-sub highest_twitterid
-{
-	my ($self) = @_;
-
-	return $self->get_value('highest_twitterid');
-}
-
 #a parallel list of tweet ids (due to a utf8 issue) will be rendered as the number of tweets.
 sub render_tweetcount
 {
@@ -1555,7 +1537,7 @@ sub data_for_export
 
 	my $data;
 
-	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_tweetees top_target_urls highest_twitterid /)
+	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_tweetees top_target_urls /)
 	{
 		$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
 	}

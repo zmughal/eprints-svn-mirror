@@ -10,11 +10,11 @@ use LWP::UserAgent;
 use JSON;
 use Encode qw(encode);
 
-
-
 sub action_update_tweetstreams
 {
 	my ($self) = @_;
+
+	$self->{log_data}->{start_time} = scalar localtime time;
 
 	if ($self->is_locked)
 	{
@@ -67,12 +67,14 @@ sub action_update_tweetstreams
 			if ($code == 403) #forbidden -- probably because we've gone back too many pages on this item
 			{
 				#We've got all we can.  Move onto the next and let this one fall off of the queue
+				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{end_state} = 'No more results';
 				next ITEM;
 			}
 
 			#otherwise, assume we've gone over the API limit, and halt *all* requests
-			print STDERR 'Got failure status, assuming API limit reached: ',$response->status_line, "\n";
-			last ITEM;
+			print STDERR 'Got failure status, assuming API limit reached: ', $response->status_line, "\n";
+			$self->{log_data}->{end_state} = 'BAD RESPONSE FROM TWITTER: ' . $response->status_line;
+			last ITEM; 
 		}
 
 		#convert JSON to perl structure
@@ -87,17 +89,28 @@ sub action_update_tweetstreams
 				$current_item->{retries}--;
 				push @queue, $current_item
 			}
-			#else let this one fall off the end of the queue
+			#else let this one fall off the end of the queue (i.e. don't repush onto queue)
+			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{end_state} = 'PARSE ERROR';
+			next ITEM;
 		}
 
-		next ITEM unless scalar @{$tweets->{results}}; #if an empty page of results, assume no more tweets
-
-		my $first = 1;
+		if (!scalar @{$tweets->{results}})#if an empty page of results, assume no more tweets
+		{
+			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{end_state} = 'No more results';
+			next ITEM;
+		}
 		my $update_finished;
+
 		#create a tweet dataobj for each tweet and store the objid in the queue item
 		TWEET_IN_UPDATE: foreach my $tweet (@{$tweets->{results}})
 		{
-			$update_finished = 0;	
+
+			$self->{log_data}->{tweets_processed}++; #global count
+			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{earliest_seen} = $tweet->{created_at}; #keep updating this as we walk backwards, though it
+			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{latest_seen} = $tweet->{created_at}
+				unless $self->{log_data}->{tweetstreams}->{$current_item->{id}}->{latest_seen}; #only store the first instance -- it will be the most recent
+
+			$update_finished = 0;
 			if (!$current_item->{search_params}->{max_id})
 			{
 				$current_item->{search_params}->{max_id} = $tweet->{id}; #highest ID, for consistant paging
@@ -116,24 +129,43 @@ sub action_update_tweetstreams
 						tweetstreams => $current_item->{tweetstreamids},
 					} 
 				);
+				$self->{log_data}->{tweets_created}++; #global_count
+				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{tweets_created}++;
 			}
+			#an existing tweet harvested is either a crossover with another stream, or it's the last tweet from the previous update.
+			#add and log if it isn't the last from the previous update.
 			else
 			{
-				$tweetobj->add_to_tweetstreamid($current_item->{tweetstreamids});
+				#compare $current_item->{tweetstreams} to $tweetobj->value('tweetstreams').
+				#If they differ, then at least one of the tweetstreams needs to have this tweet added to it.
+				#If they're identical, then we've gone back as far as we need to go.
+				if (
+					join(',',sort(@{$current_item->{tweetstreamids}})) eq
+					join(',',sort(@{$tweetobj->value('tweetstreams')}))
+				)
+				{
+					$update_finished = 1;
+				}
+				else
+				{
+					$tweetobj->add_to_tweetstreamid($current_item->{tweetstreamids});
+					$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{tweets_added}++;
+				}
 			}
+
 			#only the first in the update doesn't have a following tweet
-			if (!$first)
+			#this will also set the flag on the first item from the previous update.
+			if ($current_item->{search_params}->{max_id} != $tweet->{id})
 			{
 				$tweetobj->set_next_in_tweetstream($current_item->{tweetstreamids});
 			}
 			$tweetobj->commit;
 
-			if ($tweet->{id} <= $current_item->{since_twitterid}) #the one we're considering is the same or younger than the oldest in our stream
+			if ($update_finished) #the one we're considering is the same or younger than the oldest in our stream
 			{
-				$update_finished = 1;
+				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{end_state} = 'Update Complete';
 				last TWEET_IN_UPDATE;
 			}
-			$first = 0;
 		}
 
 		#request the next page of results (unless we've reached a previously seen item)
@@ -151,7 +183,47 @@ sub action_update_tweetstreams
 
 	#tweetstream is only committed when the tweets are enriched
 
+	$self->{log_data}->{end_time} = scalar localtime time;
+	$self->write_log;
 	$self->remove_lock
+}
+
+sub generate_log_string
+{
+	my ($self) = @_;
+	my $l = $self->{log_data};
+
+	my @r;
+
+	push @r, "Update started at: " . $l->{start_time};
+	push @r, "Update finished at: " . $l->{end_time};
+	push @r, $l->{tweets_processed} . " tweets processed";
+	push @r, $l->{tweets_created} . " tweets created";
+	push @r, (scalar keys %{$l->{tweetstreams}}) . " tweetstreams updated:";
+
+	foreach my $ts_id (keys %{$l->{tweetstreams}})
+	{
+		my $ts = $l->{tweetstreams}->{$ts_id};
+
+		my $new = $ts->{tweets_created} ? $ts->{tweets_created} : 0;
+		my $added = $ts->{tweets_added} ? $ts->{tweets_added} : 0;
+		my $end = $ts->{end_state} ? $ts->{end_state} : 'Unknown Endstate';
+		my $earliest = $ts->{earliest_seen} ? $ts->{earliest_seen} : 'unknown';
+		my $latest = $ts->{latest_seen} ? $ts->{latest_seen} : 'unknown';
+
+		push @r, "\t$ts_id:";
+		push @r, "\t\t$new created";
+		push @r, "\t\t$added existing tweets added (stream overlap)";
+		push @r, "\t\tFrom: $earliest";
+		push @r, "\t\tTo:   $latest";
+		push @r, "\t\tCompleted with status: $end";
+
+	}
+
+	my $end = $l->{end_state} ? $l->{end_state} : 'No Known Errors';
+	push @r, "Complete with status: " . $l->{end_state};
+
+	return join("\n",@r);
 }
 
 sub order_queue
@@ -166,21 +238,16 @@ sub create_queue_item
 	my ($repo, $ds, $tweetstream, $queue_items) = @_;
 
 	my $search_string = $tweetstream->get_value('search_string');
-	my $highest_id = $tweetstream->highest_twitterid;
-	$highest_id = 0 unless $highest_id;
 
 	if ($queue_items->{$search_string})
 	{
 		push @{$queue_items->{$search_string}->{tweetstreamids}}, $tweetstream->id;
-		if ($highest_id < $queue_items->{$search_string}->{since_twitterid})
-		{
-			$queue_items->{$search_string}->{since_twitterid} = $highest_id;
-			$queue_items->{$search_string}->{orderval} = $highest_id;
-		}
+		$queue_items->{$search_string}->{id} = join(',',sort(@{$queue_items->{$search_string}->{tweetstreamids}}));
 	}
 	else
 	{
 		$queue_items->{$search_string} = {
+			id => $tweetstream->id, #id for logging
 			search_params => {
 				q => $search_string,
 				rpp => 100,
@@ -189,8 +256,7 @@ sub create_queue_item
 			},
 			tweetstreamids => [ $tweetstream->id ], #for when two streams have identical search strings
 			retries => 5, #if there's a failure, we'll try again.
-			since_twitterid => $highest_id,
-			orderval => $highest_id,
+			orderval => 0,
 		};
 	}
 }

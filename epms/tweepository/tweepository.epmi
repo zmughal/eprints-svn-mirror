@@ -15,9 +15,9 @@
         <file>
           <filename>epm/tweepository/cfg/cfg.d/z_tweepository_libs.pl</filename>
           <mime_type>text/plain</mime_type>
-          <hash>6f825805a4c7ec487fbfc9283f229885</hash>
+          <hash>5bf2938f4b8b95dc427f9bc0faebc88c</hash>
           <hash_type>MD5</hash_type>
-          <filesize>41568</filesize>
+          <filesize>41120</filesize>
         </file>
         <file>
           <filename>epm/tweepository/cfg/citations/tweet/default.xml</filename>
@@ -64,23 +64,23 @@
         <file>
           <filename>plugins/EPrints/Plugin/Event/EnrichTweets.pm</filename>
           <mime_type>application/x-not-regular-file</mime_type>
-          <hash>e1e6e87c18a6b18166c5b2f92b440c17</hash>
+          <hash>9d94371f72dd98ec388b666c66f781f2</hash>
           <hash_type>MD5</hash_type>
-          <filesize>1317</filesize>
+          <filesize>2460</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Event/LockingEvent.pm</filename>
           <mime_type>application/x-not-regular-file</mime_type>
-          <hash>f6a621b573e10f64eac7f694c38163b8</hash>
+          <hash>358a0cbe407d0573691a2594e0e80942</hash>
           <hash_type>MD5</hash_type>
-          <filesize>888</filesize>
+          <filesize>1604</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Event/UpdateTweetStreams.pm</filename>
           <mime_type>application/x-not-regular-file</mime_type>
-          <hash>cf1ab0068784838ac66264ee205ca388</hash>
+          <hash>fbde1244cfba3fb6cd59f68b4fa1c76e</hash>
           <hash_type>MD5</hash_type>
-          <filesize>5860</filesize>
+          <filesize>8847</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Event/enrich_tweets.pl</filename>
@@ -151,7 +151,7 @@
       <content>coverimage</content>
     </document>
   </documents>
-  <version>0.2.2</version>
+  <version>0.2.3</version>
   <controller>EPMC::tweepository</controller>
   <creators>
     <item>
