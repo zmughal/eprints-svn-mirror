@@ -57,7 +57,7 @@ pushd %{_eppackage}
 pushd perl_lib
 # We ought to use the system libraries
 mv URI/OpenURL.pm OpenURL.pm
-rm -rf URI.pm URI Unicode Proc MIME/Lite.pm XML/SAX/Base.pm
+rm -rf URI.pm URI Unicode Proc MIME/Lite.pm XML/SAX/Base.pm Apache/DBI.pm
 mkdir URI
 mv OpenURL.pm URI/
 popd
