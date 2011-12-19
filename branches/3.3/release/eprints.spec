@@ -26,6 +26,7 @@ Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
 Requires: perl(Time::HiRes) perl(CGI) perl(Digest::MD5)
 Requires: perl(XML::LibXML) >= 1.63 perl(XML::LibXSLT)
 Requires: perl(XML::SAX) perl(Digest::SHA) perl(IO::Socket::SSL)
+Requires: perl(MIME::Lite) perl(Apache::DBI)
 Requires: tetex-latex wget gzip tar ImageMagick unzip elinks
 Requires: poppler-utils
 Requires: chkconfig
