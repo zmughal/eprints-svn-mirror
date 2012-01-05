@@ -201,7 +201,10 @@ my $dbh = DBI->connect("dbi:mysql:$dsn;mysql_read_default_group=mysqlhotcopy",
     AutoCommit => 1,
 });
 
-my $server_version = $dbh->{mysql_serverversion};
+my $server_version = $dbh->selectrow_arrayref(
+		"SHOW VARIABLES LIKE 'version'"
+	)->[1];
+$server_version = sprintf("%d%03d%03d", split(/\./, $server_version));
 
 # --- check that checkpoint table exists if specified ---
 if ( $opt{checkpoint} ) {
@@ -463,7 +466,7 @@ if ( $opt{checkpoint} || $opt{record_log_pos} ) {
 my $hc_started = time;	# count from time lock is granted
 
 if ( $opt{dryrun} ) {
-    if ( $server_version < 50500 ) {
+    if ( $server_version < 5005000 ) {
         print "LOCK TABLES $hc_locks\n";
         print "FLUSH TABLES /*!32323 $hc_tables */\n";
     }
@@ -477,7 +480,7 @@ if ( $opt{dryrun} ) {
 }
 else {
     my $start = time;
-    if ( $server_version < 50500 ) {
+    if ( $server_version < 5005000 ) {
         $dbh->do("LOCK TABLES $hc_locks");
         printf "Locked $num_tables tables in %d seconds.\n", time-$start unless $opt{quiet};
         $hc_started = time;	# count from time lock is granted
