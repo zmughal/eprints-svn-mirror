@@ -75,8 +75,6 @@ Usage: $0 db_name[./table_regex/] [new_db_name | directory]
   -h, --host=#         hostname for local server when connecting over TCP/IP
   -P, --port=#         port to use when connecting to local server with TCP/IP
   -S, --socket=#       socket to use when connecting to local server
-      --old_server     connect to old MySQL-server (before v5.5) which
-                       doesn't have FLUSH TABLES WITH READ LOCK fully implemented.
 
   --allowold           don\'t abort if target dir already exists (rename it _old)
   --addtodest          don\'t rename target dir if it exists, just add files to it
@@ -124,7 +122,6 @@ GetOptions( \%opt,
     "password|p=s",
     "port|P=s",
     "socket|S=s",
-    "old_server",
     "allowold!",
     "keepold!",
     "addtodest!",
@@ -203,6 +200,8 @@ my $dbh = DBI->connect("dbi:mysql:$dsn;mysql_read_default_group=mysqlhotcopy",
     PrintError => 0,
     AutoCommit => 1,
 });
+
+my $server_version = $dbh->{mysql_serverversion};
 
 # --- check that checkpoint table exists if specified ---
 if ( $opt{checkpoint} ) {
@@ -464,7 +463,7 @@ if ( $opt{checkpoint} || $opt{record_log_pos} ) {
 my $hc_started = time;	# count from time lock is granted
 
 if ( $opt{dryrun} ) {
-    if ( $opt{old_server} ) {
+    if ( $server_version < 50500 ) {
         print "LOCK TABLES $hc_locks\n";
         print "FLUSH TABLES /*!32323 $hc_tables */\n";
     }
@@ -478,7 +477,7 @@ if ( $opt{dryrun} ) {
 }
 else {
     my $start = time;
-    if ( $opt{old_server} ) {
+    if ( $server_version < 50500 ) {
         $dbh->do("LOCK TABLES $hc_locks");
         printf "Locked $num_tables tables in %d seconds.\n", time-$start unless $opt{quiet};
         $hc_started = time;	# count from time lock is granted
@@ -994,10 +993,6 @@ when using the --host option.
 =item -S, --socket=#         
 
 UNIX domain socket to use when connecting to local server.
-
-=item --old_server
-
-Use old server (pre v5.5) commands.
 
 =item  --noindices          
 
