@@ -50,6 +50,8 @@ mysqlhotcopy - fast on-line hot-backup utility for local MySQL databases and tab
   mysqlhotcopy --method='scp -Bq -i /usr/home/foo/.ssh/identity' --user=root --password=secretpassword \
          db_1./^nice_table/ user@some.system.dom:~/path/to/new_directory
 
+  mysqlhotcopy --method='rsync -ptog -e "ssh -l ssh-user"' db_name host:~/
+
 WARNING: THIS PROGRAM IS STILL IN BETA. Comments/patches welcome.
 
 =cut
@@ -80,7 +82,7 @@ Usage: $0 db_name[./table_regex/] [new_db_name | directory]
   --addtodest          don\'t rename target dir if it exists, just add files to it
   --keepold            don\'t delete previous (now renamed) target when done
   --noindices          don\'t include full index files in copy
-  --method=#           method for copy (only "cp" currently supported)
+  --method=#           method for copy
 
   -q, --quiet          be silent except for errors
   --debug              enable debug
@@ -374,7 +376,7 @@ if (defined($tgt_name) && length $tgt_name ) {
 	$rdb->{target} = "$tgt_dirname";
       }
     }
-    elsif ($opt{method} =~ /^scp\b/) 
+    elsif ($opt{method} !~ /^cp\b/)
     {   # we have to trust scp to hit the target
 	foreach my $rdb ( @db_desc ) {
 	    $rdb->{target} = "$tgt_dirname/$rdb->{src}";
@@ -429,7 +431,7 @@ foreach my $rdb ( @db_desc ) {
     if ( $opt{dryrun} ) {
         print "mkdir $tgt_dirpath, 0750\n";
     }
-    elsif ($opt{method} =~ /^scp\b/) {
+    elsif ($opt{method} !~ /^cp\b/) {
         ## assume it's there?
         ## ...
     }
@@ -608,23 +610,22 @@ sub copy_files {
     my @cmd;
     print "Copying ".@$files." files...\n" unless $opt{quiet};
 
-    if ($method =~ /^s?cp\b/)  # cp or scp with optional flags
+    my $cp = $method;
+
+    if ($method =~ /^cp\b/)
     {
-	my $cp = $method;
 	# add option to preserve mod time etc of copied files
 	# not critical, but nice to have
 	$cp.= " -p" if $^O =~ m/^(solaris|linux|freebsd|darwin)$/;
-
-	# add recursive option for scp
-	$cp.= " -r" if $^O =~ /m^(solaris|linux|freebsd|darwin)$/ && $method =~ /^scp\b/;
-
-	# perform the actual copy
-	safe_system( $cp, (map { "'$_'" } @$files), "'$target'" );
     }
-    else
+    elsif ($method =~ /^scp\b/)
     {
-	die "Can't use unsupported method '$method'\n";
+	# add recursive option for scp
+	$cp.= " -p -r" if $^O =~ /m^(solaris|linux|freebsd|darwin)$/;
     }
+
+    # perform the actual copy
+    safe_system( $cp, (map { "'$_'" } @$files), "'$target'" );
 }
 
 #
@@ -635,47 +636,36 @@ sub copy_index
 {
   my ($method, $files, $source, $target) = @_;
   
+  my $dir = File::Temp::tempdir('mysqlhotcopy-XXXXXX',
+        DIR => $opt_tmpdir,
+        CLEANUP => 1
+    );
+
   print "Copying indices for ".@$files." files...\n" unless $opt{quiet};  
   foreach my $file (@$files)
   {
+    next if $opt{dryrun};
+
     my $from="$source/$file";
-    my $to="$target/$file";
-    my $buff;
-    open(INPUT, "<$from") || die "Can't open file $from: $!\n";
-    binmode(INPUT, ":raw");
-    my $length=read INPUT, $buff, 2048;
-    die "Can't read index header from $from\n" if ($length < 1024);
-    close INPUT;
-    
-    if ( $opt{dryrun} )
-    {
-      print "$opt{method}-header $from $to\n";
-    }
-    elsif ($opt{method} eq 'cp')
-    {
-      open(OUTPUT,">$to")   || die "Can\'t create file $to: $!\n";
-      if (syswrite(OUTPUT,$buff) != length($buff))
-      {
-	die "Error when writing data to $to: $!\n";
-      }
-      close OUTPUT	   || die "Error on close of $to: $!\n";
-    }
-    elsif ($opt{method} =~ /^scp\b/)
-    {
-      my ($fh, $tmp)= tempfile('mysqlhotcopy-XXXXXX', DIR => $opt_tmpdir) or
-	die "Can\'t create/open file in $opt_tmpdir\n";
-      if (syswrite($fh,$buff) != length($buff))
-      {
-	die "Error when writing data to $tmp: $!\n";
-      }
-      close $fh || die "Error on close of $tmp: $!\n";
-      safe_system("$opt{method} $tmp $to");
-      unlink $tmp;
-    }
-    else
-    {
-      die "Can't use unsupported method '$opt{method}'\n";
-    }
+    my $to="$dir/$file";
+    open(my $fh, "<", $from) or die "Can't open file $from: $!\n";
+    my @stat = stat($fh);
+    sysread($fh, my $buff, 2048);
+    close($fh);
+    open($fh, ">", $to) or die "Can't open file $to: $!\n";
+    syswrite($fh, $buff);
+    close($fh);
+    chmod($stat[2], $to);
+    utime @stat[8,9], $to;
+  }
+  my @files = map { "$dir/$_" } @$files;
+  if ($opt{dryrun})
+  {
+      print "$opt{method}-header @files $target\n";
+  }
+  else
+  {
+      safe_system($opt{method}, @files, $target);
   }
 }
 
