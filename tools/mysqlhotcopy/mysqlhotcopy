@@ -206,6 +206,12 @@ my $server_version = $dbh->selectrow_arrayref(
 	)->[1];
 $server_version = sprintf("%d%03d%03d", split(/\./, $server_version));
 
+# --- get maximum open files config ---
+my $max_locks = $dbh->selectrow_arrayref(
+		"SHOW VARIABLES LIKE 'open_files_limit'"
+	)->[1];
+$max_locks /= 2; # two open files per lock
+
 # --- check that checkpoint table exists if specified ---
 if ( $opt{checkpoint} ) {
     $opt{checkpoint} = quote_names( $opt{checkpoint} );
@@ -467,8 +473,13 @@ my $hc_started = time;	# count from time lock is granted
 
 if ( $opt{dryrun} ) {
     if ( $server_version < 5005000 ) {
-        print "LOCK TABLES $hc_locks\n";
-        print "FLUSH TABLES /*!32323 $hc_tables */\n";
+		if( $num_tables > $max_locks ) {
+			$dbh->do("FLUSH TABLES WITH READ LOCK");
+		}
+		else {
+			print "LOCK TABLES $hc_locks\n";
+			print "FLUSH TABLES /*!32323 $hc_tables */\n";
+		}
     }
     else {
         print "FLUSH TABLES $hc_tables WITH READ LOCK\n";
@@ -481,23 +492,29 @@ if ( $opt{dryrun} ) {
 else {
     my $start = time;
     if ( $server_version < 5005000 ) {
-        $dbh->do("LOCK TABLES $hc_locks");
-        printf "Locked $num_tables tables in %d seconds.\n", time-$start unless $opt{quiet};
-        $hc_started = time;	# count from time lock is granted
+		if( $num_tables > $max_locks ) {
+			warn "Insufficient open_files_limit to lock tables, using global lock.\n" unless $opt{quiet};
+			$dbh->do("FLUSH TABLES WITH READ LOCK");
+			printf "Flushed and locked all tables in all databases in %d seconds.\n", time-$start unless $opt{quiet};
+			$hc_started = time;	# count from time lock is granted
+			$start = time;
+		}
+		else {
+			$dbh->do("LOCK TABLES $hc_locks");
+			printf "Locked $num_tables tables in %d seconds.\n", time-$start unless $opt{quiet};
+			$hc_started = time;	# count from time lock is granted
 
-        # flush tables to make on-disk copy up to date
-        $start = time;
-        $dbh->do("FLUSH TABLES /*!32323 $hc_tables */");
+			# flush tables to make on-disk copy up to date
+			$start = time;
+			$dbh->do("FLUSH TABLES /*!32323 $hc_tables */");
+			printf "Flushed tables ($hc_tables) in %d seconds.\n", time-$start unless $opt{quiet};
+		}
     }
     else {
         $dbh->do("FLUSH TABLES $hc_tables WITH READ LOCK");
-        printf "Locked $num_tables tables in %d seconds.\n", time-$start unless $opt{quiet};
+        printf "Flushed and locked $num_tables tables in %d seconds.\n", time-$start unless $opt{quiet};
         $hc_started = time;	# count from time lock is granted
-
-        # flush tables to make on-disk copy up to date
-        $start = time;
     }
-    printf "Flushed tables ($hc_tables) in %d seconds.\n", time-$start unless $opt{quiet};
     $dbh->do( "FLUSH LOGS" ) if ( $opt{flushlog} );
     $dbh->do( "RESET MASTER" ) if ( $opt{resetmaster} );
     $dbh->do( "RESET SLAVE" ) if ( $opt{resetslave} );
