@@ -381,13 +381,13 @@ if (defined($tgt_name) && length $tgt_name ) {
     if ($to_other_database)
     {
       foreach my $rdb ( @db_desc ) {
-	$rdb->{target} = "$tgt_dirname";
+	$rdb->{target} = "$tgt_dirname/";
       }
     }
     elsif ($opt{method} !~ /^cp\b/)
     {   # we have to trust scp to hit the target
 	foreach my $rdb ( @db_desc ) {
-	    $rdb->{target} = "$tgt_dirname/$rdb->{src}";
+	    $rdb->{target} = "$tgt_dirname/$rdb->{src}/";
 	}
     }
     else
@@ -395,7 +395,7 @@ if (defined($tgt_name) && length $tgt_name ) {
       die "Last argument ($tgt_dirname) is not a directory\n"
 	if (!(-e $tgt_dirname && -d $tgt_dirname ) );
       foreach my $rdb ( @db_desc ) {
-	$rdb->{target} = "$tgt_dirname/$rdb->{src}";
+	$rdb->{target} = "$tgt_dirname/$rdb->{src}/";
       }
     }
   }
@@ -403,7 +403,7 @@ else {
   die "Error: expected \$opt{suffix} to exist" unless ( exists $opt{suffix} );
 
   foreach my $rdb ( @db_desc ) {
-    $rdb->{target} = "$datadir/$rdb->{src}$opt{suffix}";
+    $rdb->{target} = "$datadir/$rdb->{src}$opt{suffix}/";
   }
 }
 
@@ -537,7 +537,7 @@ foreach my $rdb ( @db_desc )
     if ( $@ );
   
   @files = @{$rdb->{index}};
-  if ($rdb->{index})
+  if (@files)
   {
     copy_index($opt{method}, \@files,
 	       "$datadir/$rdb->{src}", $rdb->{target} );
