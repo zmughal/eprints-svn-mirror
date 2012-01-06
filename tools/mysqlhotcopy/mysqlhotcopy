@@ -676,6 +676,7 @@ sub copy_index
     close($fh);
     chmod($stat[2], $to);
     utime @stat[8,9], $to;
+	chown @stat[4,5], $to;
   }
   my @files = map { "$dir/$_" } @$files;
   if ($opt{dryrun})
