@@ -80,7 +80,7 @@ Usage: $0 db_name[./table_regex/] [new_db_name | directory]
   --addtodest          don\'t rename target dir if it exists, just add files to it
   --keepold            don\'t delete previous (now renamed) target when done
   --noindices          don\'t include full index files in copy
-  --method=#           method for copy
+  --method=#           method for copy (cp, scp or rsync)
 
   -q, --quiet          be silent except for errors
   --debug              enable debug
@@ -183,6 +183,11 @@ $opt_tmpdir= $opt{tmpdir} if $opt{tmpdir};
 $0 = $1 if $0 =~ m:/([^/]+)$:;
 $opt{quiet} = 0 if $opt{debug};
 $opt{allowold} = 1 if $opt{keepold};
+
+# --- check allowed methods ---
+if( $opt{method} !~ /^cp\b|scp\b|rsync\b/ ) {
+	die "Unknown or unsupported method '$opt{method}'\n";
+}
 
 # --- connect to the database ---
 my $dsn;
