@@ -1,3 +1,1200 @@
+eprints (3.3.7) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.7
+  * Fixed empty pages appearing at the end of OAI partial lists
+  * Use '..' for date ranges
+  * [7223] Cause import paste box to be centered
+  * [7221] Fixed pasted imports not setting UTF-8
+  * Stay on the same tab on the import screen
+  * Allow the user to specify the imported file encoding (default latin-1)
+  * [7219] Check env HTTP proxy settings when accessing the bazaar
+  * [7213] #4020 Fixed View screen calling non-existant XHTML object
+  * Fixed undef warning on undefined indexer parameters
+  * Fixed Index causing failed events if an index was called on an undefined value (shouldn't happen though!)
+  * Merged [7199:7202]
+  * Removed redundant/deprecated reload_metafields
+  * Added missing files from trunk merge
+  * Fixed a bunch of undef warnings in the unit tests
+  * Added missing files from trunk merge
+  * [7199] Removed redundant/deprecated reload_metafields
+  * Added EP_TRIGGER_REMOVED dataset trigger (c.f. EP_TRIGGER_CREATED)
+  * Fixed bugs in BibTeX import, updated BibTeX::Parser
+  * Split http/https cookies to improve https security
+  * sendmail email method now sets utf8
+  * Fixed disabled plugins not being aliasable
+  * Fixed some issues with generate_views placing files in the wrong places
+  * import_rand_data can now use SciGen to generate believable-looking English entries
+  * Missing use() before inheritance
+  * Merged all trunk changes
+  * Subjects editing has been re-worked to use a workflow file
+  * document.mime_type added
+  * [7172] UTF-8 decode data from indexcodes text files
+  * [7170] Show executions in noise > 1 mode
+  * [7170] Fixed ffmpeg not defaulting to 5-second offset for cells when no sample_start is specified
+  * [7168] Fixed typos and broken JS for batch editing (never tested it in 3.3?!)
+  * -----------------------------------------------------------------------
+  * [7166] Default to matching all records in advanced search
+  * Merged [7161,7154,7155,7156,7157,7151,7144,7145,7142,7140]
+  * Can now upload any file as a "bibliography" and if there is an import plugin that supports its mime-type (e.g. text/x-bibtex) then it can be exported via oai_bibl
+  * Fixed name-fields getting NULL parts (again)
+  * Refactored XHTML::tree() to produce the parent <div> and javascript fragment
+  * XHTML trees are now only <dl>s to make the implementation simpler
+  * Subjects input component now uses XHTML tree and can take a "citation" attribute that will cause the given citation to be used instead of render_description()
+  * Pass a "render_value" argument to XHTML tree to control the rendering of the <dt> elements (<dd> elements are now just containers for nested <dl>s)
+  * Spot any drive letter for IE uploads (sigh)
+  * render_icon_link() now links to the document using a relative path, so you don't go to http: from https: locations when editing an item.
+  * Added DataObj::path() method that returns the URL path to the object.
+  * Added Document::file_path() method that returns the URL path to a file in a document.
+  * Fixed missing $session argument to has_phrase()
+  * Block Microsoft Office OPTIONS challenges on documents
+  * Removed Subject, Subject::Check
+  * Subject::Edit is now a sub-class of Workflow::Edit
+  * Subject::Edit and Subject avoid infinite loops on recursive structures (mostly)
+  * Fixed AJAX workflow components in Subjects and Workflow
+  * Should *show* errors with $quiet is off, not hide them when $quiet is off
+  * Improved and phrased error messages coming out of Screen::Import
+  * Fixed DataSet::citation() dying if no default citation available
+  * Files have no workflow available, fixing #4006
+  * Use "" to quote quotes in CSV output, fixing #4010
+  * Re-instated EPrints::System::join_path (back-compatibility)
+  * Allow XHTML::tabs() to be used offline, fixes an issue with the Kultur plugin
+  * Updated to current TeX::Encode version
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Fri, 09 Dec 2011 09:43:25 +0000
+
+eprints (3.3.6) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Merged [7135]
+  * 3.3.6
+  * 3.3.6 Gooseberry
+  * Removed empty bin directory
+  * Merged [7125:7126]
+  * Don't make Archive Title white (clobbers old-style templates)
+  * Don't die if aliases are undefined
+  * Build epindexer from Makefile
+  * -----------------------------------------------------------------------
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Wed, 21 Sep 2011 11:17:13 +0100
+
+eprints (3.3.5) unstable; urgency=low
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * typo: Subject::create calling User::create_from_data
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.5
+  * Multilang fields should default to INdex searching (when is multilang not going to be text?)
+  * In search, if the datasetid does not match an existing dataset and no searchid was given assume datasetid is actually a searchid for 'archive'
+  * Fixed cachemaps not getting reaped - '-10' is now a negative number when performing searches, not "upto and including 10". Use '..10'. Holy overloaded operator meanings Batman!
+  * Added UpdateDatabase Admin screen for updating the database post-configuration changes
+  * Admin::Reload now returns true if the action_reload_config succeeded
+  * Fixed OAI_Bibliography clobbering oai_dc
+  * Multilang uses the "languages" namedset
+  * The "languages" namedset is equivalent to the supported typenames in system.xml phrases
+  * Removed wacky '?' language (use UNSPECIFIED)
+  * Removed MetaField::most_local (belongs in Multilang)
+  * Fixed DC/OAI_DC for use with Multilang title/abstract
+  * NOTE: to order-by a multi-lang you must order-by on the Multilang field and not its sub-field(s), this was broken and is now unsupported - ordering by the sub-field will result in an order-by of the first value, not the current language, which is consistent with general multiple fields
+  * Fixed Set field options breaking in the GUI metafield editor
+  * Avoid an ARRAY REF options die for existing broken fields
+  * Fixed Available contents never showing on EPrints Bazaar when no packages are installed typo - fixes #4012
+  * Multilang fields should default to INdex searching (when is multilang not going to be text?)
+  * In search, if the datasetid does not match an existing dataset and no searchid was given assume datasetid is actually a searchid for 'archive'
+  * Fixed cachemaps not getting reaped - '-10' is now a negative number when performing searches, not "upto and including 10". Use '..10'. Holy overloaded operator meanings Batman!
+  * Fixed --version not showing the actual EPrints version (also added database schema version & fixed ./bin/imports --version name)
+  * Don't let old versions of enabled files clobber new versions in EPM
+  * Uploading an EPM will now upgrade (or downgrade) an installed EPM of the same name
+  * Allow "extra_fields" to be specified for the EPrint staff search
+  * -----------------------------------------------------------------------
+  * Added UpdateDatabase Admin screen for updating the database post-configuration changes
+  * Admin::Reload now returns true if the action_reload_config succeeded
+  * Fixed OAI_Bibliography clobbering oai_dc
+  * Multilang uses the "languages" namedset
+  * The "languages" namedset is equivalent to the supported typenames in system.xml phrases
+  * Removed wacky '?' language (use UNSPECIFIED)
+  * Removed MetaField::most_local (belongs in Multilang)
+  * Fixed DC/OAI_DC for use with Multilang title/abstract
+  * NOTE: to order-by a multi-lang you must order-by on the Multilang field and not its sub-field(s), this was broken and is now unsupported - ordering by the sub-field will result in an order-by of the first value, not the current language, which is consistent with general multiple fields
+  * Fixed Set field options breaking in the GUI metafield editor
+  * Avoid an ARRAY REF options die for existing broken fields
+  * Fixed Available contents never showing on EPrints Bazaar when no packages are installed typo - fixes #4012
+  * Multilang fields should default to INdex searching (when is multilang not going to be text?)
+  * In search, if the datasetid does not match an existing dataset and no searchid was given assume datasetid is actually a searchid for 'archive'
+  * Fixed cachemaps not getting reaped - '-10' is now a negative number when performing searches, not "upto and including 10". Use '..10'. Holy overloaded operator meanings Batman!
+  * -----------------------------------------------------------------------
+  * [7098] Added Repository::id() to get the repository's ID
+  * [7096] render_quiet now suppresses UNSPECIFIEDs for multiple values
+  * -----------------------------------------------------------------------
+  * [7094] Added OrgUnit (for project-funders) to CERIF XML export
+  * [7093] Respect 'render_quiet' in Compound sub-fields
+  * [7082] Added Plugin::Event to Wiki API
+  * -----------------------------------------------------------------------
+  * -----------------------------------------------------------------------
+  * Merged [7087-7091]
+  * Backwards compatibility for cgi/export_redirect (defaults to 'archive')
+  * Added missing lib/searchfield:help_subobject phrase
+  * Fixed missing 'Of' causing indexcodes to always be regenerated
+  * Added Repository::init_from_indexer to properly init the Repository object in the indexer MAINLOOP (currently database, language & check-config-change)
+  * Periodically write the Xapian changes, to avoid crazy memory footprints
+  * -----------------------------------------------------------------------
+  * [7084] Efficiency tweaks for re-indexing (esp. on upgrade). Fixed "Unpack" ignoring the 'type' target, re-use existing doc/file objects for indexcodes, avoid a secondary commit when converting to new document objects
+  * [7085] Fixed indexer loop not re-loading the database object
+  * -----------------------------------------------------------------------
+  * [7080] Thumbnail support for JPEG 2000, if the system 'convert' supports it
+  * -----------------------------------------------------------------------
+  * Merged [7061]
+  * Merged [7059], [7060], [7062], [7067]
+  * Merged [7073]
+  * Merged [7071]
+  * Merged [7063], unknown image for EPMs
+  * Merged [7068], fix for file imports
+  * Next version 3.3.5
+  * Merged [7034-7033]
+  * Updated to trunk release manager level
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Fri, 16 Sep 2011 11:04:30 +0100
+
+eprints (3.3.4) unstable; urgency=low
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * re-phrased 'add additional files' link
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.4
+  * Don't include the directory in PlainText output files (e.g. for elinks conversion)
+  * Don't attempt to decode doc conversions already in UTF-8
+  * Merged [7026]
+  * Fixes for indexing in xapian and an undef warning from MetaField::Id
+  * Merged [7023]
+  * Merged trunk changes
+  * Merged [7015]
+  * Merged [7011]
+  * Merged [7009]
+  * Added XML::SAX::Base (useful generic XML::SAX driver but with screwed-up CPAN dependencies)
+  * Merged [7004], antiword dependency
+  * 3.2.4 will be the next version
+  * Merged [6991], [6993], [6995:7001]
+  * Fixed date/time fields not working with multiples (introduced bug in previous messing around with date/time inheritance)
+  * Merged [6980], [6976]
+  * Merged [6974]
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Tue, 09 Aug 2011 13:39:51 +0100
+
+eprints (3.3.3) unstable; urgency=low
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * removed the search_format field, it's easy to add it in the local config if needed
+  * Fixes bugs with the Bibtex importer:
+  * doesn't parse correctly non-ASCII characters
+  * redecode ->{type}, un-necessary
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.3
+  * Merged trunk changes
+  * Merged some random whitespace changes?
+  * Merged [6959]
+  * Merged trunk changes in
+  * Merged [6939:6944]
+  * Merged [6913:6914], [6916:6936] from trunk
+  * Merged [6911] - fixes metadata_visibility issues
+  * Merged [6908:6909]
+  * Missing file from previous Workflow error handling
+  * s/opensearch/search/
+  * -----------------------------------------------------------------------
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Fri, 29 Jul 2011 16:00:49 +0100
+
+eprints (3.3.2) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.2
+  * 3.3 beta 2
+  * Show the user's history and not the current user's history in user profile page
+  * Merged [6901]
+  * Merged [6885:6887] and [6892:6893]
+  * Added capture_stderr/restore_stderr to System to capture STDERR to a file
+  * Screen::Import now redirects to import-specific screens if the Import defines a screen via Plugin::Import::screen()
+  * require_if_exists can now take module import parameters (via use() instead of require())
+  * Added custom import screens for DOI and ISIWoK (interactive search-and-import)
+  * Bumped CPAN's SOAP::ISIWoK::Lite requirement to 1.05 (which has the retrieve method in it)
+  * TODO: move ISIWoK to Bazaar package
+  * Allow suppression of stack traces in Import by using "show_stderr=0"
+  * Insert useful error messages instead of aborting on workflow configuration, so workflows are less susceptable to e.g. missing fields.
+  * Don't set $plugin->{problems} on validate() - unused anyway. For now $plugin->{problems} will mean problems with the component initialisation, which should halt all further use of the component/field.
+  * Allow Longtext to be used without a dataset
+  * -----------------------------------------------------------------------
+  * Fixed bug in User::View always redirecting to current user (fixes user search results)
+  * Allow 'email' to be used in registration form as a synonym for 'newemail'
+  * Allow 'password' to be used in registration form to support registration without email confirmation of password
+  * Or if n="" or startOffset=""
+  * abort() on attempt to IN() match a non-indexable dataset
+  * Merged [6860:6874] from trunk
+  * If object has no uri don't attempt to set id= on XML output
+  * Be smarter about serialising EPMs so we avoid using a local sub override
+  * removed unused epm_icon
+  * Removed redundant JSON code, use content-negotiated /id or the direct export links
+  * Allow .relation to be used on /id/document/XX, but probably want a better solution for locating thumbnails
+  * Throw an error if we can't write to the lib/epm directory
+  * Allow ScreenProcessor to take 'repository' argument
+  * Use plugin 'disable' parameter to determine whether to enable system-level plugins (so they can globally enable themselves if necessary e.g. for EPMCs)
+  * Allow EPMCs to show messages on the Installed screen
+  * Fixed EPM/EPMC in DataObj::EPM (didn't I already fix that?)
+  * Need to map over all search results for things like graphing (don't default to 20 limit)
+  * Fixed empty-search serialising creating a broken search string (|-|-| instead of |-||-|)
+  * Added --force option to cleanup_cachemaps to remove all cachemaps
+  * Throw an error if we can't write to the lib/epm directory
+  * Allow .relation to be used on /id/document/XX, but probably want a better solution for locating thumbnails
+  * Merged changes from trunk [6850], [6851], [6854], [6855]
+  * $repo->client() is no longer supported
+  * openid has been moved into an add-on package
+  * Reverted [6823]
+  * Updated counter to use new EPM structure
+  * Merged [6841], [6842]
+  * Fixed make_thumbnails not removing/updating old thumbnails
+  * Remove duplicate thumbnails of the same type on make_thumbnails
+  * Added missing logo-background images
+  * Fixed 82_screen unit_test for new screen_lists cache location
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Wed, 20 Jul 2011 11:31:47 +0100
+
+eprints (3.3.1) unstable; urgency=low
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * minor style changes on the document citation
+  * removed o(l|d)d references to EPrints::User
+  * added missing triggers: EP_TRIGGER_STATUS_CHANGE EP_TRIGGER_BEFORE_COMMIT
+  * added search_format to EPrint objects, in order to search formats categories, fixing #4000 and #3929 (seen on ECS EPrints even so the ticket's closed)
+  * merged r6732
+  * opens the subject file as utf8 to cope with foreign characters
+  * prevents IE from opening the progress bar in another window
+  * for once, there was no need for a specific hack for IE so hack removed, also fixes event listener failing on IE (scoping issues)
+  * a  is not a {}, fixes bug whereas new Element() takes a {} as param not a /Hash
+  * fixes bug in Firefox whereas all object methods are copied as attributes
+  * replaces Element.attributes.toHash() with Element.attributesHash() because IE7- returns an Array while the other browsers return a NodeMap
+  * merged r6695
+  * merged r6693
+  * german
+  * and reverts commented-out code - oops
+  * fixes menu not working on ie7
+  * makes a <td> slightly wider, to remove empty space
+  * show filename on main document citation
+  * synonym overdose for removing-destroying-deleting - fixes #3843
+  * introducing EPJS_Menu() to create JS menus (\!), and adding the first one to the toolbar for the links to the Browse views
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.1
+  * Version 3.3.1
+  * Removed duplicated EPM code
+  * -----------------------------------------------------------------------
+  * Replaced with trunk/
+  * Replacing with trunk/
+  * Merged all changes from trunk
+  * Merged [6718]
+  * Missing files from [6702]
+  * Merged [6697], [6698]
+  * Fixed /cgi/export generating weird 500 internal server errors (but still outputting the data)
+  * Most plugins don't support output_dataobj( fh => ... )
+  * Merged [6684], [6689], [6691], [6692], [6699], [6700]
+  * Tabs now use <ul><li> and re-styled to use border-radius
+  * Removed deprecated usages of Session::render_tabs()
+  * Fixed hard-coded 'Browse' in template
+  * Reduced disappear-time to .1 seconds (feels more responsive)
+  * Merged site title and logo into one image with alt=
+  * Updated sitelogo to be PNG and added white-on-transparent EPrints logo
+  * Visual tweaks to the banner to make it more attractive (?)
+  * Improved button CSS so they :active when clicked
+  * Added colors.css to contain CSS color definitions, to separate layout CSS from color definitions
+  * Merged and removed menu.css into normal menu CSS controls
+  * Need text-left with <div class='ep_block'><ul>
+  * Fixed Workflow::View not AJAXing slow tabs
+  * Made the top menu bar a bit more defined, fixed search button roundness
+  * Fixed movie preview links going to is*Of instead of has*
+  * "System-level EPMs using EPrints XML"
+  * Made DataObj::EPM install/uninstall/enable/disable
+  * Added CLI tool to manage EPMs via DataObj::EPM
+  * TODO: rebuild (re-build an EPM from an EPM package)
+  * Removed unused (?) File::Basename
+  * Allow a Repository object to be created without a repository by omitting the repositoryid argument from new() i.e. only using system-settings. This is useful for manipulating the system-level data without having to have an active repository for phrases, datasets etc.
+  * Merged [6670] - fixed search export link
+  * Merged [6668]
+  * Merged [6666]
+  * Merged [6662], [6663], [6664]
+  * Use internal redirects for custom 404 handlers if its local
+  * Added lib/plugins directory for system-level extension-based plugins - default to disabled
+  * Added "alias" parameter to plugins that allows a plugin to specify aliases
+  * Added wrapper for Public::EPrintSearch
+  * -----------------------------------------------------------------------
+  * Disabled OpenID login/register
+  * Fixed undef warning in XHTML
+  * ::VERSION = 3.3.1
+  * Merged [6654]
+  * Merged [6655]
+  * Merged [6652]
+  * Merged [6650]
+  * Merged [6648]
+  * Fixed typo (and tidied up code) in 'developer mode'
+  * Merged [6643], [6642]
+  * Small tool for generating an atom multipart POST
+  * Added support for Content-Transfer-Encoding to MIME::Multipart::Parser
+  * Fixed XSLT importers
+  * Fixed Apache::CRUD not returning a dataobj from epdata_to_dataobj
+  * Merged [6640], [6639], [6638]
+  * Adjusted some MIME types - JSON is application/json
+  * Fixed field-coverage unit-test errors
+  * Citation::XSL will now generate an error fragment if an error occurs during citation creation
+  * ----------------------------------------------------------------------- _M   . M    perl_lib/EPrints/Repository.pm M    perl_lib/EPrints/Plugin/Export/JSON.pm M    perl_lib/EPrints/Plugin/Export/Atom.pm M    perl_lib/EPrints/Plugin/Export/XML.pm M    perl_lib/EPrints/Citation/XSL.pm M    bin/epadmin
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Tue, 05 Jul 2011 09:55:16 +0100
+
+eprints (3.3.0) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.3.0 [beta release]
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Tue, 07 Jun 2011 09:21:19 +0100
+
+eprints (3.2.9) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.9
+  * Fixed indexer not indexing non-latin1 - database reconnect + decode indexcodes file
+  * Merged [7073], fix for infinite loop in TeX::Encode
+  * Merged [6827]
+  * Fixed trim_whitespace breaking Repository::make_javascript(), fixing #4003
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Tue, 18 Oct 2011 12:27:05 +0100
+
+eprints (3.2.8) unstable; urgency=low
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * merged r6687
+  * merged r6579
+  * merged r6409
+  * merged r6382
+  * merged r6379
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.8
+  * Merged [6670]
+  * Fixed search export being joined with 'n'
+  * Use internal redirects for custom 404 handlers if its local
+  * Merged [6627]
+  * Check can_be_viewed so we actually show no_tools if Items is not viewable, otherwise fallback to User::View (profile)
+  * Allow POSTing to Advanced Search (required for passing big values in an Export)
+  * Don't encode numbers in JSON output
+  * Fixed link although it doesn't do anything on /cgi/latest_tool
+  * Fix to produce valid JSON output
+  * Google has broken the HTTPS certificate for api-*.recaptcha, now it's at www.google.com
+  * Merged [6524]
+  * Use SHOW INDEX for MySQL in Database::index_name() as its an easy fix for MySQL 4.0, fixing #3996
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Fri, 17 Jun 2011 15:33:09 +0100
+
+eprints (3.2.7) unstable; urgency=low
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * merged r6339
+  * merged tdb's r6334 to 3.2.z
+  * fixes r3980
+  * merged r6314
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.7
+  * Remove just the file extension in Update::Views, not the first ., fixing #3984
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Mon, 04 Apr 2011 10:50:32 +0100
+
+eprints (3.2.6) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * Merge of r6291 r6292 r6044
+  * Fixed bug in RDF+XML generation
+  * updated foaf name predicates to current recommendation #3947
+  * added rdfs:label to document as file objects #3949
+  * removed incorrect use of seeAlso #3975
+  * added epadmin option: rebuild_triples. Closes #3905
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * merged r6288
+  * merged r6238
+  * merged r6204
+  * merged r6199
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.6 Apple Tart [attempt #1]
+  * VERSION 3.2.6
+  * Fixed unit tests errors
+  * Stopped XML::DOM HTMLifying XML output
+  * Actually show warnings on the Details tab (already applied to trunk)
+  * Use eprint URI as the Atom entry id, removing a dependency on the date field
+  * Fixed BibTeX export replacing '[*]' with question marks, fixing #3977
+  * Merged [6251], [6252]
+  * Fixed divisions & subjects searching finding no matches, fixing #3970
+  * Added unit test for divisions & subjects searching based on test data
+  * Merged [6241]
+  * Fixed tokenizer mappings for German � and umlauts, reported by Volker Schallehn
+  * Merged [6221]
+  * Fixed items with problems not complying with 'skip_buffer' for editors, fixing #3968
+  * Added support for OpenSearch paging to Atom export
+  * Merged [6206], [6207]
+  * Top-level view menus now only count metadata_visibility=show eprints, fixing #3966
+  * Merged [6202]
+  * Fixed broken links in reject emails (EPrint::View::Owner is now just EPrint::View), fixing #3964, reported by Thomas Lauke
+  * Added class-level "register_plugin" method to fix regression in Export::XSLT
+  * Drop existing key when upgrading subject__rindex
+  * Fixed EPrints::SystemSettings getting overridden by lib/syscfg.d/
+  * Merged [6193]
+  * Upgrade subject__rindex to UTF8/utf8_bin, fixing #3963
+  * Only create eprint revisions if we are NOT under construction
+  * Call remove_indexcodes() from file_modified (avoids a revision)
+  * Don't output volatiles in revision files
+  * Avoid generating revisions when making thumbnails/indexcodes
+  * Merged [6187]
+  * Don't render more than 10 histories (avoid a server collapse for busy items)
+  * Merged [6181]
+  * Allow control_url() to be called on any DataObj
+  * Merged [6179]
+  * Allow view pages to contain '.', patch contributed by raffaele messuti
+  * No need to force the parent eprint to commit as fileinfo is always set
+  * Remove all thumbnail relations from a document including ones pointing to nothing
+  * Remove all thumbnail documents, even ones not defined as "volatile"
+  * Merged [6172]
+  * Can't do a case-insensitive search for "NULL", fixing #3961
+  * Merged [6174]
+  * Fixed '/' getting escaped by TeX::BibTeX, fixing #3960
+  * Merged [6169]
+  * Applied patch from #3958 (although AbstractSearch isn't used on trunk main search now)
+  * Merged [6161]
+  * fixed JSON exporter. now produces valid JSON. ticket #3920
+  * -----------------------------------------------------------------------
+  * Merged [6162]
+  * Removed EAP/SWAP (unused?)
+  * Merged [6158]
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Wed, 02 Mar 2011 14:53:28 +0000
+
+eprints (3.2.5) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * Merge of r6091
+  * Added code to escape tricksy characters in N3 and NT: > < \n \. #3943
+  * Added code to XML escape URIs in RDFXML. #3943
+  * Merge of r6068
+  * Fix to N3 export to stop "/" or "#" appearing in namespace-shortened URIs. Fixes #3941
+  * Merge of r6064
+  * N3 and N-Triples should not back-slash escape single quote
+  * Merge or r6041: Correcting typo s/foaf:type/rdf:type/ closes #3936
+  * Merge of r6038: Fixed broken link in RDF <link> headers on homepage
+  * Merge of r5892
+  * PubMedID now gets PubMedXML via the plugin method rather than a "use", making for clearer overriding. Closes #3896.
+  * Added month & day import from PubMedXML. Closes #3880.
+  * Merge of r5879
+  * added URL_REWRITE_TRIGGER to allow any URL to be intercepted. Closes #3884.
+  * Merge of r5877
+  * added viewnull_eprint_year style phrases to override "UNSPECIFIED" when rendering null values in views. Closes #3871
+
+  [Dave Tarrant <davetaz@ecs.soton.ac.uk>]
+  * Added missing (duplicated) phrases for metafield editing.
+  * Fixes #3890
+  * Merged [5872]
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * fixes http://trac.eprints.org/eprints/ticket/3665
+  * added sanity check
+  * fixing #3908
+  * hopefully this will fix http://trac.eprints.org/eprints/ticket/3873
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.5 Stollen
+  * Removed version dependency
+  * Merged [6146]
+  * Merged [6144]
+  * Merged [6142]
+  * 3.2.5
+  * Need to fix the file.hash field *before* updating datasets
+  * Merged [6131], [6132]
+  * Added a key to __rindex to improve index remove performance: KEY(ID,'field')
+  * Indexing efficiency tweaks:
+  * made history unindexed (all the fields were set text_index=>0 anyway)
+  * history.datasetid is an 'id' field
+  * Made last_mod and rev_number volatile - a history event on 'fileinfo|last_mod|rev_number' shouldn't exist
+  * Merged [6128]
+  * Fix file.hash sql type during upgrade
+  * Merged [6126], [6125], [6124]
+  * Fixes #3925
+  * Check the __rindex tables for the correct (case-sensitive) collation, fixing #3925
+  * Fixed Database not using get_sql_index() for constructing indexes
+  * Modify file dataset to use ids for id fields and reduced sql_index usage
+  * Merged [6121]
+  * Use 'ids' in Triple because Triple is not a text indexed dataset
+  * Merged [6080], [6081], fixing #3942
+  * Merged [6066]
+  * Merged [6045]
+  * Fixed issue with generate_views() where different datasets could override each other's cached citations
+  * Merged [6034]
+  * Merged [6030]
+  * Fixed an issue with OR queries that have empty logic (e.g. when searching with an ANY advanced search), fixing #3932
+  * Merged [6026]
+  * Return the var type from run_related_objects(), Mark Gregson <mark.gregson@qut.edu.au>, fixing #3931
+  * Reverted part of [5779] to avoid a problem with EQ match overriding IN match text searches, fixing #3927
+  * Merged [5978]
+  * Set mysql_auto_reconnect for MySQL DBD
+  * Merged [5975]
+  * Fixed /view/ matching all files in the root starting with 'view', fixing #3917
+  * Merged [5963]
+  * LogHandler is now called before other cleanups, fixing #3915
+  * Don't text index relation fields, see #3916
+  * Remove __rindex entries when removing objects, fixing #3916
+  * Rolled back weird branch commit of [5931]
+  * Modified EPrints::Const to not always export everything (mem usage)
+  * Experimental tweaks to MetaField and Config loading for speed/memory
+  * Stop SummaryPage trying to export everything
+  * Use the product of plugin & browse score in HTTP negotiation, fixing #3901
+  * Fixed bad merge from r5878 that refers to $view->{dataset}, fixing #3895, reported by "Alexander 'Leo' Bergolth" <leo@strike.wu.ac.at>
+  * Ensure all name parts are defined in form_value()
+  * Added --force option to bin/epadmin erase_eprints
+  * bin/epadmin create_db() will now repeatedly ask for root password instead of dying (for MySQL)
+  * Fixed paginated screens failing when fields are removed, fixing #3889
+  * Merged [5847]
+  * Repository-level cfg/cfg.d should override system-level cfg/cfg.d
+  * Merged [5850]
+  * Added $VERSION to EPrints.pm
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Mon, 17 Jan 2011 13:51:51 +0000
+
+eprints (3.2.4) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * Merge of r5820
+  * removed debug line
+  * Merge of r5437 r5775 r5776 r5777 r5778 r5779
+  * Added option to override the template for the cgi/users/home area. Closing #3859.
+  * Fixed bug where two elements had the same id in Box. Closes #3865
+  * Improved error message for missing citations. Closes #3863
+  * Check to remove a couple of not-defined warnings. Closes #3861.
+  * Allow "merge" to be passed from search config. Closes #3866
+  * Formalises the fact that text fields default to "IN" for web based searches, but "EQ" otherwise.
+  * Now passes on merge value via cgi if it's not the default for the field type.
+  * Fixed undef warning in MetaField::Date render (closes #5437)
+  * Merged r5669
+  * removed strange 15pt (big) style on one bit of history rendering.
+  * merge of r5664 & r5665
+  * Fix of trivial typo in a RDF title
+  * Moved CC namespace config to more logical file.
+  * Fixed errors in RDF License code which only show up if you configure a license
+  * Merge of r5613
+  * Correction to URIs inserted when the admin configures a data license.
+
+  [pm705@zepler.net]
+  * Fixes the problem of plugins from one local repo appearing in another. ticket #3867
+  * DOI now gives error message on mallford DOI. Merged from trunk r5731 ticket #3656
+  * DOI now does last page. Merged from trunk r5728 ticket #3827
+  * merged from r5724 ticket #3638
+
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
+  * regex typo
+  * oai should throw badVerb if no verb - also trying to keep the tickets number low for tim :)
+  * resolving #3874
+  * automatically logs in user after password activation, closing #3771
+  * Export::MODS now checks that the EPrint ds has the field 'creators_name', Reported by Balazs Kosaras
+  * fixing #3486 - views are now automatically generated
+  * fixing #3253
+  * added extra checks, closing #3855
+  * extra safety checks + fixing #3496
+  * fixed few typos
+  * closing #3502
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.4 Victoria Sponge
+  * Fixed epadmin:write_config_file()
+  * Merged [5836]
+  * Fixed legacy subjects being mis-ordered with new subjects, fixing #3887
+  * Fixed floating-point numbers not supporting decimals (wrong inheritance)
+  * Merged [5832]
+  * Fix generate_static using the wrong directory order, fixing #3886
+  * Minimal merge of 5826 to fix /id/document/XX not exporting the document file
+  * Merged [5813]
+  * Applied patch to query database tables without using DBI::get_tables() which triggers an obscure server crash, Alexander 'Leo' Bergolth <leo@strike.wu.ac.at>
+  * Merged [5808]
+  * Fixed broken ALTVIEW links on browse view pages, fixing #3870
+  * Merged [5805]
+  * Reverting [5606] (it was correct in the first place?)
+  * Made $data the first option to register_plugin() in PluginFactory
+  * s/provenance/providence/ in 3.2
+  * Merged [5695]
+  * Avoid a failure if a local file copy can't be obtained when rendering a history object
+  * Merged [5798]
+  * Fixed retrieval of history revisions when the EPrint has been deleted, fixing #3869
+  * Merged [5796]
+  * Fixed s/,/;/ typo, fixing #3529
+  * Merged [5794]
+  * Enable system fields to be overridden by configured fields by using a "replace_core" property, fixing #2976 (sort-of)
+  * Added POD for "provenance" and "replace_core" properties
+  * Merged [5792]
+  * Modified Int and Float to validate form values are numbers, fixing #3842
+  * Pagerange now inherits from Text
+  * Merged [5790]
+  * Fixed old-style URLs being redirected incorrectly, fixing #3868
+  * Merged [5773]
+  * Merged [5742], [5743]
+  * Usernames are now case-insensitive
+  * Repository::valid_login() and Database::valid_login() now return undef or the real username of the user
+  * Modified user_with_username and user_with_email to be case-insensitive
+  * Don't use() Plugin::Convert from DocPDF, fixing odd error encountered on ROAR's indexer
+  * Merged [5733], [5735]
+  * Ensure get_all_documents() always returns a stable sort order by sorting by id after placement
+  * DataObj::History-details will now contain a '|' separated list of fields that were changed on DataObj::EPrint::commit() (useful for debugging)
+  * Merged [5726]
+  * Re-made NameVirtualHost/Listen a warning but made it sterner
+  * Merged [5720]
+  * Merged [5718]
+  * Fixed DB reconnects on timeout error, Alexander 'Leo' Bergolth <leo@strike.wu.ac.at>
+  * Merged [5716]
+  * Re-added support for $c->{aliases} to Apache configuration, Balazs Kosaras <bkosaras@aed.org>
+  * Merged [5714]
+  * generate_apacheconf now backs-up files when writing new config files
+  * Added System::write_config_file() method for writing configuration files
+  * Apache start-up will now die if NameVirtualHost or Listen are missing, fixing #3852
+  * Merged [5687]
+  * MySQL has a bug causing long queries when getting distinct names with empty values with UTF-8 encoded columns (e.g. lineage and honourific parts)
+  * Merged [5684]
+  * Must return DECLINED when a Rewrite handler doesn't do anything, fixing #3850
+  * Merged [5680]
+  * Fixed batch editor breaking on creator's names
+  * Merged [5671]
+  * Re-added "Create Account" link (/cgi/register), fixing #3847
+  * Merged [5667]
+  * Re-worded HTTPS epadmin create question
+  * Merged [5655]
+  * Added check for year in DOI
+  * Merged [5642]
+  * Don't rely on URI::Escape::uri_escape_utf8 being available, fixing #3839
+  * Merged [5640]
+  * Fixed xmlns:xsi not appearing on <metadata> in OAI responses
+  * Merged [5634], [5637]
+  * Fixed multiple-value field buttons in Inputform::Documents, fixing #3829
+  * Fixed fragment links to documents, fields in workflow
+  * Added method EPrints::MetaField::has_internal_action()
+  * Added method InputForm::Component::get_state_fragment()
+  * Merged [5631], [5632]
+  * Count dataset sizes by doing a direct table COUNT(*)
+  * Count eprint status counts by doing a group-by
+  * Merged [5627]
+  * Force a revision of DataObj::EPrint whenever a child Document is added/changed/removed
+  * Added support for multiple-value parameters to current_url()
+  * Avoid passing file handles to URI from current_url()
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Fri, 03 Sep 2010 17:37:33 +0100
+
+eprints (3.2.3) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Battenburg
+  * Merged [5607]
+  * Fix stringify "Operation ne no method found" error with LibXML<=1.69
+  * Merged [5605]
+  * Oracle "ROWNUM" is 1-indexed, fixing a problem with search results
+  * Merged [5603]
+  * Don't show the Metadata tab for documents with no fields to edit, fixing #3395
+  * Merged [5601]
+  * If validated field is a sub-field link instead to the parent compound, fixing #3240
+  * Merged [5599]
+  * Added query parameters to target_url for use with get_login_url, fixing #3446
+  * Merged [5596]
+  * Removed calls to deprecated EPrints::Search::dispose()
+  * Nuking mergeinfo brokeness
+  * Merged [5592]
+  * $c->{frontpage} is now the full URL (which various phrases expect it to be), fixing #3824
+  * Merged [5586]
+  * Simpler fix for compound sub-fields getting repeated, by moving it to a sub-classable method
+  * Merged [5581]
+  * Modified list of robots to the COUNTER list (for COUNTER compliance)
+  * Fixed setAttribute error under IE when editing phrases
+  * Merged [5564]
+  * No longer writes index terms to the __index table, fixing #3816
+  * Merged [5550]
+  * Respond to pages containing '..' (but not /..)
+  * Merged [5552]
+  * Fixed links to browse views when using "menus" in the configuration, Laszlo Csirmaz <csirmaz@ceu.hu>
+  * Merged [5553]
+  * Fixed compound field sub-classes adding fields on clone()
+  * Merged [5557]
+  * Fixed _read_exec not returning the exit code correctly
+  * Merged [5543]
+  * When format is specified with latest_tool respect the n parameter, fixing #3573 and #2971
+  * Merged [5538], [5541]
+  * Fixed monthly alerts using the wrong date function
+  * Fixed latest_tool not setting the output mode on export (e.g. RSS)
+  * Merged [5524]
+  * Fixed creation of zero-length file objects failing
+  * Added extra debug when creating sub-dataobjs
+  * Merged [5515]
+  * Compound fields now warn if sub-fields don't have a sub_name set, fixing #2965
+  * Merged [5513]
+  * Fixed Update::Views mismatch on abbreviated and not filepaths, reported by Oliver Rehmann
+  * Merged [5509]
+  * Fixed URIs not being upgraded to utf-8 in Apache::Rewrite
+  * Fixed filenames not being upgraded to utf-8 in epadmin/upgrade_add_files
+  * epadmin/upgrade_add_files will now fill-in any missing document files
+  * Merged read_exec changes from [5460], [5503], [5505]
+  * Added read_exec() method to Platform
+  * Fixed a flush() STDOUT problem when calling Platform read_exec/read_perl_script by moving the STDOUT/STDERR re-open into a system() call
+  * Merged [5485]
+  * Fixed XPage not allowing any editing
+  * Removing junk mergeinfo properties
+  * Merged [5482]
+  * Fixed Views showing unadvertised export plugins, contributed by Mark Gregson <mark.gregson@qut.edu.au>
+  * Merged [5480]
+  * Fixed repository auto/ files not overriding system auto/ files, reported by Mark Gregson <mark.gregson@qut.edu.au>
+  * Merged [5478]
+  * Added "textonly" attribute to epc:phrase to get the text-content of a phrase, contributed by Alexander 'Leo' Bergolth <leo@strike.wu.ac.at>, fixing #3808
+  * Merged [5470]
+  * Simplified Subject::get_all() to retrieve records in-order from the database
+  * Merged [5471]
+  * Added property "parent" to MetaFields that is the Compound parent (if any)
+  * Fields that are sub-fields of a Multilang now generate an ordervalue from the most-local value given, resolving #3814, #3813, #3448
+  * Modified: svn:mergeinfo
+  * Merged [5464]
+  * Fixed link to "Edit page", fixing #3812
+  * svn:property mergeinfo?
+  * Partial merge of [5461]
+  * Replaced EPrints::TempDir with File::Temp->newdir() which seems to fix uploaded URL tempdirs remaining until server restart
+  * Merged [5458], [5459]
+  * Fixed storage layer filesize error when writing files larger than 2GB
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Thu, 01 Jul 2010 13:49:12 +0100
+
+eprints (3.2.2) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Bug fix release, especially #3807
+  * Fixed previous commit that didn't do insert BINARY on table charset upgrade
+  * Merged [5443]
+  * Upgrader will no longer barf when attempting to add missing defaultcfg files
+  * Merged [5444]
+  * Merged [5340]
+  * Modified Local storage plugins to escape unfriendly chars in filenames
+  * Simplified LocalCompress inheritance from Local
+  * Merged [5439], [5438]
+  * Actually upgrade tables to UTF-8 when upgrading MySQL charset, reported by Nicholas Sheppard <nicholas.sheppard@qut.edu.au>
+  * Fixed bug in Subobject that caused all objects to be retrieved if the parent id was unset
+  * Merged [5435]
+  * Removed extraneous whitespace, fixing #3545
+  * Merged [5433]
+  * If a sub-field of a Compound is required check that a value is given for every row, fixing #3098
+  * Revised icon set, fixing #3558
+  * Merged [5429]
+  * Merged [5427], [5426], [5425]
+  * Tweaked related_dataobjs() so it returns a list of objects in list context
+  * Added experimental method to Metafield::Time to return ISO datetime
+  * Updated remove_thumbnails to 3.2 API, fixing #3804
+  * Merged [5421]
+  * Merged [5419]
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Tue, 25 May 2010 08:42:44 +0100
+
+eprints (3.2.1) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * it is done!
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Merged [5414]
+  * cgi/schema now works from the current metafield configuration
+  * fixed Pagerange schema (TODO: regexp of /D(-D)?/)
+  * Merged [5412]
+  * Removed single use of HTML::Entities
+  * Merged [5410]
+  * Merged [5403]
+  * Moved perlmodules.pl utility into main SVN (it's only copied by installer anyway)
+  * Debian build tree, copy this into the eprints directory and run the dpkg-buildpackage
+  * Moved perlmodules.pl utility into main SVN (it's only copied by installer anyway)
+  * Fixed executable bits not being set on file copy
+  * ubdated for ubuntu 10.04
+  * internal_makepackage now uses x-platform tools
+  * Fixed missing move() import
+  * Don't attempt to run without arguments
+  * Fixed `pwd` call
+  * internal_makemsi gets supplied with 7 arguments but needs 6
+
+ -- Christopher Gutteridge <cjg@ecs.soton.ac.uk>  Mon, 17 May 2010 18:29:58 +0100
+
+eprints (3.2.1-rc-3) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * rc-3
+  * Merge of r5391
+  * Last minute tweak to change controvesial /id/x-foo/bar URIs into more acceptable /id/foo/ext-bar
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Merged [5389]
+  * source and target go the other way round in the copy command.... duh!
+
+ -- Christopher Gutteridge <cjg@ecs.soton.ac.uk>  Fri, 14 May 2010 12:58:27 +0100
+
+eprints (3.2.1-rc-2) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * Nearly ready...
+  * Merged r5386 | dct05r
+  * Updated Edit screen to fall back to default phrase rather than complain... lots
+  * Merge of r5384
+  * Added missing phrase eprint_fieldname_files
+  * Altered eprint lock time to be an hour
+  * EPrint only *obtains* a lock on the edit and deposit screens, all other screens just check it's not locked
+  * Depositing, Moving an EPrint or Cancelling or Saving from the edit screen now release the lock
+  * The view screen warns if you have left the EPrint locked.
+  * Indexer checks if the parent of a document is locked before applying events to it.
+  * Merge of r5381 and 5382
+  * s/DOC_REWRITE/DOC_URL_REWRITE/
+  * Merged r
+  * removed bless and replaced it with appropriate function call.
+  * Merge of r5377
+  * Turned off seeAlso triples which were making the records huge and not that helpful.
+  * "Secret" metadata fields no longer full-text index
+  * Fixed bug which caused MANY spurious triples to be generated in the database. Fixing #3792
+  * Fixed bug which meant triples were never deleted when the RDF was updated.
+  * epadmin erase_eprints also now erases the "triple" dataset. Fixing #3791
+  * merge of r5350
+  * Added a URI which dumps *all* eprint related triples
+  * Added a dynamic sitemap.xml for autodiscovey of RDF
+  * robots.txt is now dynamic and links to sitemap.xml
+  * RDF Export of triples now batches them into sets of 1000 to reduce the size of dumps.
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Merged [5375]
+  * Use sql_LIKE to get case-insensitive matches in title_duplicates lookup
+  * Merged [5372], [5373]
+  * s/get_related_objects/related_objects/ and s/get_stored_file/stored_file/
+  * s/object(s)/dataobj(s)/ in relation methods
+  * Added unit tests for DataObj::relations methods
+  * Merged [5369]
+  * More tweakings of the spec file to avoid a double-specified warning
+  * Merged [5361]
+  * Fixed cfg/ problems and uninstallation if error in RPM spec file
+  * Merged [5354], [5356]
+  * Check for PerlIO::gzip before attempting to use Local::Compress storage plugin
+  * Don't rely on eprint 23 and user 1 existing
+  * Disabled 10_xml tests - gets confused by attempting to change XML library
+  * Merged [5348]
+  * Sword XML Importer now uses EPrints XML handler, fixing a problem in importing files via SWORD
+
+ -- Christopher Gutteridge <cjg@ecs.soton.ac.uk>  Tue, 11 May 2010 16:11:06 +0100
+
+eprints (3.2.1-rc-1) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * Merge of r5313 r5314
+  * Added unary minus to EPScript
+  * Added STRING join() function to EPScript
+  * Added unit tests for EPScript
+  * More costmetic changes to the Details tab
+  * re-disabled 2 lines in scripaculous after the last upgrade (fixing jumpy autocomplete issue)
+  * Added wiki link to rdf config so we can add more help there later
+  * Merge of r5238 fixing earlier bug
+  * Added  system/lib/cfg.d/rdf_triples_formats.pl which didn't get added by merge!
+  * Merge of r5207 r5208 r5214 r5215 r5216 r5217 r5218 r5219
+  * Merge of r5181 and r5182
+  * merge of r5179
+  * merge of r5147
+  * Merged RDF exporters into cgi/export
+  * /id/23 on a non-archive eprint now redirects to the control page closing #3739 & 3734
+  * Fixed some RDF which had both "type" and "lang" (apparently not needed)
+  * Upgrade now forces queue of "create rdf" for all eprints. closing #3716
+  * Improvements to RDF export plugins to send data to the $fh ASAP, rather than build up a huge string.
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * 3.2.1 RC 1
+  * Merged [5343]
+  * Fixed missing about_to_render to View (used by NewVersion and UseAsTemplate)
+  * Merged [5330], [5331], [5332], [5333], [5334]
+  * Added "current" option to XHTML::tabs to choose which tab to show first
+  * Fixed Encode::decode not returning UTF-8 data
+  * Added LICENSE and updated BibTeX::Parser
+  * Fixed name parsing and make all elements return as raw bibtex
+  * Merged [5336]
+  * Added missing $args to /perl/ fixing #3785
+  * Merged [5319]
+  * Removed deprecated calls to Search->dispose
+  * Merged [5303], [5304], [5311]
+  * Moved document relation code to a new trigger EP_TRIGGER_DOC_REWRITE
+  * Merged [5305]
+  * Added EP_TRIGGER_OK and EP_TRIGGER_DONE
+  * To stop processing triggers return EP_TRIGGER_DONE
+  * Merged [5306]
+  * Strip time part if $date->set_value( "2010-5-3T12:34:20Z" )
+  * Merged [5300]
+  * Tidied up Details tab, fixing #3778
+  * Merged [5296]
+  * Fixed permissions (use edit:editor rather than staff/edit)
+  * Fixed epadmin upgrade not adding files for non-thumbnailed eprints, fixing #3780
+  * Merged [5293], [5294]
+  * If archives/[repoid]/cfg/apache.conf exists point to that, otherwise write the repository config to cfg/archives/[repoid].conf
+  * Added startup.pl to support upgraded apache confs
+  * Updated generate_apacheconf documentation
+  * SSL directives now chain off a single top-level file
+  * Merged [5290], [5291]
+  * Moved repository-specific configuration files to cfg/archives/XXX.conf
+  * If apachevhost.conf exists include it in the main repository conf file
+  * Replaced Perl Include with standard Apache glob (doesn't work on mod_perl < 2.4)
+  * Only copy default template to secure.xml if securehost is set, fixing #3774
+  * Merged [5288], [5287]
+  * Quick fix to stop the documents display getting broken by empty documents
+  * Fixed regression bug in login, fixing #3773
+  * Fixed high-bit UTF-8 filenames failing on upload
+  * Merged [5284], [5285]
+  * Removed trailing comma in JS, fixing browser error
+  * Tidied up Document::remove(), avoiding double-calls to retrieving dependent objects
+  * Removed hard-coded removal of directory trees on Document remove
+  * Storage::Local now removes directories when they're empty
+  * s/noise/loglevel/ on indexer (--loglevel controls indexer noisiness)
+  * Removed removed files from trunk merge
+  * Added missing files from trunk merge
+  * Removed removed files from trunk
+  * Merged all changes from trunk
+  * Merged all diffs between 3.2 branch and trunk, complete log of 3.2 differences follows
+  * s/getpwnam/getgrnam/
+  * Fixed double-declaration warning
+  * Documentation error
+  * Removed requirement for GlobalRequest directive in Apache conf (instead holds a pointer in the $EPrints::HANDLE object)
+  * Added some documentation on adding Listen and NameVirtualHost directives to generate_apacheconf
+  * Added some simple detection of apache conf problems (prints a warning to the apache error log)
+  * Modified EPrints->abort() so it can work when called from Rewrite
+  * Added init()/cleanup() concepts for EPrints, so it sets current_repository at start and cleans up after the request
+  * Repository() will now abort if you attempt to call it with cgi => 1
+  * Fixed importing empty ints (=NULL) from XML causing "not a number" DB errors
+  * Fixed eprint.dir not being set correctly when using --migrate in import
+  * Fixed missing "AS" glue for PostgreSQL in lookup/name [Ian Stuart <Ian.Stuart@ed.ac.uk>]
+  * Fixed non-ASCII characters breaking filename links, fixing #3742
+  * Merged RDF exporters into cgi/export
+  * /id/23 on a non-archive eprint now redirects to the control page closing #3739 & 3734
+  * Fixed some RDF which had both "type" and "lang" (apparently not needed)
+  * Upgrade now forces queue of "create rdf" for all eprints. closing #3716
+  * Improvements to RDF export plugins to send data to the $fh ASAP, rather than build up a huge string.
+  * Deduplicated dataset_name_ and datasetname_ phrases
+  * Added a DataSets screen that shows all viewable datasets
+  * Added a link to the Dataobjref input field to that dataset's listings
+  * Fixed double var declaration in Dataobjref
+  * Fixed phrase for event_queue help
+  * Added --respawn option to indexer to control respawn timeout
+  * Fixed log file rotation in indexer, fixing #3744
+  * Fixed errant EPrints::Repository->new() call in epadmin upgrade
+  * Experimental export of and summary-page generation for arbitrary datasets
+  * Added support to cgi/export for /XX/YY/ URLs where XX is the dataset id
+  * Moved render_export_links from EPrint.pm to DataObj.pm
+  * Added "Export" tab to custom datasets interface
+  * Modified plugin dataobj_export_url to link to /export/datasetid/id
+  * Made the eprint_status filters a user preference on the Items screen
+  * Fixed outside-of-set pagination behaviour when changing filters on Items screen
+  * Fixed path to batch edit 'remove' icon
+  * Updated prototype to 1.6.1 and scriptaculous to 1.8.3
+  * Fixed IE autocompletion
+  * Fixed BatchEdit under IE, Safari, Chrome
+  * Fixed Item filters breaking if more than one filter was clicked
+  * Added utility "tabs" method (simpler tabs generation)
+  * Added remove option to the Batch Edit tool aka how to destroy your repository in one easy step
+  * Added permission for administrators to access the batch edit tool
+  * Removed warning on allow(item) when item is undefined and the matching privilege requires an item
+  * Remove failed as well as inprogress tasks on --clear
+  * uri/internal_uri now return undef if the object identifier isn't set
+  * Added specific permission for "Manage Records"
+  * Reordered system level cfg.d's. /cfg/cfg.d is now empty, and is used to override /lib/syscfg.d/ which contains systemsettings style .pl files. /lib/cfg.d/ contains files to be loaded per repository, but over-ridable per repository.
+  * Moved rdf*.pl files to /lib/cfg.d/
+  * Fixed bug in API which meant $dataset("archive")->dataobj(23) could load a record from inbox or buffer, fixing #3749
+  * Fixed bug in /cgi/export which could export eprints not in 'archive'. Fixing #3746
+  * Plugin now callable with session OR repository option. Both now exist as params. Starting on #3678
+  * Templates now insert phrases at load time, allowing params to work, fixing #3688
+  * /cgi/counter now indicates indexer status. Closing #3745
+  * s/abstract/description for project title
+  * Added unit test and fix for eprint.user.name searches breaking due to multiple includes of the main dataset joining table (user)
+  * fixed s/summary/summary_page/ typo
+  * Added "dataset_fieldname" and "dataobj_fieldname" properties to Subobject that enables the subobject field to be used to refer to any foreign dataset (not just Subobject-based datasets)
+  * Test allow_anybody privileges for whether to support exporting a given dataset
+  * fixed typo on get_server_version
+  * Set values can be non-unique when they are used in a compound field
+  * Change to $repository->test_config to actually,er, check the config.
+  * plugins/blah/foo.pm are now editable via the web under the same rules as .pl files.
+  * Live syntax highlighting of code on the edit screen via the codemirror javascript library, note it uses a php library to highlight perl, which is close enough to help, all others (js,css,html,xml) are supported.
+  * Fixed file uploads not being imported in XML, fixes #3761
+  * Fixed typo in "use" header missing ;
+  * Fixed login issues with cookie being set first
+  * Login now detects disabled cookies closing #3735
+  * RDF now uses create unique to reduce work. Fixing #3735
+  * Non existant resources now 404, closing #3759
+  * Fixed $userid which should have been $user
+  * Moved license config to cfg.d
+  * Added seeAlso triples for an eprint leading to the other formats
+  * Login/Logout/Loggedout are now rendered by Screen plugins
+  * The action menu (key_tools) is now a <UL> and only uses Screen plugins, CSS classed as ep_tm_key_tools
+  * Modified FirstTool to use a parameter ("default") rather than the first screen in the key_tools listing, defaults to "Items" if not set
+  * Fixed bug in ScreenProcessor not recognising Screen action placements
+  * Fixed login/logout using hard-coded English and added missing phrases
+  * Use css:first-child to set correct styling on first element in key_tools menu
+  * Removed SIG{CHLD} from Indexer Daemon due to problems with convert/gs
+  * /cgi/export now checks the user has the correct privileges to access the object/plugin
+  * Export plugins are now sorted alphabetically
+  * Note: links are no longer generated to /cgi/users/export, so the user must log in before accessing an export (if necessary). This may be changed in future by e.g. redirecting /cgi/export to /cgi/users/export on Forbidden.
+  * Fixed EndNote not setting utf-8 on mime-type
+  * Fixed subjects not being exported in previous commit + tidy-up
+  * Fixed unit test for multiple set value de-duplication (doesn't de-dupe compound values)
+  * Added "export" privilege for accessing the export of objects
+  * Added unit test for copying files between storage endpoints, see #3753
+  * Fixed Paginate overwriting any below_results option, fixing #3305
+  * Don't clobber existing SystemSettings values in syscfg.d/ files
+  * Fixes to RDF seeAlso triples (missed "<" and ">")
+  * Added seeAlso back to summary page
+  * Fixed errorenous access to repository attribute in Session in RequestRemoval, reported by Michele Pinassi <michele.pinassi@unisi.it>, fixing #3763
+  * Fixed filenames with spaces in not being retrievable (match=EX)
+  * Fixed Id fields not correctly round-tripping UTF-8
+  * Fixes to failed login detection
+  * Always set a main file and guess the doc type when uploading tar.gz/zip files
+  * Edit page phrases
+  * Modified default config to be friendlier towards various HTTP setups by making 20_baseurls respect "http_root" and https-only sites
+  * Fixed infinite redirect when putting EPrints in a sub-path (/eprints)
+  * frontpage and userhome are now defined by Repository if not already
+  * Added support for http_root, securehost and secureport to config_core and config_core now uses existing values as the defaults
+  * Made cgi/users/export a redirect to cgi/export
+  * Fixed user type checking in cgi/export
+  * Fixed "Exports" tab appearing twice for editors (now just shows staff view)
+  * Fixed index.xpage contained fixed paths to feed links
+  * Fixed /view/'s not working from non-root paths
+  * Fixed Template processing any file ending in 'html' (c.f. '.html')
+  * Added workflow stage titles for event_queue
+  * More missing Config/Edit phrases
+  * Always show the editor controls when logged in as an editor: so if you are logged in as an admin/editor and you view your items via Manage Deposits the edit links aren't hidden. Possibly want to add an action to switch to Owner view.
+  * field_validate will warn if a field will be truncated (shouldn't happen in practise)
+  * field values are (silently) truncated if they won't fit in the database
+  * Text fields inherit from Id which contains the UTF-8/XML fix-up code
+  * Fixed the EPrints Logo not appearing when working in a sub-location
+  * Moved most of the template footer back into template - phrases used in the template are initialised at start, so relative paths aren't available (rel_path).
+  * Fixed REST not responding to requests, fixing #3767
+  * Fixed configuration highlighting not working in sub-locations
+  * Merged default template changes into secure template
+  * Simplified language widget implementation by making it a template 'pin'
+  * If the login_status pin is not already defined for the template, define it when preparing the page
+  * Fixed languages widget breaking when only one language in use
+  * Removed debug line
+  * Removed unused WebDAV related modules (needs a different approach)
+  * Removed broken/unnecessary fallback in AcceptLanguage header interpretation (breaks on en-US;qa=0.9). Current browsers supply full lists anyway (en-UK,en-US,en)
+  * Added DRAFT constants for triggers (these will change) in EPrints::Const
+  * Added $c->add_dataset_trigger() method
+  * Added check to $c->add_trigger() for the function var type
+  * Added EP_TRIGGER_CREATED trigger to $dataset->create_dataobj()
+  * Modified logging to run after the client has disconnected
+  * Modified Access object creation so its parent is the object being accessed (doc or eprint)
+  * Added "ep_view_browse_list" class to view main page
+  * Fixed "Profile" and "Saved Searches" not appearing on templated pages (ScreenProcessor->screen->properties_from was never getting called)
+  * Removed eprint Owner/Editor distinction in eprint view pages
+  * Broken up eprint Details into seperate workflow-based sections
+  * Hidden unused (if also undefined) fields on eprint Details tab
+  * eprint workflow now always enables STAFF_MODE if user is an editor
+  * eprint Deposit screen now allows editors to deposit (with warnings)
+  * added "Editorial Actions" tab to eprint view
+  * Renamed EP_TRIGGER_GENERAL_RDF to EP_TRIGGER_BOILERPLATE_RDF
+  * Updated rdf_triples_* to use the new trigger constants.
+  * Added validation warnings to eprint details page
+  * Eprint workflow now always shows "Cancel" button
+  * Eprint workflow now shows "Save and Exit" if the eprint is not in the inbox
+  * Merged [5204]
+  * Set values can be non-unique when they are used in a compound field
+  * Merged [5174]
+  * Remove failed as well as inprogress tasks on --clear
+  * Merged [5210]
+  * Fixed file uploads not being imported in XML, fixes #3761
+  * Merged [5189]
+  * Added unit test and fix for eprint.user.name searches breaking due to multiple includes of the main dataset joining table (user)
+  * Merged [5169]
+  * Fixed Item filters breaking if more than one filter was clicked
+  * Merged [5166], [5167]
+  * Updated prototype to 1.6.1 and scriptaculous to 1.8.3
+  * Fixed IE autocompletion
+  * Fixed BatchEdit under IE, Safari, Chrome
+  * Merged [5161]
+  * Made the eprint_status filters a user preference on the Items screen
+  * Fixed outside-of-set pagination behaviour when changing filters on Items screen
+  * Merged [5153]
+  * Fixed errant EPrints::Repository->new() call in epadmin upgrade
+  * Merged [5151]
+  * Added --respawn option to indexer to control respawn timeout
+  * Fixed log file rotation in indexer, fixing #3744
+  * Merged [5145]
+  * Fixed non-ASCII characters breaking filename links, fixing #3742
+  * Merged [5142]
+  * Fixed missing "AS" glue for PostgreSQL in lookup/name [Ian Stuart <Ian.Stuart@ed.ac.uk>]
+  * Merged [5139], [5140]
+  * Fixed importing empty ints (=NULL) from XML causing "not a number" DB errors
+  * Fixed eprint.dir not being set correctly when using --migrate in import
+  * Merged [5130]
+  * Fixed double-declaration warning
+  * Merged [5134], [5131]
+  * Removed requirement for GlobalRequest directive in Apache conf (instead holds a pointer in the $EPrints::HANDLE object)
+  * Added some documentation on adding Listen and NameVirtualHost directives to generate_apacheconf
+  * Added some simple detection of apache conf problems (prints a warning to the apache error log)
+  * Modified EPrints->abort() so it can work when called from Rewrite
+  * Added init()/cleanup() concepts for EPrints, so it sets current_repository at start and cleans up after the request
+  * Repository() will now abort if you attempt to call it with cgi => 1
+  * Official 3.2 branch
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Tue, 27 Apr 2010 14:58:33 +0100
+
+eprints (3.2.0) unstable; urgency=low
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Tomato Soup
+  * Merged [5121]
+  * s/getpwnam/getgrnam/
+  * Merged [5116]
+  * Fixed epindexer not using supplementary groups when setuid()ing
+  * Fixed Platform::mkdir() not setting sticky bits and attempting to create '//foo' directories
+  * -----------------------------------------------------------------------
+  * Fixed ) ) typo
+  * Merged [5111]
+  * Reduced noiseness of epadmin and fixed bug in revision file detection
+  * Merged [5102]
+  * Fixed PostgreSQL database using 'text' blobs for every textual column
+  * Fixed Oracle database using byte semantics for column lengths
+  * Merged [5099]
+  * Truncate ordervalues rather than causing a database abort
+  * Multiply Oracle column widths by 4 to accomodate 4-byte Unicode
+
+ -- Timothy David Brody <tdb01r@ecs.soton.ac.uk>  Wed, 10 Mar 2010 15:43:39 +0000
+
+eprints (3.2.0-rc-3) unstable; urgency=low
+
+  [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
+  * This *should* be the release
+  * Removed support RDF from 3.2.0 (grumble, moan, etc.)
+  * Merged r5063, r5080
+  * merge of r5024
+  * Merge of r5020 r5021 r5022
+
+  [Timothy David Brody <tdb01r@ecs.soton.ac.uk>]
+  * Merged [5082]
+  * Fixed indexer fatal crash due to malformed UTF-8 data, hopefully fixing #3712
+  * Merged [5070]
+  * Fixed equals not equals in custom_sets in cgi/oai2, fixing #3677
+  * Merged [5060]
+  * Added unit test for and fixed typo of s/Metafield/MetaField/, fixing #3704
+  * Merged [5034], [5035]
+  * Fixed misnamed call to sub-routine when dynamically reloading storage configuration
+  * Make document creation fail if any contained files can't also be created
+  * When converting documents warn if the new document couldn't be created
+  * ----------------------------------------------------------------------- M    perl_lib/EPrints/DataObj.pm M    perl_lib/EPrints/Storage.pm M    perl_lib/EPrints/Plugin/Convert.pm
+  * Merged [5014] - fix for " AS " under Oracle
+  * Merged [5008]
+  * Fixed bug that caused no indexes to be created even when sql_index was true
+  * Now won't create any indexes for fields that are at the start or end of a PRIMARY KEY
+  * Merged [4995], [4996], [4997], [4998], [5002]
+  * Fixed SWORD not accepting deposits due to not reading the POST before accessing the query object, fixing #3689
+  * Replace control characters from textual metafield values with 0xfffd
+  * Fixed undef warning in Time value format check
+  * When cloning EPrints fix the relations in the contained documents to point to the newly cloned documents
+  * Processing templates should no longer incorrectly consume ':' in phrases and print expressions
+
+ -- Christopher Gutteridge <cjg@ecs.soton.ac.uk>  Fri, 05 Mar 2010 16:26:06 +0000
+
 eprints (3.2.0-rc-2) unstable; urgency=low
 
   [Christopher Gutteridge <cjg@ecs.soton.ac.uk>]
@@ -512,7 +1709,7 @@ eprints (3.2.0-alpha-1) unstable; urgency=low
   * Moved some old stuff from Utils.pm into BackCompatibility.pm and moved documentation from the docfest into Utils.pm.
   * oving the documentation from the docfest into List.pm
 
-  [sf03r@ecs.soton.ac.uk]
+  [Sebastien Francois <sf03r@ecs.soton.ac.uk>]
   * added doc
   * sf - fixed file corruption problem on SWORD + removed some comments
   * adding sword2
