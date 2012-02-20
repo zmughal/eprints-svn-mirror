@@ -564,7 +564,6 @@ sub process
 
 	my $cachemap = delete $opts{cachemap};
 	my $limit = delete $opts{limit};
-	my $offset = delete $opts{offset};
 
 	my $sql = $self->sql( %opts );
 
@@ -580,7 +579,7 @@ sub process
 	}
 
 #print STDERR "EXECUTING: $sql\n";
-	my $sth = $db->prepare_select( $sql, limit => $limit, offset => $offset );
+	my $sth = $db->prepare_select( $sql, limit => $limit );
 	$db->execute($sth, $sql);
 
 	my @results;
@@ -746,6 +745,28 @@ sub optimise
 	my( $self, %opts ) = @_;
 
 	return $self;
+}
+
+# return the keys to join two datasets together
+sub join_keys
+{
+	my( $self, $source, $target ) = @_;
+
+	my $left_key = $source->get_key_field->get_name;
+	my $right_key = $target->get_key_field->get_name;
+
+	if( $source->has_field( $right_key ) )
+	{
+		return( $right_key, $right_key );
+	}
+	elsif( $target->has_field( $left_key ) )
+	{
+		return( $left_key, $left_key );
+	}
+	else
+	{
+		EPrints::abort( "Can't create join path for: ".$source->confid." -> ".$target->confid );
+	}
 }
 
 1;

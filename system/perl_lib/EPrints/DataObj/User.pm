@@ -1266,7 +1266,6 @@ my $PRIVMAP =
 		"eprint/details",
 		"eprint/edit",
 		"eprint/export",
-		"eprint/upsert",
 		"eprint/view",
 		"eprint/archive/remove",
 		"eprint/archive/edit", # BatchEdit

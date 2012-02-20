@@ -98,7 +98,7 @@ use Carp;
 
 use strict;
 
-our $VERSION = v3.4.0;
+our $VERSION = v3.3.8;
 $conf->{version} = "EPrints ".EPrints->human_version;
 $conf->{versionid} = "eprints-".EPrints->human_version;
 
@@ -219,7 +219,6 @@ use EPrints::DataObj::File;
 use EPrints::DataObj::History;
 use EPrints::DataObj::Import;
 use EPrints::DataObj::Import::XML;
-use EPrints::DataObj::Issue;
 use EPrints::DataObj::EventQueue;
 use EPrints::DataObj::LoginTicket;
 use EPrints::DataObj::Message;

@@ -241,14 +241,7 @@ sub handler
 			\&EPrints::Apache::Auth::authz
 			] );
 
-		my $crud = EPrints::Apache::CRUD->new(
-				repository => $repository,
-				request => $r,
-			);
-
-		$r->set_handlers( PerlResponseHandler => [
-				sub { $crud->servicedocument }
-			] );
+		$r->set_handlers( PerlResponseHandler => [ \&EPrints::Apache::CRUD::servicedocument ] );
 
 		return OK;
 	}
@@ -338,33 +331,72 @@ sub handler
 		return redir_see_other( $r, $url );
 	}
 
-	if( $uri =~ s! ^$urlpath/id/(?:
-			contents | ([^/]+)(?:/([^/]+)(?:/([^/]+))?)?
-		)$ !!x )
+	if( $uri =~ s! ^$urlpath/id/contents$ !!x )
 	{
-		my( $datasetid, $dataobjid, $fieldid ) = ($1, $2, $3);
+		$r->pnotes( dataset => $repository->dataset( "eprint" ) );
+		$r->pnotes( uri => $uri );
 
-		my $crud = EPrints::Apache::CRUD->new(
-				repository => $repository,
-				request => $r,
-				datasetid => $datasetid,
-				dataobjid => $dataobjid,
-				fieldid => $fieldid,
-			);
-		return $r->status if !defined $crud;
+		my( $rc, $plugin ) =
+			EPrints::Apache::CRUD::content_negotiate_best_plugin( $r );
+
+		return $rc if $rc != OK;
+
+		$r->pnotes( plugin => $plugin );
 
 		$r->handler( 'perl-script' );
 
 		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
 
 		$r->push_handlers(PerlAccessHandler => [
-				sub { $crud->authen },
-				sub { $crud->authz },
+			\&EPrints::Apache::CRUD::authen,
+			\&EPrints::Apache::CRUD::authz
 			] );
 
-		$r->set_handlers( PerlResponseHandler => [
-				sub { $crud->handler },
+		$r->set_handlers( PerlResponseHandler => [ "EPrints::Apache::CRUD" ] );
+
+		return OK;
+	}
+
+	if( $uri =~ s! ^$urlpath/id/([^/]+)/([^/]+)/? !!x )
+	{
+		my( $datasetid, $id ) = ( $1, $2 );
+
+		my $dataset = $repository->get_dataset( $datasetid );
+		return NOT_FOUND if !defined $dataset;
+
+		($id, my @relations) = split /\./, $id;
+
+		my $dataobj = $dataset->dataobj( $id );
+		return NOT_FOUND if !defined $dataobj;
+
+		# get the real eprint dataset
+		if( $dataset->base_id eq "eprint" )
+		{
+			$dataset = $dataobj->get_dataset;
+		}
+
+		$r->pnotes( dataset => $dataset );
+		$r->pnotes( dataobj => $dataobj );
+		$r->pnotes( relations => \@relations );
+		$r->pnotes( uri => $uri );
+
+		my( $rc, $plugin ) =
+			EPrints::Apache::CRUD::content_negotiate_best_plugin( $r );
+
+		return $rc if $rc != OK;
+
+		$r->pnotes( plugin => $plugin );
+
+		$r->handler( 'perl-script' );
+
+		$r->set_handlers( PerlMapToStorageHandler => sub { OK } );
+
+		$r->push_handlers(PerlAccessHandler => [
+			\&EPrints::Apache::CRUD::authen,
+			\&EPrints::Apache::CRUD::authz
 			] );
+
+		$r->set_handlers( PerlResponseHandler => [ "EPrints::Apache::CRUD" ] );
 
 		return OK;
 	}

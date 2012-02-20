@@ -652,9 +652,11 @@ sub map
 {
 	my( $self, $function, $info ) = @_;	
 
+	my $count = $self->count();
+
 	my $CHUNKSIZE = 100;
 
-	for( my $offset = 0; 1; $offset+=$CHUNKSIZE )
+	for( my $offset = 0; $offset < $count; $offset+=$CHUNKSIZE )
 	{
 		my @records = $self->slice( $offset, $CHUNKSIZE );
 		foreach my $item ( @records )
@@ -665,7 +667,6 @@ sub map
 				$item, 
 				$info );
 		}
-		last if @records < $CHUNKSIZE;
 	}
 }
 

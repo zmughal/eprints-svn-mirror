@@ -7,8 +7,7 @@ EPrints::Plugin::Screen::Staff::HistorySearch
 
 package EPrints::Plugin::Screen::Staff::HistorySearch;
 
-use EPrints::Plugin::Screen::Search;
-@ISA = ( 'EPrints::Plugin::Screen::Search' );
+@ISA = ( 'EPrints::Plugin::Screen::AbstractSearch' );
 
 use strict;
 
@@ -28,6 +27,20 @@ sub new
 	return $self;
 }
 
+sub search_dataset
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_repository->get_dataset( "history" );
+}
+
+sub search_filters
+{
+	my( $self ) = @_;
+
+	return;
+}
+
 sub render_links
 {
 	my( $self ) = @_;
@@ -44,6 +57,10 @@ sub render_links
 	return $f;
 }
 
+sub allow_export { return 1; }
+
+sub allow_export_redir { return 1; }
+
 sub can_be_viewed
 {
 	my( $self ) = @_;
@@ -51,19 +68,11 @@ sub can_be_viewed
 	return $self->allow( "staff/history_search" );
 }
 
-sub properties_from
+sub from
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{dataset} = $self->repository->dataset( "history" );
-	$self->{processor}->{searchid} = "staff";
-
-	$self->SUPER::properties_from;
-}
-
-sub default_search_config
-{
-	return {
+	my $sconf = {
 		search_fields => [
 			{ meta_fields => [ "userid.username" ] },
 			{ meta_fields => [ "action" ] },
@@ -78,13 +87,38 @@ sub default_search_config
 		},
 		default_order => "timestampdesc",
 	};
+
+			
+	$self->{processor}->{sconf} = $sconf;
+
+	$self->SUPER::from;
 }
 
-# suppress dataset=
-sub hidden_bits
+sub _vis_level
 {
-	return shift->EPrints::Plugin::Screen::AbstractSearch::hidden_bits();
+	my( $self ) = @_;
+
+	return "staff";
 }
+
+sub get_controls_before
+{
+	my( $self ) = @_;
+
+	return $self->get_basic_controls_before;	
+}
+
+sub render_result_row
+{
+	my( $self, $session, $result, $searchexp, $n ) = @_;
+
+	return $result->render_citation_link_staff(
+			$self->{processor}->{sconf}->{citation},  #undef unless specified
+			n => [$n,"INTEGER"] );
+}
+
+
+
 
 =head1 COPYRIGHT
 

@@ -48,9 +48,18 @@ sub search_dataset
 	return $self->{processor}->{dataset};
 }
 
-sub allow_advanced { shift->can_be_viewed( @_ ) }
-sub allow_export { shift->can_be_viewed( @_ ) }
-sub allow_export_redir { shift->can_be_viewed( @_ ) }
+# DEPRECATED
+# Use the configuration to add per-dataset filters
+sub search_filters
+{
+	my( $self ) = @_;
+
+	return;
+}
+
+sub allow_advanced { &can_be_viewed }
+sub allow_export { &can_be_viewed }
+sub allow_export_redir { &can_be_viewed }
 sub allow_savesearch
 {
 	my( $self ) = @_;
@@ -65,20 +74,15 @@ sub can_be_viewed
 	my( $self ) = @_;
 
 	# note this method is also used by $self->datasets()
-	
+
 	my $dataset = $self->{processor}->{dataset};
 	return 0 if !defined $dataset;
-
-	my $searchid = $self->{processor}->{searchid};
 
 	if( $dataset->id eq "archive" )
 	{
 		return $self->allow( "eprint_search" );
 	}
-	elsif( defined($searchid) && (my $rc = $self->allow( $dataset->id . "/search/$searchid" )) )
-	{
-		return $rc;
-	}
+	else
 	{
 		return $self->allow( $dataset->id . "/search" );
 	}
@@ -132,33 +136,27 @@ sub get_controls_before
 	return @controls;
 }
 
-sub hidden_bits
+sub render_hidden_bits
 {
 	my( $self ) = @_;
 
-	return(
-		$self->SUPER::hidden_bits,
-		dataset => $self->{processor}->{dataset}->id
-	);
+	my $session = $self->{session};
+
+	my $frag = $session->make_doc_fragment;
+
+	$frag->appendChild( $self->SUPER::render_hidden_bits );
+	$frag->appendChild( $session->xhtml->hidden_field( dataset => $self->{processor}->{dataset}->id ) );
+
+	return $frag;
 }
 
 sub render_result_row
 {
 	my( $self, $session, $result, $searchexp, $n ) = @_;
 
-	my $staff = $self->{processor}->{sconf}->{staff};
-	my $citation = $self->{processor}->{sconf}->{citation};
-
-	if( $staff )
-	{
-		return $result->render_citation_link_staff( $citation, 
+	return $result->render_citation_link(
+			$self->{processor}->{sconf}->{citation},  #undef unless specified
 			n => [$n,"INTEGER"] );
-	}
-	else
-	{
-		return $result->render_citation_link( $citation,
-			n => [$n,"INTEGER"] );
-	}
 }
 
 sub export_url
@@ -174,7 +172,8 @@ sub export_url
 	my $url = URI->new( $self->{session}->current_url() . "/export_" . $self->{session}->get_repository->get_id . "_" . $format . $plugin->param( "suffix" ) );
 
 	$url->query_form(
-		$self->hidden_bits,
+		screen => $self->{processor}->{screenid},
+		dataset => $self->search_dataset->id,
 		_action_export => 1,
 		output => $format,
 		exp => $self->{processor}->{search}->serialise,
@@ -270,10 +269,9 @@ sub render_preamble
 	my( $self ) = @_;
 
 	my $pphrase = $self->{processor}->{sconf}->{"preamble_phrase"};
+	$pphrase = "cgi/advsearch:preamble" if !defined $pphrase;
 
-	return $self->{session}->make_doc_fragment if !defined $pphrase;
-
-	return $self->{session}->html_phrase( $pphrase );
+	return $self->{"session"}->html_phrase( $pphrase );
 }
 
 sub render_simple_form
@@ -373,15 +371,12 @@ sub properties_from
 	my $dataset = $processor->{dataset};
 	my $searchid = $processor->{searchid};
 
-	return if !defined $dataset;
-	return if !defined $searchid;
-
 	my $sconf;
 	if( $dataset->id eq "archive" )
 	{
 		$sconf = $repo->config( "search", $searchid );
 	}
-	if( !defined $sconf )	
+	else
 	{
 		$sconf = $repo->config( "datasets", $dataset->id, "search", $searchid );
 	}
@@ -403,16 +398,10 @@ sub properties_from
 	{
 		$sconf = $dataset->_advanced_search_config();
 	}
-	else
-	{
-		$sconf = $self->default_search_config;
-	}
 
 	$processor->{sconf} = $sconf;
 	$processor->{template} = $sconf->{template};
 }
-
-sub default_search_config {}
 
 sub from
 {
@@ -429,9 +418,8 @@ sub from
 	if( !EPrints::Utils::is_set( $self->{processor}->{action} ) )
 	{
 		my %params = map { $_ => 1 } $self->{session}->param();
-		foreach my $param (keys %{{$self->hidden_bits}}) {
-			delete $params{$param};
-		}
+		delete $params{screen};
+		delete $params{dataset};
 		if( EPrints::Utils::is_set( $self->{session}->param( "output" ) ) )
 		{
 			$self->{processor}->{action} = "export";
@@ -455,7 +443,7 @@ sub from
 		my $format = $processor->{searchid} . "/" . $processor->{dataset}->base_id;
 		if( !defined $sconf )
 		{
-			EPrints->abort( "No available configuration for search type $format" );
+			EPrints->abort( "No such search type $format" );
 		}
 		$searchexp = $session->plugin( "Search" )->plugins(
 			{
@@ -464,10 +452,6 @@ sub from
 				keep_cache => 1,
 				satisfy_all => $satisfy_all,
 				%{$sconf},
-				filters => [
-					$self->search_filters,
-					@{$sconf->{filters} || []},
-				],
 			},
 			type => "Search",
 			can_search => $format,

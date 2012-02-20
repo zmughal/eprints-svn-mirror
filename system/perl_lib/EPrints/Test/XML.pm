@@ -46,18 +46,10 @@ sub xml_tests
 	ok(utf8::is_utf8($xml_str), "to_string utf8 document");
 
 	my $eprint = EPrints::Test::get_test_dataobj( $repo->dataset( "eprint" ) );
-	my $dataset = $eprint->get_dataset;
 
 	my $xml_dump = $eprint->to_xml;
 	my $epdata = $eprint->xml_to_epdata( $repo, $xml_dump );
-	# MetaField::Subobject can't to_xml non-objects, which is what
-	# xml_to_epdata gives us, but Subobject will retrieve the records for us in
-	# the final object
-	foreach my $field ($dataset->fields)
-	{
-		next if !$field->isa( "EPrints::MetaField::Subobject" );
-		delete $epdata->{$field->name};
-	}
+	delete $epdata->{documents}; # to_xml() won't work with non-objects
 	my $eprint2 = $repo->dataset( "eprint" )->make_dataobj( $epdata );
 
 	is( $xml_dump->toString(), $eprint2->to_xml->toString(), "to_xml==xml_to_epdata" );

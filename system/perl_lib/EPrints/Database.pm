@@ -1039,25 +1039,6 @@ sub get_primary_key
 	return $self->{dbh}->primary_key( undef, undef, $tablename );
 }
 
-=item $db->create_primary_key( $tablename, @cols )
-
-Create a PRIMARY KEY on $tablename over @cols.
-
-=cut
-
-sub create_primary_key
-{
-	my( $self, $tablename, @cols ) = @_;
-
-	return 1 if !@cols;
-
-	return $self->do("ALTER TABLE " .
-			$self->quote_identifier( $tablename ) .
-			" ADD PRIMARY KEY (".join(',',
-				map { $self->quote_identifier( $_ ) } @cols
-		).")");
-}
-
 ######################################################################
 =pod
 
@@ -3510,14 +3491,7 @@ sub _add_field_index
 
 	my @cols = $field->get_sql_index;
 
-	if( $field->name eq $dataset->key_field->name )
-	{
-		return $self->create_primary_key( $table, @cols );
-	}
-	else
-	{
-		return $self->create_index( $table, @cols );
-	}
+	return $self->create_index( $table, @cols );
 }
 
 # Add the field to the main tables
@@ -3556,14 +3530,7 @@ sub _add_field
 
 	if( my @columns = $field->get_sql_index )
 	{
-		if( $field->name eq $dataset->key_field->name )
-		{
-			$rc &&= $self->create_primary_key( $table, @columns );
-		}
-		else
-		{
-			$rc &&= $self->create_index( $table, @columns );
-		}
+		$rc &&= $self->create_index( $table, @columns );
 	}
 
 	return $rc;
