@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -59,7 +64,7 @@ sub _logic_time
 
 	my @parts = split( /[-: TZ]/, $self->{params}->[0] );
 	my $nparts = scalar @parts;
-	if( !$self->{field}->isa( "EPrints::MetaField::Time" ) && $nparts > 3 )
+	if( $self->{field}->isa( "EPrints::MetaField::Date" ) && $nparts > 3 )
 	{
 		$nparts = 3;
 	}
@@ -110,21 +115,6 @@ sub joins
 		{
 			return ();
 		}
-		elsif( $self->{field}->isa( "EPrints::MetaField::Compound" ) )
-		{
-			my @joins;
-			foreach my $f (@{$self->{field}->property( "fields_cache" )})
-			{
-				my $table = $f->{dataset}->get_sql_sub_table_name( $f );
-				push @joins, {
-					type => "inner",
-					table => $table,
-					alias => "$prefix$table",
-					key => $self->dataset->get_key_field->get_sql_name,
-				};
-			}
-			return @joins;
-		}
 		else
 		{
 			my $table = $self->table;
@@ -139,22 +129,18 @@ sub joins
 	# join to another dataset
 	else
 	{
+		my( $left_key, $right_key ) = $self->join_keys( $opts{dataset}, $self->dataset );
 		my $main_table = $self->dataset->get_sql_table_name;
-		my $logic = $self->join_path(
-				$opts{dataset},
-				%opts,
-				alias => "$prefix$main_table",
-			);
+		my $main_key = $self->dataset->get_key_field->get_sql_name;
 		# join to main table of child dataset
 		my $join = {
 			type => "inner",
 			table => $main_table,
 			alias => "$prefix$main_table",
-			logic => $logic,
+			logic => $db->quote_identifier( $opts{dataset}->get_sql_table_name, $left_key )."=".$db->quote_identifier( "$prefix$main_table", $right_key ),
 		};
 		if( $self->{field}->get_property( "multiple" ) )
 		{
-			my $main_key = $self->dataset->get_key_field->get_sql_name;
 			my $table = $self->table;
 			return ($join, {
 				type => "inner",
@@ -195,44 +181,6 @@ sub logic
 		}
 		return "(".join(") AND (", @logic).")";
 	}
-	elsif( $field->isa( "EPrints::MetaField::Compound" ) )
-	{
-		my @logic;
-		my $prev_table;
-		foreach my $f (@{$self->{field}->property( "fields_cache" )})
-		{
-			local $self->{field} = $f;
-			my $table = $prefix . $self->table;
-			if( $f->property( "multiple" ) )
-			{
-				if( $prev_table )
-				{
-					push @logic, sprintf("%s %s %s",
-						$db->quote_identifier( $prev_table, "pos" ),
-						"=",
-						$db->quote_identifier( $table, "pos" ) );
-				}
-				$prev_table = $table;
-			}
-			push @logic, sprintf("%s %s %s",
-					$db->quote_identifier( $table, $f->get_sql_name ),
-					$self->{op},
-					$db->quote_value( $self->{params}->[0]->{$f->property( "sub_name" )} ) );
-		}
-		return "(".join(") AND (", @logic).")";
-	}
-	elsif( $field->isa( "EPrints::MetaField::Multipart" ) )
-	{
-		my @logic;
-		for($field->parts)
-		{
-			push @logic, sprintf("%s %s %s",
-				$db->quote_identifier( $table, "$sql_name\_$_" ),
-				$self->{op},
-				$db->quote_value( $self->{params}->[0]->{$_} ) );
-		}
-		return "(".join(") AND (", @logic).")";
-	}
 	elsif( $field->isa( "EPrints::MetaField::Date" ) )
 	{
 		return $self->_logic_time( %opts, table => $table );
@@ -253,82 +201,4 @@ sub logic
 	}
 }
 
-# return the logic to join two datasets together
-sub join_path
-{
-	my( $self, $source, %opts ) = @_;
-
-	my @logic;
-
-	my $db = $opts{session}->database;
-
-	my $target = $self->dataset;
-
-	my $left_key = $source->get_key_field->get_name;
-	my $right_key = $target->get_key_field->get_name;
-
-	# document.docid = file.objectid AND file.datasetid = 'document'
-	if(
-		$target->dataobj_class->isa( "EPrints::DataObj::SubObject" ) &&
-		$target->has_field( "datasetid" ) &&
-		$target->has_field( "objectid" )
-	  )
-	{
-		push @logic, join '=',
-			$db->quote_identifier( $source->get_sql_table_name, $left_key ),
-			$db->quote_identifier( $opts{alias}, "objectid" );
-		push @logic, join '=',
-			$db->quote_identifier( $opts{alias}, "datasetid" ),
-			$db->quote_value( $source->base_id );
-	}
-	# eprint.userid = user.userid
-	elsif( $source->has_field( $right_key ) )
-	{
-		push @logic, join '=',
-			$db->quote_identifier( $source->get_sql_table_name, $right_key ),
-			$db->quote_identifier( $opts{alias}, $right_key );
-	}
-	# eprint.eprintid = document.eprintid
-	elsif( $target->has_field( $left_key ) )
-	{
-		push @logic, join '=',
-			$db->quote_identifier( $source->get_sql_table_name, $left_key ),
-			$db->quote_identifier( $opts{alias}, $left_key );
-	}
-	else
-	{
-		EPrints::abort( "Can't create join path for field ".$self->dataset->base_id.".".$self->{field}->get_name.": ".$source->confid." -> ".$target->confid );
-	}
-
-	return join ' AND ', @logic;
-}
-
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

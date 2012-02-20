@@ -1,15 +1,14 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Admin::StorageManager
-
-=cut
-
 ######################################################################
 #
 # EPrints::Plugin::Screen::Admin::StorageManager
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -20,6 +19,7 @@ package EPrints::Plugin::Screen::Admin::StorageManager;
 use strict;
 
 my $LOADING_DIV = "ep_busy_fragment";
+my $JAVASCRIPT = join "", <DATA>;
 
 sub new
 {
@@ -88,7 +88,7 @@ sub ajax_stats
 	my $store = $session->plugin( $pluginid );
 	return "$pluginid is not a valid plugin name" unless defined $store;
 
-	my $dataset = $session->dataset( "file" );
+	my $dataset = $session->get_repository->get_dataset( "file" );
 
 	my $data = {
 			total => 0,
@@ -201,7 +201,7 @@ sub ajax_migrate
 	return "$target is not a valid plugin name" unless defined $target_store;
 	my $datasetid = $session->param( "datasetid" );
 
-	my $dataset = $session->dataset( "file" );
+	my $dataset = $session->get_repository->get_dataset( "file" );
 
 	my $searchexp = EPrints::Search->new(
 		session => $session,
@@ -235,7 +235,7 @@ sub ajax_delete
 	return "$pluginid is not a valid plugin name" unless defined $store;
 	my $datasetid = $session->param( "datasetid" );
 
-	my $dataset = $session->dataset( "file" );
+	my $dataset = $session->get_repository->get_dataset( "file" );
 
 	my $searchexp = EPrints::Search->new(
 		session => $session,
@@ -274,7 +274,7 @@ sub fetch_data
 
 	my $session = $plugin->{session};
 
-	my $dataset = $session->dataset( "file" );
+	my $dataset = $session->get_repository->get_dataset( "file" );
 
 	my $plugin_datasets = {};
 
@@ -303,18 +303,6 @@ sub fetch_data
 	return $return;
 }
 
-sub render_links
-{
-	my( $self ) = @_;
-
-	my $frag = $self->SUPER::render_links;
-	$frag->appendChild( $self->{session}->make_javascript( undef,
-		src => $self->{session}->current_url( path => "static", "javascript/screen_admin_storagemanager.js" ),
-	) );
-
-	return $frag;
-}
-
 sub render
 {
 	my( $plugin ) = @_;
@@ -331,10 +319,14 @@ sub render
 	$div = $session->make_element( "div", id => $LOADING_DIV, style => "display: none" );
 	$html->appendChild( $div );
 	$div->appendChild( $session->make_element( "img",
-		src => $session->config( "rel_path" )."/style/images/loading.gif"
+		src => $session->get_repository->get_conf( "rel_path" )."/style/images/loading.gif"
 		) );
 
 	my @plugins = $session->get_plugins( type => "Storage" );
+
+	my $script = $session->make_element( "script", type => "text/javascript" );
+	$html->appendChild( $script );
+	$script->appendChild( $session->make_comment( "\n$JAVASCRIPT\n// " ) );
 
 	$div = $session->make_element( "div" );
 	$html->appendChild( $div );
@@ -466,7 +458,7 @@ sub render_plugin
 	$html->appendChild( $stats );
 
 	$stats->appendChild( $session->make_element( "img",
-		src => $session->config( "rel_path" )."/style/images/loading.gif"
+		src => $session->get_repository->get_conf( "rel_path" )."/style/images/loading.gif"
 		) );
 
 	return $html;
@@ -531,32 +523,155 @@ sub redirect_to_me_url
 
 1;
 
+__DATA__
 
-=head1 COPYRIGHT
+Event.observe(window,'load',function () {
+	$$('.js_admin_storagemanager_show_stats').each(function(div) {
+		js_admin_storagemanager_load_stats(div);
+	});
+});
 
-=for COPYRIGHT BEGIN
+function js_admin_storagemanager_load_stats(div)
+{
+	var pluginid = div.id.substring(6);
 
-Copyright 2000-2011 University of Southampton.
+	new Ajax.Request(
+		eprints_http_cgiroot+"/users/home",
+		{
+			method: "post",
+			onFailure: function() { 
+				alert( "AJAX request failed..." );
+			},
+			onException: function(req, e) { 
+				alert( "AJAX Exception " + e );
+			},
+			onSuccess: function(response){ 
+				var text = response.responseText;
+				if( text.length == 0 )
+				{
+					alert( "No response from server..." );
+				}
+				else
+				{
+					div._original = div.innerHTML;
+					Element.update( div, text );
+				}
+			},
+			parameters: { 
+				ajax: "stats",
+				screen: "Admin::StorageManager", 
+				store: pluginid
+			} 
+		} 
+	);
+}
 
-=for COPYRIGHT END
+function js_admin_storagemanager_migrate(button)
+{
+	Element.extend(button);
 
-=for LICENSE BEGIN
+	var form = button.up('form');
+	Element.extend(form);
 
-This file is part of EPrints L<http://www.eprints.org/>.
+	var ajax_parameters = form.serialize(1);
+	ajax_parameters['ajax'] = 'migrate';
 
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+	form._original = form.innerHTML;
+	form.update( $('ep_busy_fragment').innerHTML );
 
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
+	new Ajax.Request(
+		eprints_http_cgiroot+"/users/home",
+		{
+			method: "post",
+			onFailure: function() { 
+				alert( "AJAX request failed..." );
+				form.update( form._original );
+			},
+			onException: function(req, e) { 
+				alert( "AJAX Exception " + e );
+				form.update( form._original );
+			},
+			onSuccess: function(response){ 
+				var text = response.responseText;
+				if( text.length == 0 )
+				{
+					alert( "No response from server..." );
+				}
+				else
+				{
+					// Element.update( div, text );
+					div = $('stats_'+ajax_parameters['target']);
+					if( !div )
+					{
+						alert("Can't find stats_"+ajax_parameters['target']);
+					}
+					else
+					{
+						Element.update(div,div._original);
+						js_admin_storagemanager_load_stats(div);
+					}
+				}
+				form.update( form._original );
+			},
+			parameters: ajax_parameters
+		} 
+	);
 
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
+	return false;
+}
 
-=for LICENSE END
+function js_admin_storagemanager_delete(button)
+{
+	Element.extend(button);
 
-=cut
+	var form = button.up('form');
+	Element.extend(form);
+
+	var ajax_parameters = form.serialize(1);
+	ajax_parameters['ajax'] = 'delete';
+
+	form._original = form.innerHTML;
+	form.update( $('ep_busy_fragment').innerHTML );
+
+	new Ajax.Request(
+		eprints_http_cgiroot+"/users/home",
+		{
+			method: "post",
+			onFailure: function() { 
+				alert( "AJAX request failed..." );
+				form.update( form._original );
+			},
+			onException: function(req, e) { 
+				alert( "AJAX Exception " + e );
+				form.update( form._original );
+			},
+			onSuccess: function(response){ 
+				var text = response.responseText;
+				if( text.length == 0 )
+				{
+					alert( "No response from server..." );
+				}
+				else
+				{
+					// Element.update( div, text );
+					div = $('stats_'+ajax_parameters['store']);
+					if( !div )
+					{
+						alert("Can't find stats_"+ajax_parameters['target']);
+					}
+					else
+					{
+						Element.update(div,div._original);
+						js_admin_storagemanager_load_stats(div);
+					}
+				}
+				form.update( form._original );
+			},
+			parameters: ajax_parameters
+		} 
+	);
+
+	return false;
+}
+
+

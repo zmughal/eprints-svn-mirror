@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Surround::Default
-
-=cut
-
 package EPrints::Plugin::InputForm::Surround::Default;
 
 use strict;
@@ -33,6 +27,7 @@ sub render
 	my( $self, $component ) = @_;
 
 	my $comp_name = $component->get_name();
+	my @problems = @{$component->get_problems()};
 
 	my $surround = $self->{session}->make_element( "div",
 		class => "ep_sr_component",
@@ -68,6 +63,18 @@ sub render
 	if( $component->has_help && !$component->{no_help} )
 	{
 		$self->_render_help( $component, $title_bar, $content_inner );
+	}
+
+	# Problem rendering
+
+	if( scalar @problems > 0 )
+	{
+		my $problem_div = $self->{session}->make_element( "div", class => "wf_problems" );
+		foreach my $problem ( @problems )
+		{
+			$problem_div->appendChild( $problem );
+		}
+		$surround->appendChild( $problem_div );
 	}
 
 	my $imagesurl = $self->{session}->get_repository->get_conf( "rel_path" );
@@ -177,31 +184,3 @@ sub _render_help
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

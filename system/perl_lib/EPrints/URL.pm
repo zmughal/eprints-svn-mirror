@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -129,15 +134,15 @@ sub get
 		if( $opts{scheme} eq "https" )
 		{
 			$uri->scheme( "https" );
-			$uri->host( $session->config( "securehost" ) );
-			my $port = $session->config( "secureport" ) || 443;
+			$uri->host( $session->get_repository->get_conf( "securehost" ) );
+			my $port = $session->get_repository->get_conf( "secureport" ) || 443;
 			$uri->port( $port ) if $port != 443;
 		}
 		else
 		{
 			$uri->scheme( "http" );
-			$uri->host( $session->config( "host" ) );
-			my $port = $session->config( "port" ) || 80;
+			$uri->host( $session->get_repository->get_conf( "host" ) );
+			my $port = $session->get_repository->get_conf( "port" ) || 80;
 			$uri->port( $port ) if $port != 80;
 		}
 	}
@@ -153,15 +158,15 @@ sub get
 	}
 	elsif( $opts{path} eq "static" )
 	{
-		$uri->path( $session->config( "$opts{scheme}_root" ) );
+		$uri->path( $session->get_repository->get_conf( "$opts{scheme}_root" ) );
 	}
 	elsif( $opts{path} eq "cgi" )
 	{
-		$uri->path( $session->config( "$opts{scheme}_cgiroot" ) );
+		$uri->path( $session->get_repository->get_conf( "$opts{scheme}_cgiroot" ) );
 	}
 	elsif( $opts{path} eq "images" )
 	{
-		$uri->path( $session->config( "$opts{scheme}_root" ) . "/style/images" );
+		$uri->path( $session->get_repository->get_conf( "$opts{scheme}_root" ) . "/style/images" );
 	}
 
 	# query
@@ -173,7 +178,7 @@ sub get
 			foreach my $value ($session->param( $param ))
 			{
 				next if ref($value); # e.g. file handle
-				push @params, $param => Encode::encode_utf8( $value );
+				push @params, $param => $value;
 			}
 		}
 		$uri->query_form( @params );
@@ -184,7 +189,7 @@ sub get
 		$uri->path( $uri->path . "/" . $page );
 	}
 
-	return $uri;
+	return "$uri";
 }
 
 ######################################################################
@@ -196,32 +201,4 @@ sub get
 ######################################################################
 
 1; # For use/require success
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

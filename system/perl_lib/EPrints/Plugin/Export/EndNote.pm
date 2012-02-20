@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::EndNote
-
-=cut
-
 =pod
 
 =head1 FILE FORMAT
@@ -87,16 +81,6 @@ sub convert_dataobj
 			push @{ $data->{A} }, EPrints::Utils::make_name_string( $name->{name}, 0 );
 		}
 	}
-
-	# A Corporate Author - a trailing comma MUST be added, see EndNote documentation
-	my $ds = $dataobj->get_dataset;
-	if( $dataobj->exists_and_set( 'corp_creators' ) )
-	{
-		foreach my $corp ( @{ $dataobj->get_value( 'corp_creators' ) } )
-		{
-			push @{ $data->{A} }, $corp.",";
-		}
-	}	
 
 	# B Conference Name, Department (Thesis), Series (Book, Report), Book Title (Book Section)
 	if( $type eq "conference_item")
@@ -225,8 +209,7 @@ sub output_dataobj
 	my $data = $plugin->convert_dataobj( $dataobj );
 
 	my $out = "";
-	# forces '0' to be FIRST
-	foreach my $k ( sort { $a eq "0" ? -1 : $b eq "0" ? 1 : $a cmp $b } keys %{ $data } )
+	foreach my $k ( sort keys %{ $data } )
 	{
 		if( ref( $data->{$k} ) eq "ARRAY" )
 		{
@@ -247,31 +230,3 @@ sub output_dataobj
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

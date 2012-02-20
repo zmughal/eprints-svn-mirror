@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -119,8 +124,6 @@ sub new_from_filename
 {
 	my( $class, $repo, $dataobj, $filename ) = @_;
 	
-	return undef if !EPrints::Utils::is_set( $filename );
-
 	my $dataset = $repo->dataset( $class->get_dataset_id );
 
 	my $results = $dataset->search(
@@ -147,12 +150,7 @@ sub new_from_filename
 
 =item $dataobj = EPrints::DataObj::File->create_from_data( $session, $data [, $dataset ] )
 
-Create a new File record using $data.
-
-Private data elements:
-
-	_content - content to pass to L</set_file>.
-	_filepath - path to source file used for improved mime-type detection
+Create a new File record using $data. If "_content" is defined in $data it will be read from and stored - for possible values see set_file().
 
 =cut
 
@@ -161,21 +159,10 @@ sub create_from_data
 	my( $class, $session, $data, $dataset ) = @_;
 
 	my $content = delete $data->{_content} || delete $data->{_filehandle};
-	my $filepath = delete $data->{_filepath};
 
 	# if things go wrong later filesize will be zero
 	my $filesize = $data->{filesize};
 	$data->{filesize} = 0;
-
-	if( !EPrints::Utils::is_set( $data->{mime_type} ) )
-	{
-		$session->run_trigger( EPrints::Const::EP_TRIGGER_MEDIA_INFO,
-			filepath => $filepath,
-			filename => $data->{filename},
-			epdata => my $media_info = {}
-		);
-		$data->{mime_type} = $media_info->{mime_type};
-	}
 
 	my $self;
 
@@ -275,8 +262,7 @@ sub get_system_field_info
 
 		{ name=>"hash_type", type=>"id", maxlength=>32, },
 
-		{ name=>"filesize", type=>"bigint", sql_index=>0,
-			render_value => \&render_filesize },
+		{ name=>"filesize", type=>"bigint", sql_index=>0, },
 
 		{ name=>"mtime", type=>"timestamp", },
 
@@ -310,6 +296,34 @@ Returns the id of the L<EPrints::DataSet> object to which this record belongs.
 sub get_dataset_id
 {
 	return "file";
+}
+
+######################################################################
+
+=item $defaults = EPrints::DataObj::File->get_defaults( $session, $data )
+
+Return default values for this object based on the starting data.
+
+=cut
+
+######################################################################
+
+sub get_defaults
+{
+	my( $class, $session, $data, $dataset ) = @_;
+	
+	$class->SUPER::get_defaults( $session, $data, $dataset );
+
+	if( defined( $data->{filename} ) )
+	{
+		my $type = $session->get_repository->call( "guess_doc_type", $session, $data->{filename} );
+		if( $type ne "other" )
+		{
+			$data->{mime_type} = $type;
+		}
+	}
+
+	return $data;
 }
 
 ######################################################################
@@ -370,25 +384,6 @@ sub remove
 	$self->SUPER::remove();
 
 	$self->get_session->get_storage->delete( $self );
-}
-
-=item $file->update( $epdata )
-
-=cut
-
-sub update
-{
-	my( $self, $epdata ) = @_;
-
-	my $content = delete $epdata->{_content};
-	my $filesize = delete $epdata->{filesize};
-
-	$self->SUPER::update( $epdata );
-
-	$self->set_file(
-			$content,
-			$filesize
-		) if defined $content;
 }
 
 =item $filename = $file->get_local_copy()
@@ -458,7 +453,7 @@ sub upload
 	$self->set_value( "filename", $filename );
 
 	$filesize = $self->set_file( $fh, $filesize );
-	
+
 	$self->commit();
 
 	return $filesize;
@@ -569,96 +564,34 @@ sub update_sha
 	$self->set_value( "hash_type", "SHA-$alg" );
 }
 
-sub to_sax
+sub to_xml
 {
 	my( $self, %opts ) = @_;
 
-	my $handler = $opts{Handler};
-	my $dataset = $self->dataset;
-	my $name = $dataset->base_id;
-
-	my %Attributes;
-
-	my $uri = $self->uri;
-	if( defined $uri )
+	# This is a bit of a hack to inject the publicly accessible URL of data
+	# files in documents into XML exports.
+	# In future importers should probably use the "id" URI to retrieve
+	# file objects?
+	if( $self->get_value( "datasetid" ) eq "document" )
 	{
-		$Attributes{'{}id'} = {
-				Prefix => '',
-				LocalName => 'id',
-				Name => 'id',
-				NamespaceURI => '',
-				Value => $uri,
-			};
-	}
-
-	$handler->start_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-		Attributes => \%Attributes,
-	});
-
-	if( $self->value( "datasetid" ) eq "document" )
-	{
-		my $doc = $self->parent();
-		my $url = $doc->get_url( $self->value( "filename" ) );
+		my $doc = $self->get_parent();
+		my $url = $doc->get_url( $self->get_value( "filename" ) );
 		$self->set_value( "url", $url );
+
 	}
 
-	foreach my $field ($dataset->fields)
+	if( $opts{embed} )
 	{
-		next if !$field->property( "export_as_xml" );
-
-		$field->to_sax(
-			$field->get_value( $self ),
-			%opts
-		);
-	}
-
-	if( $opts{embed} && !$self->is_set( "data" ) )
-	{
-		$handler->start_element({
-			Prefix => '',
-			LocalName => 'data',
-			Name => 'data',
-			NamespaceURI => EPrints::Const::EP_NS_DATA,
-			Attributes => {
-				('{}encoding') => {
-					Prefix => '',
-					LocalName => 'encoding',
-					Name => 'encoding',
-					NamespaceURI => '',
-					Value => 'base64',
-				},
-			},
-		});
-		my $buffer = "";
+		my $data = "";
 		$self->get_file(sub {
-			use bytes;
-			substr($_[0],0,0) = $buffer;
-			$handler->characters({
-				Data => MIME::Base64::encode_base64( substr($_[0],0,length($_[0]) - length($_[0])%57 ) )
-			});
-			$buffer = substr($_[0],length($_[0]) - length($_[0])%57);
+			$data .= $_[0];
 		});
-		$handler->characters({
-			Data => MIME::Base64::encode_base64( $buffer )
-		});
-		$handler->end_element({
-			Prefix => '',
-			LocalName => 'data',
-			Name => 'data',
-			NamespaceURI => EPrints::Const::EP_NS_DATA,
-		});
+		$self->set_value( "data", MIME::Base64::encode( $data ) );
 	}
 
-	$handler->end_element( {
-		Prefix => '',
-		LocalName => $name,
-		Name => $name,
-		NamespaceURI => EPrints::Const::EP_NS_DATA,
-	});
+	my $file = $self->SUPER::to_xml( %opts );
+
+	return $file;
 }
 
 =item $stored->add_plugin_copy( $plugin, $sourceid )
@@ -694,24 +627,17 @@ sub remove_plugin_copy
 	$self->set_value( "copies", $copies );
 }
 
-=item $success = $stored->get_file( CALLBACK [, $offset, $n ] )
+=item $success = $stored->get_file( CALLBACK )
 
-Get the contents of the stored file - see L<EPrints::Storage/retrieve>.
-
-$offset is the position in bytes to start reading from, default 0.
-
-$n is the number of bytes to read, default C<filesize>.
+Get the contents of the stored file - see L<EPrints::Storage>::retrieve().
 
 =cut
 
 sub get_file
 {
-	my( $self, $f, $offset, $n ) = @_;
+	my( $self, $f ) = @_;
 
-	$offset = 0 if !defined $offset;
-	$n = $self->value( "filesize" ) if !defined $n;
-
-	return $self->{session}->get_storage->retrieve( $self, $offset, $n, $f );
+	return $self->{session}->get_storage->retrieve( $self, $f );
 }
 
 =item $content_length = $stored->set_file( CONTENT, $content_length )
@@ -728,15 +654,11 @@ CONTENT may be one of:
 
 This method does not check the actual number of bytes read is the same as $content_length.
 
-Calling set_file() will delete any existing file data.
-
 =cut
 
 sub set_file
 {
 	my( $self, $content, $clen ) = @_;
-
-	$self->{session}->get_storage->delete( $self );
 
 	use bytes;
 	# on 32bit platforms this will cause wrapping at 2**31, without integer
@@ -802,87 +724,6 @@ sub set_file
 	return $rlen;
 }
 
-sub start_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	$self->SUPER::start_element( $data, $epdata, $state );
-
-	if( $state->{depth} == 2 )
-	{
-		my $attr = $data->{Attributes}->{"{}encoding"};
-		if( defined $attr && $data->{LocalName} eq "data" && $attr->{Value} eq "base64" )
-		{
-			delete $state->{handler};
-
-			$state->{encoding} = $attr->{Value};
-			$state->{buffer} = "";
-			my $tmpfile = $epdata->{_content} = File::Temp->new();
-			binmode($tmpfile);
-		}
-	}
-}
-
-sub end_element
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	if( $state->{depth} == 2 && defined $state->{encoding} )
-	{
-		my $tmpfile = $epdata->{_content};
-		print $tmpfile MIME::Base64::decode_base64( $state->{buffer} );
-		seek($tmpfile,0,0);
-		delete $state->{encoding};
-		delete $state->{buffer};
-	}
-
-	$self->SUPER::end_element( $data, $epdata, $state );
-}
-
-sub characters
-{
-	my( $self, $data, $epdata, $state ) = @_;
-
-	$self->SUPER::characters( $data, $epdata, $state );
-
-	if( $state->{depth} == 2 && defined $state->{encoding} )
-	{
-		my $tmpfile = $epdata->{_content};
-		$state->{buffer} .= $data->{Data};
-		for($state->{buffer})
-		{
-			print $tmpfile MIME::Base64::decode_base64( substr($_,0,length($_) - length($_)%77) );
-			$_ = substr($_,length($_) - length($_)%77);
-		}
-	}
-}
-
-sub render_filesize
-{
-	my( $repo, $field, $value ) = @_;
-
-	return $repo->make_doc_fragment if !EPrints::Utils::is_set( $value );
-	return $repo->make_text( EPrints::Utils::human_filesize( $value ) );
-}
-
-sub get_url
-{
-	my( $self ) = @_;
-
-	my $doc = $self->parent or return;
-	return $doc->get_url( $self->value( "filename" ) );
-}
-
-sub path
-{
-	my( $self ) = @_;
-
-	my $parent = $self->parent;
-	return undef if !defined $parent || !defined $parent->path;
-
-	return $parent->path . URI::Escape::uri_escape_utf8( $self->value( "filename" ), "^A-Za-z0-9\-\._~\/" );
-}
-
 1;
 
 __END__
@@ -894,32 +735,4 @@ __END__
 L<EPrints::DataObj> and L<EPrints::DataSet>.
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

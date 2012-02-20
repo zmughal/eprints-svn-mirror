@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -36,6 +41,8 @@ BEGIN
 
 use EPrints::MetaField;
 
+our $REGEXP_DATETIME = qr/\d\d\d\d(?:-\d\d(?:-\d\d(?:[ T]\d\d(?::\d\d(?::\d\dZ?)?)?)?)?)?/;
+
 sub get_sql_names
 {
 	my( $self ) = @_;
@@ -43,32 +50,18 @@ sub get_sql_names
 	return map { $self->get_name . "_" . $_ } qw( year month day );
 }
 
-# parse either ISO or our format and output our value
-sub _build_value
-{
-	my( $self, $value ) = @_;
-
-	return undef if !defined $value;
-
-	my @parts = split /[-: TZ]/, $value;
-
-	$value = "";
-	$value .= sprintf("%04d",$parts[0]) if( defined $parts[0] );
-	$value .= sprintf("-%02d",$parts[1]) if( defined $parts[1] );
-	$value .= sprintf("-%02d",$parts[2]) if( defined $parts[2] );
-
-	return $value;
-}
-
 sub value_from_sql_row
 {
 	my( $self, $session, $row ) = @_;
 
-	my @parts = grep { defined $_ } splice(@$row,0,3);
+	my @parts = splice(@$row,0,3);
 
-	return undef if !@parts;
+	my $value = "";
+	$value.= sprintf("%04d",$parts[0]) if( defined $parts[0] );
+	$value.= sprintf("-%02d",$parts[1]) if( defined $parts[1] );
+	$value.= sprintf("-%02d",$parts[2]) if( defined $parts[2] );
 
-	return $self->_build_value( join(' ', @parts) );
+	return $value;
 }
 
 sub sql_row_from_value
@@ -233,17 +226,21 @@ sub form_value_basic
 {
 	my( $self, $session, $basename ) = @_;
 	
-	my @parts;
-	for(qw( year month day ))
-	{
-		my $part = $session->param( $basename."_$_" );
-		last if !EPrints::Utils::is_set( $part ) || $part == 0;
-		push @parts, $part;
-	}
-
-	return undef if !@parts;
-
-	return $self->_build_value( join('-', @parts) );
+	my $day = $session->param( $basename."_day" );
+	my $month = $session->param( 
+				$basename."_month" );
+	my $year = $session->param( $basename."_year" );
+	$month = undef if( !EPrints::Utils::is_set($month) || $month == 0 );
+	$year = undef if( !EPrints::Utils::is_set($year) || $year == 0 );
+	$day = undef if( !EPrints::Utils::is_set($day) || $day == 0 );
+	my $r = undef;
+	return $r if( !defined $year );
+	$r .= sprintf( "%04d", $year );
+	return $r if( !defined $month );
+	$r .= sprintf( "-%02d", $month );
+	return $r if( !defined $day );
+	$r .= sprintf( "-%02d", $day );
+	return $r;
 }
 
 
@@ -278,20 +275,44 @@ sub get_unsorted_values
 	return \@outvalues;
 }
 
-sub get_id_from_value
+sub get_ids_by_value
 {
-	my( $self, $session, $value ) = @_;
+	my( $self, $session, $dataset, %opts ) = @_;
 
-	return 'NULL' if !EPrints::Utils::is_set( $value );
-	my $id = $self->SUPER::get_id_from_value( $session, $value );
+	my $in_ids = $session->get_database->get_ids_by_field_values( $self, $dataset, %opts );
 
 	my $res = $self->{render_res};
 
-	return substr($id,0,4) if $res eq "year";
-	return substr($id,0,7) if $res eq "month";
-	return substr($id,0,10) if $res eq "day";
+	if( $res eq "day" )
+	{
+		return $in_ids;
+	}
 
-	return $res;
+	my $l = 10;
+	if( $res eq "month" ) { $l = 7; }
+	if( $res eq "year" ) { $l = 4; }
+
+	my $id_map = {};
+	foreach my $value ( keys %{$in_ids} )
+	{
+		my $proc_v = "undef";
+		if( defined $value )
+		{
+			$proc_v = substr($value,0,$l);
+		}
+
+		foreach my $id ( @{$in_ids->{$value}} )
+		{
+			$id_map->{$proc_v}->{$id} = 1;
+		}
+	}
+	my $out_ids = {};
+	foreach my $value ( keys %{$id_map} )
+	{
+		$out_ids->{$value} = [ keys %{$id_map->{$value}} ];
+	}
+
+	return $out_ids;
 }
 
 sub get_value_label
@@ -319,7 +340,19 @@ sub from_search_form
 {
 	my( $self, $session, $basename ) = @_;
 
-	return $self->EPrints::MetaField::Int::from_search_form( $session, $basename );
+	my $val = $session->param( $basename );
+	return unless defined $val;
+
+	my $drange = $val;
+	$drange =~ s/-(\d\d\d\d(-\d\d(-\d\d)?)?)$/-/;
+	$drange =~ s/^(\d\d\d\d(-\d\d(-\d\d)?)?)(-?)$/$4/;
+
+	if( $drange eq "" || $drange eq "-" )
+	{
+		return( $val );
+	}
+			
+	return( undef,undef,undef, $session->html_phrase( "lib/searchfield:date_err" ) );
 }
 
 
@@ -327,37 +360,47 @@ sub render_search_value
 {
 	my( $self, $session, $value ) = @_;
 
-	my $regexp = $self->property( "regexp" );
-	my $range = qr/-|(?:\.\.)/;
+	# still not very pretty
+	my $drange = $value;
+	my $lastdate;
+	my $firstdate;
+	if( $drange =~ s/-($REGEXP_DATETIME)$/-/ )
+	{	
+		$lastdate = $1;
+	}
+	if( $drange =~ s/^($REGEXP_DATETIME)(-?)$/$2/ )
+	{
+		$firstdate = $1;
+	}
 
-	if( $value =~ /^($regexp)$range($regexp)$/ )
+	if( defined $firstdate && defined $lastdate )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc:date_between",
 			from => EPrints::Time::render_date( 
 					$session, 
-					$1 ),
+					$firstdate ),
 			to => EPrints::Time::render_date( 
 					$session, 
-					$2 ) );
+					$lastdate ) );
 	}
 
-	if( $value =~ /^$range($regexp)$/ )
+	if( defined $lastdate )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc:date_orless",
 			to => EPrints::Time::render_date( 
 					$session,
-					$1 ) );
+					$lastdate ) );
 	}
 
-	if( $value =~ /^($regexp)$range$/ )
+	if( defined $firstdate && $drange eq "-" )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc:date_ormore",
 			from => EPrints::Time::render_date( 
 					$session,
-					$1 ) );
+					$firstdate ) );
 	}
 	
 	return EPrints::Time::render_date( $session, $value );
@@ -369,11 +412,6 @@ sub get_search_conditions
 {
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
-
-	if( $match eq "SET" )
-	{
-		return $self->SUPER::get_search_conditions( @_[1..$#_] );
-	}
 
 	if( $match eq "EX" )
 	{
@@ -399,16 +437,68 @@ sub get_search_conditions_not_ex
 {
 	my( $self, $session, $dataset, $search_value, $match, $merge,
 		$search_mode ) = @_;
-
+	
 	# DATETIME
 	# DATETIME-
 	# -DATETIME
 	# DATETIME-DATETIME
 	# DATETIME := YEAR-MON-DAY{'T',' '}HOUR:MIN:SEC{'Z'}
 
-	return $self->EPrints::MetaField::Int::get_search_conditions_not_ex(
-		$session, $dataset, $search_value, $match, $merge, $search_mode
-	);
+	my $drange = $search_value;
+	my $lastdate;
+	my $firstdate;
+	if( $drange =~ s/-($REGEXP_DATETIME)$/-/o )
+	{	
+		$lastdate = $1;
+	}
+	if( $drange =~ s/^($REGEXP_DATETIME)(-?)$/$2/o )
+	{
+		$firstdate = $1;
+	}
+
+	if( !defined $firstdate && !defined $lastdate )
+	{
+		return EPrints::Search::Condition->new( 'FALSE' );
+	}
+
+	# not a range.
+	if( $drange ne "-" )
+	{
+		return EPrints::Search::Condition->new( 
+				'=',
+				$dataset,
+				$self,
+				$firstdate );
+	}		
+
+	my @r = ();
+
+	if( defined $firstdate )
+	{
+		push @r, EPrints::Search::Condition->new( 
+				'>=',
+				$dataset,
+				$self,
+				$firstdate);
+	}
+
+	if( defined $lastdate )
+	{
+		push @r, EPrints::Search::Condition->new( 
+				'<=',
+				$dataset,
+				$self,
+				$lastdate);
+	}
+
+	if( scalar @r == 0 )
+	{
+		return EPrints::Search::Condition->new( 'FALSE' );
+	}
+	if( scalar @r == 1 ) { return $r[0]; }
+
+	return EPrints::Search::Condition->new( "AND", @r );
+	# error if @r is empty?
 }
 
 sub get_search_group { return 'date'; } 
@@ -421,7 +511,6 @@ sub get_property_defaults
 	$defaults{render_res} = "day";
 	$defaults{render_style} = "long";
 	$defaults{text_index} = 0;
-	$defaults{regexp} = qr/\d\d\d\d(?:-\d\d(?:-\d\d)?)?/;
 	return %defaults;
 }
 
@@ -439,27 +528,6 @@ sub trim_date
 	return substr( $date, 0, 19 ) if $resolution == 6;
 
 	return $date;
-}
-
-sub ordervalue_basic
-{
-	my( $self , $value ) = @_;
-
-	return $self->_build_value( $value );
-}
-
-sub set_value
-{
-	my( $self, $dataobj, $value ) = @_;
-
-	# reformat date/time values so they are always consistently stored
-	local $_;
-	for(ref($value) eq "ARRAY" ? @$value : $value)
-	{
-		$_ = $self->_build_value( $_ );
-	}
-
-	$self->SUPER::set_value( $dataobj, $value );
 }
 
 sub get_resolution
@@ -497,31 +565,3 @@ sub render_xml_schema_type
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

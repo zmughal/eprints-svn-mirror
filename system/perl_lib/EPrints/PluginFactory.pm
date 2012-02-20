@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -30,10 +35,8 @@ against a set of restrictions.
 
 package EPrints::PluginFactory;
 
-use EPrints;
-use EPrints::Const qw( :namespace );
-
 use strict;
+use warnings;
 
 use File::Find qw();
 
@@ -65,111 +68,43 @@ sub new
 
 	$self->{repository_data} = {};
 
-	$self->{xslt} = {};
-
-	$self->{disabled} = {};
-
 	my $dir;
 
-	my $use_xslt =
-		$EPrints::XML::CLASS eq "EPrints::XML::LibXML" &&
-		EPrints::Utils::require_if_exists( "XML::LibXSLT" );
-
-	# system plugins (don't reload)
-	if( !scalar keys %SYSTEM_PLUGINS )
+	# system plugins (only load once)
+	$dir = $repository->get_conf( "base_path" )."/perl_lib";
+	if( defined $dir && !scalar keys %SYSTEM_PLUGINS )
 	{
-		$dir = $repository->config( "base_path" )."/perl_lib";
 		$self->_load_dir( \%SYSTEM_PLUGINS, $repository, $dir );
-		if( $use_xslt )
-		{
-			$self->_load_xslt_dir( \%SYSTEM_PLUGINS, $repository, $dir );
-		}
-
-		# extension plugins
-		$dir = $repository->config( "base_path" )."/lib/plugins";
-		my @loaded = $self->_load_dir( \%SYSTEM_PLUGINS, $repository, $dir );
-		if( $use_xslt )
-		{
-			push @loaded,
-				$self->_load_xslt_dir( \%SYSTEM_PLUGINS, $repository, $dir );
-		}
-		# default to disabled
-		my $conf = $repository->config( "plugins" );
-		foreach my $plugin (@loaded)
-		{
-			my $pluginid = $plugin->get_id();
-			if( !defined $plugin->param( "disable" ) )
-			{
-				$conf->{$pluginid}{params}{disable} = 1;
-			}
-		}
 	}
 
 	# repository-specific plugins
 	$dir = $repository->get_conf( "config_path" )."/plugins";
-	$self->_load_dir( $self->{repository_data}, $repository, $dir );
-	if( $use_xslt )
+	if( defined $dir )
 	{
-		$self->_load_xslt_dir( $self->{repository_data}, $repository, $dir );
+		$self->_load_dir( $self->{repository_data}, $repository, $dir );
 	}
 
+	$self->{disabled} = {};
+
+	# build a cheat-sheet of config-disabled plugins
 	foreach my $plugin ($self->get_plugins)
 	{
-		# build a cheat-sheet of config-disabled plugins
 		my $pluginid = $plugin->get_id();
 		$self->{disabled}->{$pluginid} = $plugin->param( "disable" );
-		# plugin-defined aliases
-		if( !$plugin->param( "disable" ) )
-		{
-			foreach my $alias (@{$plugin->param( "alias" )||[]})
-			{
-				$self->{alias}->{$alias} = $pluginid;
-			}
-		}
 	}
 
 	return $self;
-}
-
-=begin InternalDoc
-
-=item $v = $plugins->cache( $k [, $v ] )
-
-Cache a value in the PluginFactory. This is a convenient way to cache information about plugins that will automatically get reset if plugins are reloaded.
-
-=end InternalDoc
-
-=cut
-
-sub cache
-{
-	my( $self, $key, $value ) = @_;
-
-	return $self->{_cache}->{$key} if @_ == 2;
-	return $self->{_cache}->{$key} = $value;
-}
-
-sub reset
-{
-	my( $self ) = @_;
-
-	%SYSTEM_PLUGINS = ();
 }
 
 sub _load_dir
 {
 	my( $self, $data, $repository, $base_dir ) = @_;
 
-	if( !grep { $_ eq $base_dir } @INC )
-	{
-		@INC = ($base_dir, @INC);
-	}
-
-	$base_dir .= "/EPrints/Plugin";
-
 	return unless -d $base_dir;
 
-	my @plugins;
+	local @INC = ($base_dir, @INC);
+
+	$base_dir .= "/EPrints/Plugin";
 
 	File::Find::find({
 		wanted => sub {
@@ -183,55 +118,18 @@ sub _load_dir
 			$class =~ s#/#::#g;
 			$class =~ s/\.pm$//;
 			$class = "EPrints::Plugin::$class";
-			my $plugin = $self->_load_plugin( $data, $repository, $File::Find::name, $class );
-			push @plugins, $plugin if defined $plugin;
+			$self->_load_plugin( $data, $repository, $File::Find::name, $class );
 		},
 		no_chdir => 1,
 		},
 		$base_dir
 	);
-
-	return @plugins;
-}
-
-sub _load_xslt_dir
-{
-	my( $self, $data, $repository, $base_dir ) = @_;
-
-	$base_dir .= "/EPrints/Plugin";
-
-	return unless -d $base_dir;
-
-	my @plugins;
-
-	File::Find::find({
-		wanted => sub {
-			return if $_ =~ m/^\./;
-			return if $_ eq "CVS";
-			return unless $_ =~ m/\.xslt?$/;
-			return unless -f $File::Find::name;
-			my $class = $File::Find::name;
-			substr($class,0,length($base_dir)) = "";
-			$class =~ s#^/+##;
-			$class =~ s#/#::#g;
-			$class =~ s/\.xslt?$//;
-			$class = "EPrints::Plugin::$class";
-			my $plugin = $self->_load_xslt( $data, $repository, $File::Find::name, $class );
-			push @plugins, $plugin if defined $plugin;
-		},
-		no_chdir => 1,
-		},
-		$base_dir
-	);
-
-	return @plugins;
 }
 
 sub _load_plugin
 {
 	my( $self, $data, $repository, $fn, $class ) = @_;
 
-	local $SIG{__DIE__};
 	eval "use $class; 1";
 	if( $@ ne "" )
 	{
@@ -239,13 +137,9 @@ sub _load_plugin
 		return;
 	}
 
-	my $plugin = eval { $class->new(
+	my $plugin = $class->new(
 		repository => $self->{repository},
-		session => $self->{repository} ) };
-	if( $@ ) {
-		warn $@;
-		return;
-	}
+		session => $self->{repository} );
 
 	# disabled by class-global?
 	no strict "refs";
@@ -256,84 +150,7 @@ sub _load_plugin
 	use strict "refs";
 	return if( $disable );
 
-	return $self->register_plugin( $data, $plugin );
-}
-
-sub _load_xslt
-{
-	my( $self, $data, $repository, $fn, $class ) = @_;
-
-	my $handler = $class;
-	$handler =~ s/^(EPrints::Plugin::([^:]+)::XSLT).*/$1/;
-
-	my $type = $2;
-
-	{
-	eval <<EOP;
-package $class;
-
-our \@ISA = qw( $handler );
-
-1
-EOP
-	die $@ if $@;
-	}
-
-	my $xslt = {};
-
-	{
-		local $SIG{__DIE__};
-		my $doc = eval { $repository->xml->parse_file( $fn ) };
-		if( !defined $doc )
-		{
-			$repository->log( "Error parsing $fn: $@" );
-			return;
-		}
-		foreach my $attr ($doc->documentElement->attributes)
-		{
-			next if $attr->isa( "XML::LibXML::Namespace" );
-			next if !defined $attr->namespaceURI;
-			next if $attr->namespaceURI ne EP_NS_XSLT;
-			$xslt->{$attr->localName} = $attr->value();
-		}
-		if( $type eq "Export" )
-		{
-			$xslt->{accept} = [split / /, $xslt->{accept}||""];
-		}
-		elsif( $type eq "Import" )
-		{
-			$xslt->{accept} = [map {
-					HTTP::Headers::Util::join_header_words(@$_)
-				}
-				HTTP::Headers::Util::split_header_words($xslt->{accept}||"")
-			];
-			$xslt->{produce} = [split / /, $xslt->{produce}||""];
-		}
-
-		$xslt->{doc} = $doc;
-		$xslt->{_filename} = $fn;
-		$xslt->{_mtime} = EPrints::Utils::mtime( $fn );
-		$class->init_xslt( $repository, $xslt );
-	}
-
-	my $plugin = $class->new( repository => $repository );
-		
-	if( $plugin->isa( "EPrints::Plugin::Import" ) )
-	{
-		return if !@{$plugin->param( "produce" )};
-
-		return $self->register_plugin( $data, $plugin );
-	}
-	elsif( $plugin->isa( "EPrints::Plugin::Export" ) )
-	{
-		return if !@{$plugin->param( "accept" )};
-
-		return $self->register_plugin( $data, $plugin );
-	}
-	else
-	{
-		return; # unsupported
-	}
+	$self->register_plugin( $data, $plugin );
 }
 
 =back
@@ -354,17 +171,17 @@ sub get_plugin
 {
 	my( $self, $id, %params ) = @_;
 
+	if( $self->{disabled}->{$id} )
+	{
+		return;
+	}
+
 	if( exists $self->{alias}->{$id} )
 	{
 		$params{id} = $id;
 		$id = $self->{alias}->{$id};
 	}
 	return unless defined $id;
-
-	if( $self->{disabled}->{$id} )
-	{
-		return;
-	}
 
 	my $class = $self->get_plugin_class( $id );
 	if( !defined $class )
@@ -377,26 +194,6 @@ sub get_plugin
 		repository => $self->{repository},
 		session => $self->{repository},
 		%params );
-
-	if( ref($plugin) =~ /^EPrints::Plugin::(Import|Export)::XSLT::/ )
-	{
-		if( EPrints::Utils::mtime( $plugin->{_filename} ) > $plugin->{_mtime} )
-		{
-			my $ok = $self->_load_xslt(
-				$self->{repository_data},
-				$self->{repository},
-				$plugin->{_filename},
-				$class
-			);
-			if( $ok )
-			{
-				$plugin = $class->new(
-					repository => $self->{repository},
-					session => $self->{repository},
-					%params );
-			}
-		}
-	}
 
 	return $plugin;
 }
@@ -486,9 +283,13 @@ sub _list
 	}
 }
 
-=item $plugin = $plugins->register_plugin( $data, $plugin )
+=item $ok = EPrints::PluginFactory->register_plugin( $plugin )
 
-Register a new plugin $plugin.
+Register a system-global plugin.
+
+=item $ok = $plugins->register_plugin( $data, $plugin )
+
+Register a new plugin $plugin into $data.
 
 =cut
 
@@ -496,42 +297,18 @@ sub register_plugin
 {
 	my( $self, $data, $plugin ) = @_;
 
+	if( $self eq __PACKAGE__ )
+	{
+		$plugin = $data;
+		$data = \%SYSTEM_PLUGINS;
+	}
+
 	my $id = $plugin->get_id;
 	my $type = $plugin->get_type;
 	my $class = ref($plugin);
 
 	push @{$data->{$type}||=[]}, $id;
 	$data->{"_class_"}->{$id} = $class;
-
-	return $plugin;
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Event::RDF
-
-=cut
-
 package EPrints::Plugin::Event::RDF;
 
 use EPrints::Plugin::Event;
@@ -33,8 +27,6 @@ sub clear_triples
 		my( $repository, $dataset, $dataobj ) = @_;
 		$dataobj->remove;
 	} );
-
-	return;
 }
 
 sub update_triples
@@ -71,8 +63,6 @@ sub update_triples
 		delete $data{tripleid};
 		$self->{session}->dataset( "triple" )->create_dataobj( \%data );
 	});
-
-	return;
 }
 
 sub uri_compress
@@ -93,31 +83,3 @@ sub uri_compress
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

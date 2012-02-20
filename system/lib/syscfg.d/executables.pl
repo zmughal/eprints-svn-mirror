@@ -4,7 +4,6 @@ $c->{executables} ||= {};
 
 # location of executables
 {
-use Config; # for perlpath
 my %executables = (
 	  'convert' => '/usr/bin/convert',
 	  'tar' => '/bin/tar',
@@ -16,15 +15,11 @@ my %executables = (
 	  'elinks' => '/usr/bin/elinks',
 	  'cp' => '/bin/cp',
 	  'latex' => '/usr/bin/latex',
-	  'perl' => $Config{perlpath},
+	  'perl' => '/usr/bin/perl',
 	  'pdftotext' => '/usr/bin/pdftotext',
 	  'wget' => '/usr/bin/wget',
 	  'antiword' => '/usr/bin/antiword',
 	  'ffmpeg' => '/usr/bin/ffmpeg',
-	  'file' => '/usr/bin/file',
-	  'doc2txt' => "$c->{base_path}/tools/doc2txt",
-	  'unoconv' => '/usr/bin/unoconv',
-	  'txt2refs' => "$c->{base_path}/tools/txt2refs",
 	);
 while(my( $name, $path ) = each %executables)
 {

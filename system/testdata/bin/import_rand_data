@@ -1,7 +1,4 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib 
 
 #-d:DProf
 
@@ -15,24 +12,14 @@ use lib "$FindBin::Bin/../../perl_lib";
 #
 ######################################################################
 
-=head1 NAME
-
-import_rand_data - import random eprint data records
-
-=head1 SYNOPSIS
-
-import_rand_data <repoid> [dataset] [count]
-
-=cut
-
 use EPrints;
+use strict;
+
+
+use strict;
 use Getopt::Long;
 use Pod::Usage;
 use Text::Lorem;
-
-use strict;
-use utf8;
-use encoding "utf8";
 
 my $version = 0;
 my $verbose = 0;
@@ -50,33 +37,19 @@ GetOptions(
 	'version' => \$version,
 	'verbose+' => \$verbose,
 	'silent' => \$quiet,
-	'quiet' => \$quiet,
-	'dump' => \(my $dump),
-	'scigen' => \(my $scigen),
+	'quiet' => \$quiet
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version( "import_test_data" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
-pod2usage( 2 ) if( scalar @ARGV < 1 ); 
+#pod2usage( 2 ) if( scalar @ARGV != 1 ); 
 
 my $noise = 1;
 $noise = 0 if( $quiet );
 $noise = 1+$verbose if( $verbose );
 
-our $SCIGEN;
-if( $scigen )
-{
-	eval "use Text::Scigen";
-	die "scigen argument requires Text::Scigen module" if $@;
-	$SCIGEN = Text::Scigen->new( filename => "scirules.in" );
-}
 
 srand(1); # Reproduce the exact same set of data
-
-our %CYRILLIC_MAP = (
-	(map { chr(65+$_) => chr(0x410 + $_) } 0 .. 25),
-	(map { chr(97+$_) => chr(0x430 + $_) } 0 .. 25)
-);
 
 our $lorem = Text::Lorem->new();
 sub Text::Lorem::name {
@@ -86,11 +59,8 @@ sub Text::Lorem::name {
 	return "\u$word";
 };
 
-my @NAMES = &read_names;
-
 # generate standard lorems, then add some exotic UTF-8 stuff
 $lorem->{wordlist} = $lorem->generate_wordlist();
-binmode(\*DATA, ":utf8");
 push @{$lorem->{wordlist}}, map { split /\s+/, $_ } <DATA>;
 
 # nb. This syntax is subject to change in future versions.
@@ -106,165 +76,57 @@ $total ||= 1000;
 
 # Basic data
 our @TYPES = @{$session->get_repository->{types}->{eprint}};
-our @SUBJECTS = read_subjects( $session, "subjects" );
+our @SUBJECTS = @{read_subjects( $session )};
 our @PUBLICATIONS;
 for(1..100)
 {
 	push @PUBLICATIONS, $lorem->sentences(1);
 }
-our @PUBLISHERS;
-for(1..10)
-{
-	push @PUBLISHERS, $lorem->sentences(1);
-}
-our @INSTITUTIONS;
-for(1..10)
-{
-	push @INSTITUTIONS, $lorem->sentences(1);
-}
 
-my $datapath = "$FindBin::Bin/../data";
+my $datapath = $EPrints::SystemSettings::conf->{base_path}."/testdata/data";
 
-our @DOCUMENTS = (
-	{
-		format => "application/pdf",
-		language => "en",
-		security => "public",
-		main => "paper2.pdf",
-		files => [ {
-			filename => "paper2.pdf",
-			filesize => "128765",
-			url => "file:$datapath/paper2.pdf",
-		} ],
-	},
-	{
-		format => "application/pdf",
-		language => "en",
-		security => "public",
-		main => "paper.pdf",
-		files => [ {
-			filename => "paper.pdf",
-			filesize => "12174",
-			url => "file:$datapath/paper.pdf",
-		} ],
-	},
-	{
-		format => "image/jpeg",
-		language => "en",
-		security => "public",
-		main => "picture.jpg",
-		files => [ {
-			filename => "picture.jpg",
-			filesize => "7927",
-			url => "file:$datapath/picture.jpg",
-		} ],
-	},
-	{
-		format => "text/plain",
-		language => "en",
-		security => "public",
-		main => "text.txt",
-		files => [ {
-			filename => "text.txt",
-			filesize => "35",
-			url => "file:$datapath/text.txt",
-		} ],
-	},
-);
-
-my $ds = $session->dataset( $datasetid );
+my $ds = $session->get_repository->get_dataset( $datasetid );
 
 $session->get_repository->{config}->{enable_file_imports} = 1;
 $session->get_repository->{config}->{enable_web_imports} = 1;
 
 
-if( $dump )
-{
-	print <<"EOX";
-<?xml version='1.0'?>
-<eprints>
-EOX
-}
 for(1..$total)
 {
-	my $type = rand_type();
 	my $data = {
 		eprint_status => $datasetid,
 		userid => $userid,
-		type => $type,
+		type => rand_type(),
 		title => rand_title(),
 		creators => rand_names(),
-		editors => ($type =~ /^book/ ? rand_names() : []),
 		ispublished => "pub",
 		subjects => [ rand_subjects() ],
 		full_text_status => "public",
 		abstract => rand_abstract(),
 		date => rand_date(),
-		date_type => "published",
 		refereed => "TRUE",
 		publication => rand_publication(),
-		book_title => ($type eq "book_section" ? rand_title() : undef),
-		publisher => ($type =~ /^book/ ? rand_publisher() : undef),
-		thesis_type => ($type eq "thesis" ? "phd" : undef),
-		institution => rand_institution(),
-		documents => rand_documents(),
+		documents => [ {
+			format => "application/pdf",
+			language => "en",
+			security => "public",
+			main => "paper.pdf",
+			files => [ {
+				filename => "paper.pdf",
+				filesize => "12174",
+				url => "file:$datapath/paper.pdf",
+			} ],
+		} ],
 	};
-	if( $dump )
-	{
-		my $plugin = $session->plugin( "Export::XML" );
-		print $plugin->output_dataobj(
-			$ds->create_object( $session, $data ),
-			omit_declaration => 1,
-			omit_root => 1,
-		);
-	}
-	else
-	{
-		$session->get_database->begin;
-		my $eprint = $ds->create_object( $session, $data );
-		$session->get_database->commit;
-		print $eprint->get_id, "\n";
-	}
-}
-if( $dump )
-{
-	print "\n</eprints>\n";
+	$session->get_database->begin;
+	my $eprint = $ds->create_object( $session, $data );
+	$session->get_database->commit;
+	print $eprint->get_id, "\n";
 }
 
 $session->terminate;
 
 exit;
-
-sub read_names
-{
-	open(my $fh, "<:gzip", "$FindBin::Bin/../data/names.gz")
-		or die "Error opening names.gz: $!";
-	my @names = <$fh>;
-	chomp($_) for @names;
-	close($fh);
-	foreach my $i (0..int($#names/2))
-	{
-		my $name = $names[$i];
-		$name =~ s/(.)/$CYRILLIC_MAP{$1}||$1/eg;
-		push @names, $name;
-	}
-	for(@names)
-	{
-		my( $given, $family, $lineage ) = /^([^,]+)\s+([^,]+)(?:,\s*(.+))?$/;
-		if( !defined $family )
-		{
-			$family = $_;
-			$given = undef;
-		}
-		$family =~ s/\s+//g;
-		$_ = {
-			given => $given,
-			family => $family,
-			lineage => $lineage,
-		};
-	}
-	return @names;
-}
 
 sub rand_names
 {
@@ -272,11 +134,13 @@ sub rand_names
 	my $max = int(rand(6))+1;
 	while($max--)
 	{
-		my $i = int(rand(scalar(@NAMES)));
-		push @names, {
-			name => $NAMES[$i],
-			id => $i,
+		my $name = {
+			name => {
+				family => $lorem->name,
+				given => $lorem->name,
+			},
 		};
+		push @names, $name;
 	}
 	return \@names;
 }
@@ -299,7 +163,6 @@ sub rand_subjects
 
 sub rand_title
 {
-	return trim($SCIGEN->generate( "SCI_TITLE" )) if $scigen;
 	my $title = $lorem->sentences( 1 );
 	$title =~ s/\.$//;
 	return $title;
@@ -307,7 +170,6 @@ sub rand_title
 
 sub rand_abstract
 {
-	return trim($SCIGEN->generate( [qw(SCI_INTRO_A SCI_ABSTRACT_A SCI_INTRO_THESIS)] )) if $scigen;
 	return $lorem->paragraphs(int(rand(3))+2);
 }
 
@@ -328,61 +190,16 @@ sub rand_date
 
 sub read_subjects
 {
-	my( $session, $id ) = @_;
+	my( $session ) = @_;
 
-	my $ds = $session->dataset( "subject" );
+	my $ds = $session->get_repository->get_dataset( "subject" );
 
-	my @subjects;
-	$ds->search(filters => [
-		{ meta_fields => [qw( ancestors )], value => $id },
-	])->map(sub {
-		(undef, undef, my $subject) = @_;
-
-		return if $subject->value( "depositable" ) ne "TRUE";
-
-		push @subjects, $subject->id;
-	});
-
-	return @subjects;
+	return $ds->get_item_ids( $session );
 }
 
 sub rand_publication
 {
-	return trim($SCIGEN->generate( "CITE_JOURNAL" )) if $scigen;
 	return $PUBLICATIONS[int(rand(@PUBLICATIONS))];
-}
-
-sub rand_documents
-{
-	my @docs = (0..$#DOCUMENTS);
-	for(my $i = @docs; --$i; ) {
-		my $j = int rand ($i+1);
-		next if $i == $j;
-		@docs[$i,$j] = @docs[$j,$i];
-	}
-	@docs = @docs[0..int(rand($#DOCUMENTS))];
-
-	return [@DOCUMENTS[@docs]];
-}
-
-sub rand_publisher
-{
-	return @PUBLISHERS[int(rand($#PUBLISHERS))];
-}
-
-sub rand_institution
-{
-	return trim($SCIGEN->generate( "CITE_INST" )) if $scigen;
-	return @INSTITUTIONS[int(rand($#INSTITUTIONS))];
-}
-
-sub trim
-{
-	my( $str ) = @_;
-	$str =~ s/^\s+//;
-	$str =~ s/\s+$//;
-	$str =~ s/  +/ /;
-	return $str;
 }
 
 =pod

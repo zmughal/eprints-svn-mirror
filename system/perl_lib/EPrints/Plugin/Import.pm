@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Import
-
-=cut
-
 package EPrints::Plugin::Import;
 
 use strict;
@@ -34,21 +28,26 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{accept} = exists $params{accept} ? $params{accept} : [];
-	$params{produce} = exists $params{produce} ? $params{produce} : [];
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 1;
-	$params{session} = exists $params{session} ? $params{session} : $params{processor}->{session};
-	$params{actions} = exists $params{actions} ? $params{actions} : [];
-	$params{arguments} = exists $params{arguments} ? $params{arguments} : {};
-	$params{Handler} = exists $params{Handler} ? $params{Handler} : EPrints::CLIProcessor->new( session => $params{session} );
-	$params{screen} = exists $params{screen} ? $params{screen} : "Import";
+	my $self = $class->SUPER::new(%params);
 
-	return $class->SUPER::new(%params);
+	if( !$self->{session} )
+	{
+		$self->{session} = $self->{processor}->{session};
+	}
+
+	if( !$self->{Handler} )
+	{
+		$self->{Handler} = EPrints::CLIProcessor->new(
+			session => $self->{session}
+		);
+	}
+
+	$self->{name} = "Base input plugin: This should have been subclassed";
+	$self->{visible} = "all";
+	$self->{advertise} = 1;
+
+	return $self;
 }
-
-sub arguments { shift->EPrints::Plugin::Export::arguments( @_ ) }
-sub has_argument { shift->EPrints::Plugin::Export::has_argument( @_ ) }
 
 sub handler
 {
@@ -87,36 +86,11 @@ sub matches
 	{
 		return( $self->param( "advertise" ) == $param );
 	}
-	if( $test eq "can_accept" )
-	{
-		return $self->can_accept( $param );
-	}
-	if( $test eq "can_action" )
-	{
-		return $self->can_action( $param );
-	}
 
 	# didn't understand this match 
 	return $self->SUPER::matches( $test, $param );
 }
 
-sub can_action
-{
-	my( $self, $actions ) = @_;
-
-	if( ref($actions) eq "ARRAY" )
-	{
-		for(@$actions)
-		{
-			return 0 if !$self->can_action( $_ );
-		}
-		return 1;
-	}
-
-	return $actions eq "*" ?
-		scalar(@{$self->param( "actions" )}) > 0 :
-		scalar(grep { $_ eq $actions } @{$self->param( "actions" )}) > 0;
-}
 
 # all, staff or ""
 sub is_visible
@@ -137,18 +111,6 @@ sub is_visible
 	}
 
 	return 1;
-}
-
-sub can_accept
-{
-	my( $self, $format ) = @_;
-
-	for(@{$self->param( "accept" )})
-	{
-		return 1 if (split /;/, $_)[0] eq $format;
-	}
-
-	return 0;
 }
 
 sub can_produce
@@ -241,29 +203,77 @@ sub convert_input
 	$plugin->log( $r );
 }
 
-=item $dataobj = $plugin->epdata_to_dataobj( $epdata, %opts )
-
-Turn $epdata into a L<EPrints::DataObj> with the dataset passed in %opts.
-
-Calls handler to perform the actual creation.
-
-=cut
-
 sub epdata_to_dataobj
 {
-	# backwards compatibility
-	my( $dataset ) = splice(@_,1,1)
-		if UNIVERSAL::isa( $_[1], "EPrints::DataSet" );
-	my( $self, $epdata, %opts ) = @_;
-	$opts{dataset} ||= $dataset;
+	my( $plugin, $dataset, $epdata ) = @_;
+
+	my $session = $plugin->{session};
+
+	my $item;
+
+	if( $session->get_repository->get_conf('enable_import_ids') )
+	{
+		my $ds_id = $dataset->confid;
+		if( $ds_id eq "eprint" || $ds_id eq "user" )
+		{
+			my $id = $epdata->{$dataset->get_key_field->get_name};
+			if( $plugin->{update} )
+			{
+				$item = $dataset->get_object( $session, $id );
+			}
+			elsif( $session->get_database->exists( $dataset, $id ) )
+			{
+				$plugin->error("Failed attampt to import existing $ds_id.$id");
+				return;
+			}
+		}
+	}
+	else
+	{
+		delete $epdata->{$dataset->get_key_field->get_name};
+	}
+
+	if( $dataset->confid eq "eprint" && exists($plugin->{import_documents}) && !$plugin->{import_documents} )
+	{
+		delete $epdata->{documents};
+	}
+
+	$plugin->handler->parsed( $epdata );
+	return if( $plugin->{parse_only} );
 
 	if( $dataset->id eq "eprint" && !defined $epdata->{eprint_status} )
 	{
-		$self->warning( "Importing an EPrint record into 'eprint' dataset without eprint_status being set. Using 'buffer' as default." );
+		$plugin->warning( "Importing an EPrint record into 'eprint' dataset without eprint_status being set. Using 'buffer' as default." );
 		$epdata->{eprint_status} = "buffer";
 	}
-	
-	return $self->handler->epdata_to_dataobj( $epdata, %opts );
+
+	# Update an existing item
+	if( defined( $item ) )
+	{
+		foreach my $fieldname (keys %$epdata)
+		{
+			if( $dataset->has_field( $fieldname ) )
+			{
+				# Can't currently set_value on subobjects
+				my $field = $dataset->get_field( $fieldname );
+				next if $field->is_type( "subobject" );
+				$item->set_value( $fieldname, $epdata->{$fieldname} );
+			}
+		}
+		$item->commit();
+	}
+	# Create a new item
+	else
+	{
+		$item = $dataset->create_object( $plugin->{session}, $epdata );
+	}
+
+	if( defined( $item ) )
+	{
+		$plugin->handler->object( $dataset, $item );
+	}
+
+	return $item;
 }
 
 sub warning
@@ -286,31 +296,3 @@ sub is_tool
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

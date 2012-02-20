@@ -1,4 +1,4 @@
-#lightbox{	position: absolute;	left: 0; width: 100%; z-index: 100; text-align: center; }
+#lightbox{	position: absolute;	left: 0; width: 100%; z-index: 100; text-align: center; line-height: 0;}
 #lightbox img{ width: auto; height: auto;}
 #lightbox a img{ border: none; }
 
@@ -31,4 +31,4 @@
 
 #overlay{ position: absolute; top: 0; left: 0; z-index: 90; width: 100%; height: 500px; background-color: #000; }
 
-#lightboxMovie {}
+#lightboxMovie { width: 320px; height: 264px; }

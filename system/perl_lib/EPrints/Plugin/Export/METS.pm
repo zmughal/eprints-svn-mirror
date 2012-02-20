@@ -31,7 +31,6 @@ sub new
 	$self->{accept} = [ 'dataobj/eprint', 'list/eprint' ];
 	$self->{visible} = "all";
 	
-	$self->{metadataPrefix} = "mets";
 	$self->{xmlns} = "http://www.loc.gov/METS/";
 	$self->{schemaLocation} = "http://www.loc.gov/standards/mets/mets.xsd";
 
@@ -235,7 +234,9 @@ sub _make_fileSec
 	
 	foreach my $doc ($dataobj->get_all_documents)
 	{
+		my $baseurl = $doc->get_baseurl;
 		my $id_base = $id."_".$doc->get_id;
+		my %files = $doc->files;
 
 		$fileSec->appendChild(my $fileGrp = $session->make_element(
 			"${PREFIX}fileGrp",
@@ -243,17 +244,17 @@ sub _make_fileSec
 		));
 
 		my $file_idx = 0;
-		foreach my $file (@{$doc->value( "files" )})
+		while( my( $name, $size) = each %files )
 		{
 			$file_idx++;
-			my $url = $doc->get_url( $file->value( "filename" ) );
-			my $mimetype = $file->value( "mime_type" );
+			my $url = $baseurl . $name;
+			my $mimetype = $doc->mime_type( $name );
 			$mimetype = 'application/octet-stream' unless defined $mimetype;
 
 			$fileGrp->appendChild( my $file = $session->make_element(
 				"${PREFIX}file",
 				"ID" => $id_base."_".$file_idx,
-				"SIZE" => $file->value( "filesize" ),
+				"SIZE" => $size,
 				"OWNERID" => $url,
 				"MIMETYPE" => $mimetype
 			));
@@ -317,31 +318,3 @@ sub _make_structMap
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

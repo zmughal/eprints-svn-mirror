@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -71,7 +76,6 @@ use EPrints::Search::Condition::Grep;
 use EPrints::Search::Condition::NameMatch;
 use EPrints::Search::Condition::InSubject;
 use EPrints::Search::Condition::IsNull;
-use EPrints::Search::Condition::IsNotNull;
 use EPrints::Search::Condition::Comparison;
 use EPrints::Search::Condition::Regexp;
 use EPrints::Search::Condition::SubQuery;
@@ -110,7 +114,6 @@ sub new
 	if( $op eq "name_match" ) { return EPrints::Search::Condition::NameMatch->new( @params ); }
 	if( $op eq "in_subject" ) { return EPrints::Search::Condition::InSubject->new( @params ); }
 	if( $op eq "is_null" ) { return EPrints::Search::Condition::IsNull->new( @params ); }
-	if( $op eq "is_not_null" ) { return EPrints::Search::Condition::IsNotNull->new( @params ); }
 	if( $op eq "grep" ) { return EPrints::Search::Condition::Grep->new( @params ); }
 	if( $op eq "regexp" ) { return EPrints::Search::Condition::Regexp->new( @params ); }
 	if ( $op =~ m/^(=|<=|>=|<|>)$/ )
@@ -324,12 +327,6 @@ Generates the SQL necessary to execute this condition tree.
 
 =cut
 
-# This method is very long because it can be called in several contexts:
-#  - a root query
-#  - a sub-query
-#  - a list of matching eprints
-#  - a list of matching eprints by a field value
-#  - a count of matching eprints by a field value
 sub sql
 {
 	my( $self, %opts ) = @_;
@@ -345,49 +342,25 @@ sub sql
 
 	my $key_alias = delete $opts{key_alias};
 
-	# DISTINCTBY gets all ids by value
-	my $distinctby = delete $opts{distinctby};
-	# GROUPBY gets totals by value
 	my $groupby = delete $opts{groupby};
 
-	my $ov_table;
-	if( $dataset->ordered )
-	{
-		$ov_table = $dataset->get_ordervalues_table_name( $session->get_langid );
-	}
-	else
-	{
-		$ov_table = $dataset->get_sql_table_name();
-	}
+	my $ov_table = $dataset->get_ordervalues_table_name( $session->get_langid );
 
 	my $sql = "";
 	my @joins;
 
-	my $distinctby_table;
-	my $groupby_table;
+	my $groupby_table = "groupby_".refaddr( $self );
 
-	if( defined $distinctby && !$distinctby->property( "multiple" ) )
+	if( !defined $groupby )
 	{
-		$distinctby_table = $dataset->get_sql_table_name;
-		# SELECT main.distinctby, main.id
-		$sql .= "SELECT ";
-		my $i = 0;
-		$sql .= join ",", map { $_.$db->sql_AS."D".$i++ } map { $db->quote_identifier( $distinctby_table, $_ ) } $distinctby->get_sql_names, $key_field->get_sql_name;
+		# SELECT dataset_main_table.key_field
+		$sql .= "SELECT ".$db->quote_identifier( $dataset->get_sql_table_name, $key_field->get_sql_name );
+		if( defined $key_alias )
+		{
+			$sql .= $db->sql_AS.$db->quote_identifier( $key_alias );
+		}
 	}
-	elsif( defined $distinctby && $distinctby->property( "multiple" ) )
-	{
-		$distinctby_table = "distinctby_".refaddr($self);
-		$sql .= "SELECT ";
-		my $i = 0;
-		$sql .= join ",", map { $_.$db->sql_AS."D".$i++ } map { $db->quote_identifier( $distinctby_table, $_ ) } $distinctby->get_sql_names, $key_field->get_sql_name;
-		push @joins, {
-			type => "inner",
-			table => $dataset->get_sql_sub_table_name( $distinctby ),
-			alias => $distinctby_table,
-			key => $key_field->get_sql_name
-		};
-	}
-	elsif( defined $groupby && !$groupby->property( "multiple" ) )
+	elsif( !$groupby->get_property( "multiple" ) )
 	{
 		$groupby_table = $dataset->get_sql_table_name;
 		# SELECT dataset_main_table.groupby, COUNT(DISTINCT dataset_main_table.key_field)
@@ -395,9 +368,8 @@ sub sql
 		$sql .= join ", ", map { $db->quote_identifier( $groupby_table, $_ ) } $groupby->get_sql_names;
 		$sql .= ", COUNT(DISTINCT ".$db->quote_identifier( $dataset->get_sql_table_name, $key_field->get_sql_name ).")";
 	}
-	elsif( defined $groupby && $groupby->property( "multiple" ) )
+	else
 	{
-		$groupby_table = "groupby_".refaddr( $self );
 		# SELECT groupby_table.groupby, COUNT(DISTINCT dataset_main_table.key_field)
 		$sql .= "SELECT ";
 		$sql .= join ", ", map { $db->quote_identifier( $groupby_table, $_ ) } $groupby->get_sql_names;
@@ -409,20 +381,11 @@ sub sql
 			key => $key_field->get_sql_name
 		};
 	}
-	else
-	{
-		# SELECT dataset_main_table.key_field
-		$sql .= "SELECT ".$db->quote_identifier( $dataset->get_sql_table_name, $key_field->get_sql_name );
-		if( defined $key_alias )
-		{
-			$sql .= $db->sql_AS.$db->quote_identifier( $key_alias );
-		}
-	}
 
 	# FROM dataset_main_table
 	$sql .= " FROM ".$db->quote_identifier( $dataset->get_sql_table_name );
 	# LEFT JOIN dataset_ordervalues
-	if( scalar @orders && $dataset->ordered )
+	if( scalar @orders )
 	{
 		$sql .= " LEFT JOIN ".$db->quote_identifier( $ov_table );
 		$sql .= " ON ".$db->quote_identifier( $dataset->get_sql_table_name, $key_field->get_sql_name )."=".$db->quote_identifier( $ov_table, $key_field->get_sql_name );
@@ -498,8 +461,8 @@ sub sql
 		$sql .= " WHERE ".join(" AND ", @logic);
 	}
 
-	# don't need to GROUP BY subqueries or DISTINCT BY
-	if( !defined $key_alias && !defined $distinctby )
+	# don't need to GROUP BY subqueries
+	if( !defined $key_alias )
 	{
 		if( !defined $groupby )
 		{
@@ -564,7 +527,6 @@ sub process
 
 	my $cachemap = delete $opts{cachemap};
 	my $limit = delete $opts{limit};
-	my $offset = delete $opts{offset};
 
 	my $sql = $self->sql( %opts );
 
@@ -580,7 +542,7 @@ sub process
 	}
 
 #print STDERR "EXECUTING: $sql\n";
-	my $sth = $db->prepare_select( $sql, limit => $limit, offset => $offset );
+	my $sth = $db->prepare_select( $sql, limit => $limit );
 	$db->execute($sth, $sql);
 
 	my @results;
@@ -608,74 +570,13 @@ sub _split_order_by
 		my $desc = 0;
 		if( $fieldname =~ s/^-// ) { $desc = 1; }
 		my $field = EPrints::Utils::field_from_config_string( $dataset, $fieldname );
-		if( $dataset->ordered )
-		{
-			push @orders, [
-					$field->get_name,
-					$desc ? "DESC" : "ASC"
-				];
-		}
-		else
-		{
-			push @orders, map {
-					[ $_, $desc ? "DESC" : "ASC" ]
-				} $field->get_sql_names;
-		}
+		push @orders, [
+				$field->get_sql_name,
+				$desc ? "DESC" : "ASC"
+			];
 	}
 
 	return @orders;
-}
-
-=item $ids_map = $scond->process_distinctby( fields => [$field1, $field2, ... ], %opts )
-
-Gets the distinct ids by each value. Multiple fields may be given, in which case the ids for the UNION of all values in each field are given.
-
-=cut
-
-sub process_distinctby
-{
-	my( $self, %opts ) = @_;
-
-	my $session = $opts{session};
-	my $db = $session->get_database;
-	my $dataset = $opts{dataset};
-	my $table = $dataset->get_sql_table_name;
-
-	my $fields = $opts{fields};
-	EPrints->abort( "Requires at least one field in fields opt" )
-		if !defined $fields || @$fields == 0;
-	for(@$fields)
-	{
-		EPrints->abort( "Can't perform process_distinctby on virtual field" )
-			if $_->is_virtual;
-		EPrints->abort( "Can only perform process_distinctby on multiple fields with the same field type" )
-			if ref($_) ne ref($fields->[0]);
-	}
-
-	my $sql = join(' UNION ',
-		map { $self->sql( %opts, distinctby => $_ ) }
-		@$fields
-	);
-	# add DISTINCT if only one field (UNION is implicitly distinct)
-	if( @$fields == 1 )
-	{
-		my $i = 0;
-		$sql = "SELECT DISTINCT ".join(',', map { "D".$i++ } $fields->[0]->get_sql_names, $dataset->get_key_field->get_sql_name )." FROM ($sql)".$db->sql_AS."D";
-	}
-
-#print STDERR "EXECUTING: $sql\n";
-	my $sth = $db->prepare_select( $sql );
-	$db->execute( $sth, $sql );
-
-	my %ids_map;
-	while(my @row = $sth->fetchrow_array)
-	{
-		my $value = $fields->[0]->value_from_sql_row( $session, \@row );
-		my $key = $fields->[0]->get_id_from_value( $session, $value );
-		push @{$ids_map{$key}}, shift @row;
-	}
-
-	return \%ids_map;
 }
 
 =item ($values, $counts) = $scond->process_groupby( field => $field, %opts )
@@ -748,6 +649,28 @@ sub optimise
 	return $self;
 }
 
+# return the keys to join two datasets together
+sub join_keys
+{
+	my( $self, $source, $target ) = @_;
+
+	my $left_key = $source->get_key_field->get_name;
+	my $right_key = $target->get_key_field->get_name;
+
+	if( $source->has_field( $right_key ) )
+	{
+		return( $right_key, $right_key );
+	}
+	elsif( $target->has_field( $left_key ) )
+	{
+		return( $left_key, $left_key );
+	}
+	else
+	{
+		EPrints::abort( "Can't create join path for: ".$source->confid." -> ".$target->confid );
+	}
+}
+
 1;
 
 ######################################################################
@@ -756,32 +679,4 @@ sub optimise
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

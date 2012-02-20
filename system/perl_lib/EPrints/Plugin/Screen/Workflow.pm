@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Workflow
-
-=cut
-
 
 package EPrints::Plugin::Screen::Workflow;
 
@@ -33,25 +27,48 @@ sub new
 	return $self;
 }
 
-sub view_screen
+sub get_view_screen
 {
 	my( $self ) = @_;
 
-	return "Workflow::View";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::View/;
+
+	return $screenid;
 }
 
-sub edit_screen
+sub get_edit_screen
 {
 	my( $self ) = @_;
 
-	return "Workflow::Edit";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Edit/;
+
+	return $screenid;
 }
 
-sub listing_screen
+sub get_commit_screen
 {
 	my( $self ) = @_;
 
-	return "Listing";
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Commit/;
+
+	return $screenid;
+}
+
+sub get_save_screen
+{
+	my( $self ) = @_;
+
+	my $screenid = $self->{id};
+	$screenid =~ s/^Screen:://;
+	$screenid =~ s/::[^:]+$/::Save/;
+
+	return $screenid;
 }
 
 sub properties_from
@@ -90,18 +107,15 @@ sub properties_from
 		return;
 	}
 
-	$processor->{"dataobj"} = $dataobj;
+	$processor->{"dataobj"} = $dataset->dataobj( $id );
 
 	my $plugin = $self->{session}->plugin(
-		"Screen::" . $self->edit_screen,
+		"Screen::" . $self->get_edit_screen,
 		processor => $self->{processor},
 		);
 	$self->{processor}->{can_be_edited} = $plugin->can_be_viewed();
 
 	$self->SUPER::properties_from;
-
-	$self->{processor}->{stage} = $self->{session}->param( "stage" );
-	$self->{processor}->{component} = $self->{session}->param( "component" );
 }
 
 sub allow
@@ -172,46 +186,17 @@ sub has_workflow
 
 sub workflow
 {
-	my( $self, $workflow_id ) = @_;
+	my( $self, $staff ) = @_;
 
 	my $cache_id = "workflow";
-	$workflow_id = "default" if !defined $workflow_id;
-
-	my $user = $self->{session}->current_user;
-	my $staff = 0;
-	if( defined $user )
-	{
-		my $priv = $self->{processor}->{dataset}->id . '/edit';
-		# staff mode if user is an admin or has editorial privileges for this
-		# object
-		$staff =
-			$user->value( "usertype" ) eq "admin" ||
-			($user->allow( $priv, $self->{processor}->{dataobj} ) & 8);
-	}
 
 	if( !defined $self->{processor}->{$cache_id} )
 	{
- 		$self->{processor}->{$cache_id} = EPrints::Workflow->new( $self->{session}, $workflow_id,
-			item => $self->{processor}->{"dataobj"},
-			STAFF_ONLY => [$staff ? "TRUE" : "FALSE", "BOOLEAN"],
-		);
+		my %opts = ( item=> $self->{processor}->{"dataobj"}, session=>$self->{session} );
+ 		$self->{processor}->{$cache_id} = EPrints::Workflow->new( $self->{session}, "default", %opts );
 	}
 
 	return $self->{processor}->{$cache_id};
-}
-
-sub current_component
-{
-	my( $self ) = @_;
-
-	return unless $self->{processor}->{component};
-	my $stage = $self->workflow->get_stage( $self->workflow->get_stage_id );
-	return unless $stage;
-	foreach my $component ($stage->get_components)
-	{
-		return $component if $component->{prefix} eq $self->{processor}->{component};
-	}
-	return undef;
 }
 
 sub uncache_workflow
@@ -225,20 +210,20 @@ sub uncache_workflow
 
 sub render_blister
 {
-	my( $self, $sel_stage_id ) = @_;
+	my( $self, $sel_stage_id, $staff_mode ) = @_;
 
 	my $session = $self->{session};
+	my $staff = 0;
 
-	my $workflow = $self->workflow();
+	my $workflow = $self->workflow( $staff_mode );
 	my $table = $session->make_element( "table", cellpadding=>0, cellspacing=>0, class=>"ep_blister_bar" );
 	my $tr = $session->make_element( "tr" );
 	$table->appendChild( $tr );
 	my $first = 1;
 	my @stages = $workflow->get_stage_ids;
+	push @stages, "commit";
 	foreach my $stage_id ( @stages )
 	{
-		my $stage = $workflow->get_stage( $stage_id );
-
 		if( !$first )  
 		{ 
 			my $td = $session->make_element( "td", class=>"ep_blister_join" );
@@ -252,12 +237,11 @@ sub render_blister
 		{ 
 			$class="ep_blister_node_selected"; 
 		}
-		my $title = $stage->render_title();
+		my $phrase = $session->phrase( "Plugin/Screen/Workflow:" . $self->dataset->id . ":" . $stage_id ."_stage:title" );
 		my $button = $session->render_button(
 			name  => "_action_jump_$stage_id", 
-			value => $session->xhtml->to_text_dump( $title ),
+			value => $phrase,
 			class => $class );
-		$session->xml->dispose( $title );
 
 		$td->appendChild( $button );
 		$tr->appendChild( $td );
@@ -267,15 +251,17 @@ sub render_blister
 	return $table;
 }
 
-sub hidden_bits
+sub render_hidden_bits
 {
 	my( $self ) = @_;
 
-	return(
-		$self->SUPER::hidden_bits,
-		dataset => $self->{processor}->{dataset}->id,
-		dataobj => $self->{processor}->{dataobj}->id,
-	);
+	my $chunk = $self->{session}->make_doc_fragment;
+
+	$chunk->appendChild( $self->{session}->render_hidden_field( "dataset", $self->{processor}->{dataset}->id ) );
+	$chunk->appendChild( $self->{session}->render_hidden_field( "dataobj", $self->{processor}->{dataobj}->id ) );
+	$chunk->appendChild( $self->SUPER::render_hidden_bits );
+
+	return $chunk;
 }
 
 sub _render_action_aux
@@ -342,32 +328,4 @@ sub _render_action_aux
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

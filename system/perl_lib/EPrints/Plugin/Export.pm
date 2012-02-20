@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export
-
-=cut
-
 package EPrints::Plugin::Export;
 
 use strict;
@@ -16,17 +10,20 @@ sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{suffix} = exists $params{suffix} ? $params{suffix} : ".txt";
-	$params{visible} = exists $params{visible} ? $params{visible} : "all";
-	$params{mimetype} = exists $params{mimetype} ? $params{mimetype} : "text/plain";
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 1;
-	$params{arguments} = exists $params{arguments} ? $params{arguments} : {};
+	my $self = $class->SUPER::new(%params);
+
+	$self->{name} = "Base output plugin: This should have been subclassed";
+	$self->{suffix} = ".txt";
+	$self->{visible} = "all";
+	$self->{mimetype} = "text/plain";
+	$self->{advertise} = 1;
+	$self->{arguments} = {};
 
 	# q is used to describe quality. Use it to increase or decrease the 
 	# desirability of using this plugin during content negotiation.
-	$params{qs} = exists $params{qs} ? $params{qs} : 0.5; 
+	$self->{qs} = 0.5; 
 
-	return $class->SUPER::new(%params);
+	return $self;
 }
 
 # Return an array of the ID's of arguemnts this plugin accepts
@@ -89,10 +86,6 @@ sub matches
 	{
 		return( $self->can_accept( $param ) );
 	}
-	if( $test eq "can_produce" )
-	{
-		return( $self->can_produce( $param ) );
-	}
 	if( $test eq "has_xmlns" )
 	{
 		return( $self->has_xmlns( $param ) );
@@ -100,13 +93,6 @@ sub matches
 	if( $test eq "is_advertised" )
 	{
 		return( $self->param( "advertise" ) == $param );
-	}
-	if( $test eq "metadataPrefix" )
-	{
-		no warnings;
-		return $param eq "*" ?
-				defined($self->param( "metadataPrefix" )) :
-				$self->param( "metadataPrefix" ) eq $param;
 	}
 
 	# didn't understand this match 
@@ -169,13 +155,6 @@ sub can_accept
 	return 0;
 }
 
-sub can_produce
-{
-	my( $self, $mime_type ) = @_;
-
-	return $self->param( "mimetype" ) eq $mime_type;
-}
-
 sub has_xmlns
 {
 	my( $plugin, $unused ) = @_;
@@ -216,7 +195,11 @@ sub output_dataobj
 {
 	my( $plugin, $dataobj ) = @_;
 	
-	EPrints->abort( "output_dataobj not subclassed on $plugin" );
+	my $r = "error. output_dataobj not subclassed";
+
+	$plugin->{session}->get_repository->log( $r );
+
+	return $r;
 }
 
 sub xml_dataobj
@@ -263,41 +246,6 @@ sub dataobj_export_url
 	return $url;
 }
 
-# if this an output plugin can output results for a list of dataobjs (defined
-# as the contents as the parent object then this routine returns a URL which 
-# will export it. This routine does not check that it's actually possible.
-sub list_export_url
-{
-	my( $plugin, $dataobj, $staff ) = @_;
-
-	my $dataset = $dataobj->get_dataset;
-
-	my $pluginid = $plugin->{id};
-
-	unless( $pluginid =~ m# ^Export::(.*)$ #x )
-	{
-		$plugin->{session}->get_repository->log( "Bad pluginid in dataobj_export_url: ".$pluginid );
-		return undef;
-	}
-	my $format = $1;
-
-	my $url = $plugin->{session}->get_repository->get_conf( "http_cgiurl" );
-	$url .= '/export/' . join('/', map { URI::Escape::uri_escape($_) }
-		$dataobj->get_dataset->base_id,
-		$dataobj->get_id,
-		'contents',
-		$format,
-		join('-',
-			$plugin->{session}->get_id,
-			$dataobj->get_dataset->base_id,
-			$dataobj->get_id,
-			'contents',
-		).$plugin->param( "suffix" )
-	);
-
-	return $url;
-}
-
 =item $plugin->initialise_fh( FH )
 
 Initialise the file handle FH for writing. This may be used to manipulate the Perl IO layers in effect.
@@ -327,31 +275,3 @@ sub byte_order_mark
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

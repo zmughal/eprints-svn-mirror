@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Status
-
-=cut
-
 
 package EPrints::Plugin::Screen::Status;
 
@@ -97,11 +91,11 @@ sub render
 	my $rows;
 
 	# Number of users in each group
-	my $total_users = $session->dataset( "user" )->count( $session );
+	my $total_users = $session->get_repository->get_dataset( "user" )->count( $session );
 
 	my %num_users = ();
-	my $userds = $session->dataset( "user" );
-	my $subds = $session->dataset( "saved_search" );
+	my $userds = $session->get_repository->get_dataset( "user" );
+	my $subds = $session->get_repository->get_dataset( "saved_search" );
 	my @usertypes = $session->get_repository->get_types( "user" );
 	foreach my $usertype ( @usertypes )
 	{
@@ -123,7 +117,7 @@ sub render
 	foreach( @esets )
 	{
 		# Number of submissions in dataset
-		$num_eprints{$_} = $session->dataset( $_ )->count( $session );
+		$num_eprints{$_} = $session->get_repository->get_dataset( $_ )->count( $session );
 	}
 	
 	my $db_status = ( $total_users > 0 ? "ok" : "down" );
@@ -157,7 +151,8 @@ sub render
 	
 	$table->appendChild( $session->render_row( 
 			$session->html_phrase( "cgi/users/status:release" ),
-			$session->make_text( EPrints->human_version ) ) );
+			$session->make_text( 
+				EPrints::Config::get( "version" ) ) ) );
 
 	$table->appendChild(
 		$session->render_row( 
@@ -252,7 +247,7 @@ sub render
 			$best_size = $size if( $size > $best_size );
 		}
 		
-		if( $best_size < $session->config( 
+		if( $best_size < $session->get_repository->get_conf( 
 						"diskspace_error_threshold" ) )
 		{
 			$p = $session->make_element( "p" );
@@ -261,7 +256,7 @@ sub render
 				$session->html_phrase( 
 					"cgi/users/status:out_of_space" ) );
 		}
-		elsif( $best_size < $session->config( 
+		elsif( $best_size < $session->get_repository->get_conf( 
 							"diskspace_warn_threshold" ) )
 		{
 			$p = $session->make_element( "p" );
@@ -329,31 +324,3 @@ sub render_common_action_buttons
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

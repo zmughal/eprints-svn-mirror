@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -83,7 +88,6 @@ use constant {
 	SQL_DOUBLE => DBI::SQL_DOUBLE,
 	SQL_DATE => DBI::SQL_DATE,
 	SQL_TIME => DBI::SQL_TIME,
-	SQL_CLOB => DBI::SQL_CLOB,
 };
 
 %EXPORT_TAGS = (
@@ -92,7 +96,6 @@ use constant {
 		SQL_NOT_NULL
 		SQL_VARCHAR
 		SQL_LONGVARCHAR
-		SQL_CLOB
 		SQL_VARBINARY
 		SQL_LONGVARBINARY
 		SQL_TINYINT
@@ -112,7 +115,7 @@ my $DEBUG_SQL = 0;
 
 # this may not be the current version of eprints, it's the version
 # of eprints where the current desired db configuration became standard.
-$EPrints::Database::DBVersion = "3.3.3";
+$EPrints::Database::DBVersion = "3.2.4";
 
 
 # ID of next buffer table. This can safely reset to zero each time
@@ -167,7 +170,7 @@ sub _new
 {
 	my( $class, $session ) = @_;
 
-	my $driver = $session->config( "dbdriver" );
+	my $driver = $session->get_repository->get_conf( "dbdriver" );
 	$driver ||= "mysql";
 
 	$class = "${class}::$driver";
@@ -393,6 +396,12 @@ sub create_archive_tables
 	
 	$self->set_version( $EPrints::Database::DBVersion );
 	
+	if( $success )
+	{
+		my $list = EPrints::DataObj::MetaField::load_all( $self->{session} );
+		$success = $list->count > 0;
+	}
+
 	return( $success );
 }
 
@@ -672,6 +681,57 @@ sub create_dataset_ordervalues_tables
 	return $rv;
 }
 
+
+# $db->get_ticket_userid( $code, $ip )
+# 
+# return the userid, if any, associated with the given ticket code and IP address.
+
+sub get_ticket_userid
+{
+	my( $self, $code, $ip ) = @_;
+
+	my $sql;
+
+	my $Q_table = $self->quote_identifier( "loginticket" );
+	my $Q_expires = $self->quote_identifier( "expires" );
+	my $Q_userid = $self->quote_identifier( "userid" );
+	my $Q_ip = $self->quote_identifier( "ip" );
+	my $Q_code = $self->quote_identifier( "code" );
+
+	# clean up old tickets
+	$sql = "DELETE FROM $Q_table WHERE ".time." > $Q_expires";
+	$self->do( $sql );
+
+	$sql = "SELECT $Q_userid FROM $Q_table WHERE ($Q_ip='' OR $Q_ip=".$self->quote_value($ip).") AND $Q_code=".$self->quote_value($code);
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth , $sql );
+	my( $userid ) = $sth->fetchrow_array;
+	$sth->finish;
+
+	return $userid;
+}
+
+sub update_ticket_userid
+{
+	my( $self, $code, $userid, $ip ) = @_;
+
+	my $table = "loginticket";
+
+	my $Q_table = $self->quote_identifier( $table );
+	my $Q_userid = $self->quote_identifier( "userid" );
+	my $Q_code = $self->quote_identifier( "code" );
+
+	my $sql = "DELETE FROM $Q_table WHERE $Q_userid=".$self->quote_int($userid)." AND $Q_code=".$self->quote_value($code);
+	$self->do($sql);
+
+	$self->insert( $table, ["code","userid","ip","expires"], [
+		$code,
+		$userid,
+		$ip,
+		time()+60*60*24*7
+	]);
+}
+
 =item $type_info = $db->type_info( DATA_TYPE )
 
 See L<DBI/type_info>.
@@ -687,7 +747,6 @@ sub type_info
 		return {
 			TYPE_NAME => "bigint",
 			CREATE_PARAMS => "",
-			COLUMN_SIZE => 19,
 		};
 	}
 	else
@@ -722,7 +781,7 @@ TYPE is the SQL type. The types are constants defined by this module, to import 
 
 Supported types (n = requires LENGTH argument):
 
-Character data: SQL_VARCHAR(n), SQL_LONGVARCHAR, SQL_CLOB.
+Character data: SQL_VARCHAR(n), SQL_LONGVARCHAR.
 
 Binary data: SQL_VARBINARY(n), SQL_LONGVARBINARY.
 
@@ -778,11 +837,7 @@ sub get_column_type
 		$type .= "($length,$scale)";
 	}
 
-	if(
-		$data_type eq SQL_VARCHAR() or
-		$data_type eq SQL_LONGVARCHAR() or
-		$data_type eq SQL_CLOB()
-	  )
+	if( $data_type eq SQL_VARCHAR() or $data_type eq SQL_LONGVARCHAR() )
 	{
 		my $langid = $opts{langid};
 		if( !defined $langid )
@@ -1039,25 +1094,6 @@ sub get_primary_key
 	return $self->{dbh}->primary_key( undef, undef, $tablename );
 }
 
-=item $db->create_primary_key( $tablename, @cols )
-
-Create a PRIMARY KEY on $tablename over @cols.
-
-=cut
-
-sub create_primary_key
-{
-	my( $self, $tablename, @cols ) = @_;
-
-	return 1 if !@cols;
-
-	return $self->do("ALTER TABLE " .
-			$self->quote_identifier( $tablename ) .
-			" ADD PRIMARY KEY (".join(',',
-				map { $self->quote_identifier( $_ ) } @cols
-		).")");
-}
-
 ######################################################################
 =pod
 
@@ -1111,11 +1147,9 @@ sub create_unique_index
 ######################################################################
 =pod
 
-=item $rows = $db->_update( $tablename, $keycols, $keyvals, $columns, @values )
+=item  $success = $db->_update( $tablename, $keycols, $keyvals, $columns, @values )
 
-UPDATES $tablename where $keycols equals $keyvals and returns the number of rows affected.
-
-Note! If no rows are affected the result is still 'true', see DBI's execute() method.
+UPDATES $tablename where $keycols equals $keyvals.
 
 This method is internal.
 
@@ -1125,6 +1159,8 @@ This method is internal.
 sub _update
 {
 	my( $self, $table, $keynames, $keyvalues, $columns, @values ) = @_;
+
+	my $rc = 1;
 
 	my $prefix = "UPDATE ".$self->quote_identifier($table)." SET ";
 	my @where;
@@ -1154,8 +1190,6 @@ sub _update
 		$self->{session}->get_repository->log( "Database execute debug: $sql" );
 	}
 
-	my $rv = 0;
-
 	foreach my $row (@values)
 	{
 		my $i = 0;
@@ -1163,18 +1197,12 @@ sub _update
 		{
 			$sth->bind_param( ++$i, ref($_) eq 'ARRAY' ? @$_ : $_ );
 		}
-		my $rc = $sth->execute(); # execute can return "0e0"
-		if( !$rc )
-		{
-			$self->{session}->log( Carp::longmess( $sth->{Statement} . ": " . $self->{dbh}->err ) );
-			return $rc;
-		}
-		$rv += $rc; # otherwise add up the number of rows affected
+		$rc &&= $sth->execute();
 	}
 
 	$sth->finish;
 
-	return $rv == 0 ? "0e0" : $rv;
+	return $rc;
 }
 
 ######################################################################
@@ -1356,22 +1384,22 @@ sub add_record
 
 	my $table = $dataset->get_sql_table_name();
 	my $keyfield = $dataset->get_key_field();
-	my $keyname = $keyfield->get_sql_name;
-	my $id = $data->{$keyname};
+	my $kf_sql = $keyfield->get_sql_name;
+	my $id = $data->{$kf_sql};
 
-	# atomically grab the slot in the table (key must be PRIMARY KEY!)
+	if( $self->exists( $dataset, $id ) )
 	{
-		local $self->{dbh}->{PrintError};
-		local $self->{dbh}->{RaiseError};
-		if( !$self->insert( $table, [$keyname], [$id] ) )
-		{
-			Carp::carp( $DBI::errstr ) if !$self->duplicate_error;
-			return 0;
-		}
+		# item already exists.
+		$self->{session}->get_repository->log( 
+"Failed in attempt to create existing item $id in table $table." );
+		return 0;
 	}
 
 	# Now add the ACTUAL data:
-	return $self->update( $dataset, $data, $data );
+	my $rv = $self->update( $dataset, $data, $data, 1 );
+	
+	# Return with an error if unsuccessful
+	return( defined $rv );
 }
 
 
@@ -1619,16 +1647,13 @@ sub update
 		$rv &&= $self->insert( $auxtable, \@names, @rows );
 	}
 
-	if( $dataset->ordered )
+	if( $insert )
 	{
-		if( $insert )
-		{
-			EPrints::Index::insert_ordervalues( $self->{session}, $dataset, $data );
-		}
-		else
-		{
-			EPrints::Index::update_ordervalues( $self->{session}, $dataset, $data, $changed );
-		}
+		EPrints::Index::insert_ordervalues( $self->{session}, $dataset, $data );
+	}
+	else
+	{
+		EPrints::Index::update_ordervalues( $self->{session}, $dataset, $data, $changed );
 	}
 
 	return $rv;
@@ -2176,24 +2201,20 @@ sub _cache_from_TABLE
 
 	my $cache_table  = $cachemap->get_sql_table_name;
 	my $keyfield = $dataset->get_key_field();
-	my $keyname = $keyfield->get_sql_name();
 	$logic ||= [];
 
+	my $Q_cache_table = $self->quote_identifier( $cache_table );
+	my $Q_keyname = $self->quote_identifier($keyfield->get_name());
+	my $O = $self->quote_identifier("O");
+	my $Q_srctable = $self->quote_identifier($srctable);
+	my $Q_pos = $self->quote_identifier("pos");
+
 	my $sql;
-	$sql .= "SELECT ".$self->quote_identifier( $srctable, $keyname )." FROM ".$self->quote_identifier( $srctable );
+	$sql .= "SELECT $Q_srctable.$Q_keyname FROM $Q_srctable";
 	if( defined $order )
 	{
-		my $ov_table;
-		if( $dataset->ordered )
-		{
-			$ov_table = $dataset->get_ordervalues_table_name( $self->{session}->get_langid );
-		}
-		else
-		{
-			$ov_table = $dataset->get_sql_table_name();
-		}
-		$sql .= " LEFT JOIN ".$self->quote_identifier($ov_table).$self->sql_AS.$self->quote_identifier( "O" );
-		$sql .= " ON ".$self->quote_identifier( $srctable, $keyname )."=".$self->quote_identifier( "O", $keyname );
+		$sql .= " LEFT JOIN ".$self->quote_identifier($dataset->get_ordervalues_table_name($self->{session}->get_langid()))." $O";
+		$sql .= " ON $Q_srctable.$Q_keyname=$O.$Q_keyname";
 	}
 	if( scalar @$logic )
 	{
@@ -2202,31 +2223,19 @@ sub _cache_from_TABLE
 	if( defined $order )
 	{
 		$sql .= " ORDER BY ";
-		my @parts;
+		my $first = 1;
 		foreach( split( "/", $order ) )
 		{
+			$sql .= ", " if( !$first );
 			my $desc = 0;
 			if( s/^-// ) { $desc = 1; }
 			my $field = EPrints::Utils::field_from_config_string(
 					$dataset,
 					$_ );
-			# if the dataset isn't ordered order by the individual columns of
-			# the field
-			if( $dataset->ordered )
-			{
-				push @parts, $self->quote_identifier("O", $field->name);
-				$parts[-1] .= " DESC" if $desc;
-			}
-			else
-			{
-				foreach my $part ($field->get_sql_names)
-				{
-					push @parts, $self->quote_identifier("O", $part);
-					$parts[-1] .= " DESC" if $desc;
-				}
-			}
+			$sql .= "$O.".$self->quote_identifier($field->get_sql_name());
+			$sql .= " DESC" if $desc;
+			$first = 0;
 		}
-		$sql .= join ', ', @parts;
 	}
 
 	return $self->_cache_from_SELECT( $cachemap, $dataset, $sql );
@@ -2587,11 +2596,11 @@ sub get_dataobjs
 	my $logic = "";
 	if( $key_field->isa( "EPrints::MetaField::Int" ) )
 	{
-		$logic = $Q_key_name . " IN (".join(',',map { $self->quote_int($_) } @ids).")";
+		$logic = join(' OR ',map { "$Q_key_name=".$self->quote_int($_) } @ids);
 	}
 	else
 	{
-		$logic = $Q_key_name . " IN (".join(',',map { $self->quote_value($_) } @ids).")";
+		$logic = join(' OR ',map { "$Q_key_name=".$self->quote_value($_) } @ids);
 	}
 
 	# we need to map the returned rows back to the input order
@@ -2634,7 +2643,7 @@ sub get_dataobjs
 		my $epdata = {};
 		foreach my $field (@fields)
 		{
-			$epdata->{$field->{name}} = $field->value_from_sql_row( $session, \@row );
+			$epdata->{$field->get_name} = $field->value_from_sql_row( $session, \@row );
 		}
 		next if !defined $epdata->{$key_name};
 		$data[$lookup{$epdata->{$key_name}}] = $epdata;
@@ -2659,7 +2668,7 @@ sub get_dataobjs
 		# multiple values are always at least empty list
 		foreach my $epdata (@data)
 		{
-			$epdata->{$field->{name}} = [];
+			$epdata->{$field->get_name} = [];
 		}
 
 		my $sth = $self->prepare( $sql );
@@ -2668,7 +2677,7 @@ sub get_dataobjs
 		{
 			my( $id, $pos ) = splice(@row,0,2);
 			my $value = $field->value_from_sql_row( $session, \@row );
-			$data[$lookup{$id}]->{$field->{name}}->[$pos] = $value;
+			$data[$lookup{$id}]->{$field->get_name}->[$pos] = $value;
 		}
 	}
 
@@ -2678,8 +2687,7 @@ sub get_dataobjs
 	# convert the epdata into objects
 	foreach my $epdata (@data)
 	{
-		# this avoids a lot of calls to MetaField::set_value()
-		my $dataobj = $dataset->make_dataobj( {} );
+		my $dataobj = $dataset->make_object( $session );
 		$dataobj->{data} = $epdata;
 		$epdata = $dataobj;
 	}
@@ -2923,10 +2931,48 @@ sub get_values
 		return [];
 	}
 
-	my $searchexp = $dataset->prepare_search();
-	my( $values, $counts ) = $searchexp->perform_groupby( $field );
+	my $M = $self->quote_identifier("M");
+	my $L = $self->quote_identifier("L");
+	my $Q_eprint_status = $self->quote_identifier( "eprint_status" );
+	my $Q_eprintid = $self->quote_identifier( "eprintid" );
 
-	return $values;
+	my $cols = join(", ", map {
+		"$M.".$self->quote_identifier($_)
+	} $field->get_sql_names);
+	my $sql = "SELECT DISTINCT $cols FROM ";
+	my $limit;
+	$limit = "archive" if( $dataset->id eq "archive" );
+	$limit = "inbox" if( $dataset->id eq "inbox" );
+	$limit = "deletion" if( $dataset->id eq "deletion" );
+	$limit = "buffer" if( $dataset->id eq "buffer" );
+	if( $field->get_property( "multiple" ) )
+	{
+		$sql.= $self->quote_identifier($dataset->get_sql_sub_table_name( $field ))." $M";
+		if( $limit )
+		{
+			$sql.=", ".$self->quote_identifier($dataset->get_sql_table_name())." $L";
+			$sql.=" WHERE $L.$Q_eprintid = $M.$Q_eprintid";
+			$sql.=" AND $L.$Q_eprint_status = '$limit'";
+		}
+	} 
+	else 
+	{
+		$sql.= $self->quote_identifier($dataset->get_sql_table_name())." $M";
+		if( $limit )
+		{
+			$sql.=" WHERE $M.$Q_eprint_status = '$limit'";
+		}
+	}
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql );
+	my @values = ();
+	my @row = ();
+	while( @row = $sth->fetchrow_array ) 
+	{
+		push @values, $field->value_from_sql_row( $self->{session}, \@row );
+	}
+	$sth->finish;
+	return \@values;
 }
 
 ######################################################################
@@ -2973,11 +3019,11 @@ sub sort_values
 	# insert all the order values with their index in $values
 	my @pairs;
 	my $i = 0;
-	foreach my $value (@$values)
+	foreach(@$values)
 	{
 		push @pairs, [
 			$i++,
-			$field->ordervalue_single( $value, $session, $langid )
+			$field->ordervalue_single( $_, $session, $langid )
 		];
 	}
 	$self->insert( $table, [ "pos", $ofield->get_sql_names ], @pairs );
@@ -3016,7 +3062,114 @@ sub get_ids_by_field_values
 {
 	my( $self, $field, $dataset, %opts ) = @_;
 
-	return $dataset->prepare_search->perform_distinctby( [$field] );
+	# what if a subobjects field is called?
+	if( $field->is_virtual )
+	{
+		$self->{session}->get_repository->log( 
+"Attempt to call get_ids_by_field_values on a virtual field." );
+		return [];
+	}
+
+	my $session = $self->{session};
+
+	my $keyfield = $dataset->get_key_field();
+
+	my %tables = ();
+	my $srctable;
+	if( $field->get_property( "multiple" ) )
+	{
+		$srctable = $dataset->get_sql_sub_table_name( $field );
+	}
+	else
+	{
+		$srctable = $dataset->get_sql_table_name();
+	}
+	$tables{$srctable} = 1;
+
+	my @cols = (
+		$keyfield->get_sql_names(),
+		$field->get_sql_names(),
+	);
+
+	my @where = ();
+
+	if( $dataset->confid eq "eprint" && $dataset->id ne $dataset->confid )
+	{
+		my $table = $dataset->get_sql_table_name();
+		$tables{$table} = 1;
+		push @where,
+			$self->quote_identifier($table, "eprint_status").
+			" = ".
+			$self->quote_value($dataset->id);
+	}
+
+	if( defined $opts{filters} )
+	{
+		foreach my $filter (@{$opts{filters}})
+		{
+			my @ors = ();
+			foreach my $ffield ( @{$filter->{fields}} )
+			{	
+				my $table;
+				if( $ffield->get_property( "multiple" ) )
+				{
+					$table = $dataset->get_sql_sub_table_name( $ffield );
+				}
+				else
+				{
+					$table = $dataset->get_sql_table_name();
+				}
+				$tables{$table} = 1;
+		
+				my @sql_cols = $ffield->get_sql_names();
+				my @sql_vals = $ffield->sql_row_from_value( $session, $filter->{value} );
+				my @ands = ();
+				for( my $i=0; $i<scalar @sql_cols; ++$i )
+				{
+					next if( !defined $sql_vals[$i] );
+					push @ands,
+						$self->quote_identifier($table,$sql_cols[$i]).
+						" = ".
+						$self->quote_value( $sql_vals[$i] );
+				}
+				if( scalar @ands )
+				{
+					push @ors, "(".join( ")  AND  (", @ands ).")";
+				}
+			}
+			if( scalar @ors )
+			{
+				push @where, "(".join( ")  OR  (", @ors ).")";
+			}
+		}
+	}
+
+	foreach my $table (keys %tables)
+	{
+		next if $srctable eq $table;
+		push @where,
+			$self->quote_identifier($srctable,"eprintid").
+			" = ".
+			$self->quote_identifier($table,"eprintid");
+	}
+
+	my $sql = "SELECT DISTINCT ";
+	$sql .= join(",",map { $self->quote_identifier($srctable,$_) } @cols);
+	$sql .= " FROM ".join( ",", map { $self->quote_identifier($_) } keys %tables );
+	$sql .= " WHERE ".join( " AND ", @where ) if @where;
+
+	my $sth = $self->prepare( $sql );
+	$self->execute( $sth, $sql );
+	my $ids = {};
+	while(my( $eprintid, @row ) = $sth->fetchrow_array ) 
+	{
+		my $value = $field->value_from_sql_row( $session, \@row );
+		my $id = $field->get_id_from_value( $session, $value );
+		push @{$ids->{$id}}, $eprintid;
+	}
+	$sth->finish;
+
+	return $ids;
 }
 
 ######################################################################
@@ -3165,8 +3318,8 @@ sub prepare_select
 		if( defined $options{offset} && length($options{offset}) )
 		{
 			$sql .= sprintf(" LIMIT %d OFFSET %d",
-				$options{limit},
-				$options{offset} );
+				$options{offset},
+				$options{limit} );
 		}
 		else
 		{
@@ -3510,14 +3663,7 @@ sub _add_field_index
 
 	my @cols = $field->get_sql_index;
 
-	if( $field->name eq $dataset->key_field->name )
-	{
-		return $self->create_primary_key( $table, @cols );
-	}
-	else
-	{
-		return $self->create_index( $table, @cols );
-	}
+	return $self->create_index( $table, @cols );
 }
 
 # Add the field to the main tables
@@ -3556,14 +3702,7 @@ sub _add_field
 
 	if( my @columns = $field->get_sql_index )
 	{
-		if( $field->name eq $dataset->key_field->name )
-		{
-			$rc &&= $self->create_primary_key( $table, @columns );
-		}
-		else
-		{
-			$rc &&= $self->create_index( $table, @columns );
-		}
+		$rc &&= $self->create_index( $table, @columns );
 	}
 
 	return $rc;
@@ -4265,12 +4404,14 @@ sub valid_login
 
 	my $sth = $self->prepare( $sql );
 	$self->execute( $sth , $sql );
-	my( $real_username, $crypt ) = $sth->fetchrow_array;
+	my( $real_username, $real_password ) = $sth->fetchrow_array;
 	$sth->finish;
 
-	return undef if( !defined $crypt );
+	return undef if( !defined $real_password );
 
-	return EPrints::Utils::crypt_equals( $crypt, $password ) ?
+	my $salt = substr( $real_password, 0, 2 );
+
+	return $real_password eq crypt( $password , $salt ) ?
 		$real_username :
 		undef;
 }
@@ -4351,7 +4492,7 @@ sub dequeue_events
 	my( $self, $n ) = @_;
 
 	my $session = $self->{session};
-	my $dataset = $session->dataset( "event_queue" );
+	my $dataset = $session->get_repository->get_dataset( "event_queue" );
 
 	my $until = EPrints::Time::get_iso_timestamp();
 
@@ -4362,7 +4503,7 @@ sub dequeue_events
 		dataset => $dataset,
 		filters => [
 			{ meta_fields => ["status"], value => "waiting" },
-			{ meta_fields => ["start_time"], value => "..$until", match => "EQ" },
+			{ meta_fields => ["start_time"], value => "-$until", match => "EQ" },
 		],
 		custom_order => "-priority/-start_time",
 		limit => $n,
@@ -4449,11 +4590,6 @@ sub retry_error
 	return 0;
 }
 
-sub duplicate_error
-{
-	return 0;
-}
-
 1; # For use/require success
 
 ######################################################################
@@ -4462,32 +4598,4 @@ sub duplicate_error
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

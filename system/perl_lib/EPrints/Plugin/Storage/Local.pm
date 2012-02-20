@@ -16,7 +16,6 @@ package EPrints::Plugin::Storage::Local;
 
 use URI;
 use URI::Escape;
-use Fcntl 'SEEK_SET';
 
 use EPrints::Plugin::Storage;
 
@@ -126,7 +125,7 @@ sub open_read
 
 sub retrieve
 {
-	my( $self, $fileobj, $sourceid, $offset, $n, $f ) = @_;
+	my( $self, $fileobj, $sourceid, $f ) = @_;
 
 	return 0 if !$self->open_read( $fileobj, $sourceid, $f );
 	my( $path, $fn ) = $self->_filename( $fileobj, $sourceid );
@@ -137,16 +136,11 @@ sub retrieve
 
 	my $rc = 1;
 
-	sysseek($fh, $offset, SEEK_SET);
-
 	my $buffer;
-	my $bsize = $n > 65536 ? 65536 : $n;
-	while(sysread($fh,$buffer,$bsize))
+	while(sysread($fh,$buffer,65536))
 	{
 		$rc &&= &$f($buffer);
 		last unless $rc;
-		$n -= $bsize;
-		$bsize = $n if $bsize > $n;
 	}
 
 	$self->close_read( $fileobj, $sourceid, $f );
@@ -258,31 +252,3 @@ sub escape_filename
 =cut
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

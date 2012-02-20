@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Export::OAI_DC
-
-=cut
-
 package EPrints::Plugin::Export::OAI_DC;
 
 # eprint needs magic documents field
@@ -28,7 +22,6 @@ sub new
 	$self->{suffix} = ".xml";
 	$self->{mimetype} = "text/xml";
 	
-	$self->{metadataPrefix} = "oai_dc";
 	$self->{xmlns} = "http://www.openarchives.org/OAI/2.0/oai_dc/";
 	$self->{schemaLocation} = "http://www.openarchives.org/OAI/2.0/oai_dc.xsd";
 
@@ -66,7 +59,7 @@ sub xml_dataobj
 	# them to the DC element.
 	foreach( @{$data} )
 	{
-		$dc->appendChild(  $plugin->{session}->render_data_element( 8, "dc:".$_->[0], $_->[1], %{$_->[2]} ) );
+		$dc->appendChild(  $plugin->{session}->render_data_element( 8, "dc:".$_->[0], $_->[1] ) );
 		# produces <key>value</key>
 	}
 
@@ -75,31 +68,3 @@ sub xml_dataobj
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -1,15 +1,14 @@
-=head1 NAME
-
-EPrints::Page::DOM
-
-=cut
-
 ######################################################################
 #
 # EPrints::Page::DOM
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2009 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -39,10 +38,15 @@ sub send
 		EPrints::abort( "Attempt to send the same page object twice!" );
 	}
 
-	$self->{page} =
-		$self->{repository}->xhtml->to_xhtml( $self->{page_dom} );
+	binmode(STDOUT,":utf8");
 
-	$self->SUPER::send( %options );
+	$self->send_header( %options );
+
+	eval { print EPrints::XML::to_string( $self->{page_dom}, undef, 1 ); };
+	if( $@ && $@ !~ m/^Software caused connection abort/ )
+	{
+		EPrints::abort( "Error in send_page: $@" );	
+	}
 
 	EPrints::XML::dispose( $self->{page_dom} );
 	delete $self->{page_dom};
@@ -57,10 +61,7 @@ sub write_to_file
 		EPrints::abort( "Attempt to write the same page object twice!" );
 	}
 
-	$self->{page} =
-		$self->{repository}->xhtml->to_xhtml( $self->{page_dom} );
-
-	$self->SUPER::write_to_file( $filename );
+	EPrints::XML::write_xhtml_file( $self->{page_dom}, $filename, add_doctype=>$self->{add_doctype} );
 
 	if( defined $wrote_files )
 	{
@@ -70,6 +71,7 @@ sub write_to_file
 	EPrints::XML::dispose( $self->{page_dom} );
 	delete $self->{page_dom};
 }
+
 
 sub DESTROY
 {
@@ -82,32 +84,4 @@ sub DESTROY
 }
 
 1;
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

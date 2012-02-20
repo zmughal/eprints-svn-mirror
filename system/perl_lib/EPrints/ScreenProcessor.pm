@@ -1,15 +1,14 @@
-=head1 NAME
-
-EPrints::ScreenProcessor
-
-=cut
-
 ######################################################################
 #
 # EPrints::Script
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -29,7 +28,6 @@ sub new
 	$self{after_messages} = [];
 	$self{before_messages} = [];
 
-	$self{session} = ($self{repository} ||= $self{session});
 	if( !defined $self{session} ) 
 	{
 		EPrints::abort( "session not passed to EPrints::ScreenProcessor->process" );
@@ -44,12 +42,9 @@ sub new
 		$self{screenid} = "FirstTool";
 	}
 
-	my $user = $self{session}->current_user;
-	if( defined $user )
-	{
-		$self{user} = $user;
-		$self{userid} = $user->id;
-	}
+	# This loads the properties of what the screen is about,
+	# Rather than parameters for the action, if any.
+	$self->screen->properties_from;
 
 	return $self;
 }
@@ -66,11 +61,9 @@ sub cache_list_items
 
 	my $session = $self->{session};
 
-	my $screen_lists = $session->get_plugin_factory->cache( "screen_lists" );
+	return if defined $session->{screen_lists};
 
-	return $screen_lists if defined $screen_lists;
-
-	$screen_lists = {};
+	my $screen_lists = {};
 
 	my $p_conf = $session->config( "plugins" );
 
@@ -155,14 +148,12 @@ sub cache_list_items
 		@$item_list = sort { $a->{position} <=> $b->{position} } @$item_list;
 	}
 
-	return $session->get_plugin_factory->cache( "screen_lists", $screen_lists );
+	$session->{screen_lists} = $screen_lists;
 }
 
 =item @screen_opts = $processor->list_items( $list_id, %opts )
 
 Returns a list of screens that appear in list $list_id ordered by their position.
-
-If $list_id is an array ref returns all matching entries for each individual list.
 
 Each screen opt is a hash ref of:
 
@@ -184,18 +175,12 @@ sub list_items
 	my $filter = $opts{filter};
 	$filter = 1 if !defined $filter;
 
-	my $screen_lists = $self->{session}->get_plugin_factory->cache( "screen_lists" );
-
-	my @opts;
-	for(ref($list_id) eq "ARRAY" ? @$list_id : $list_id)
-	{
-		push @opts, @{$screen_lists->{$_} || []};
-	}
+	my $screen_lists = $self->{session}->{screen_lists};
 
 	my @list;
-	foreach my $opt (@opts)
+	foreach my $opt (@{$screen_lists->{$list_id} || []})
 	{
-		my $screen = $self->{session}->plugin( $opt->{screen_id}, processor=>$self, %{$opts{params}||{}} );
+		my $screen = $self->{session}->plugin( $opt->{screen_id}, processor=>$self );
 		if( $filter )
 		{
 			next if !$screen->can_be_viewed;
@@ -283,12 +268,6 @@ sub process
 
 	my $self = $class->new( %opts );
 
-	my $current_user = $self->{session}->current_user;
-
-	# This loads the properties of what the screen is about,
-	# Rather than parameters for the action, if any.
-	$self->screen->properties_from;
-
 	$self->{action} = $self->{session}->get_action_button;
 	$self->{internal} = $self->{session}->get_internal_button;
 	delete $self->{action} if( $self->{action} eq "" );
@@ -312,16 +291,6 @@ sub process
 
 	if( defined $self->{redirect} )
 	{
-		if( defined $current_user )
-		{
-			foreach my $message ( @{$self->{messages}} )
-			{
-				$self->{session}->get_database->save_user_message( 
-					$current_user->get_id,
-					$message->{type},
-					$message->{content} );
-			}
-		}
 		$self->{session}->redirect( $self->{redirect} );
 		return;
 	}
@@ -329,6 +298,7 @@ sub process
 	# used to swap to a different screen if appropriate
 	$self->screen->about_to_render;
 
+	my $current_user = $self->{session}->current_user;
 	if( $ENV{REQUEST_METHOD} eq "POST" && defined $current_user )
 	{
 		my $url = $self->screen->redirect_to_me_url;
@@ -376,6 +346,7 @@ sub process
 
 	my $content = $self->screen->render;
 	my $links = $self->screen->render_links;
+#	my $toolbar = $self->{session}->render_toolbar;
 	my $title = $self->screen->render_title;
 
 	my $page = $self->{session}->make_doc_fragment;
@@ -403,8 +374,6 @@ sub process
 		template => $self->{template},
  	);
 	$self->{session}->send_page();
-
-	return $self; # useful for unit-tests
 }
 
 
@@ -426,9 +395,6 @@ sub after_messages
 sub add_message
 {
 	my( $self, $type, $message ) = @_;
-
-	# we'll sanity check now, otherwise it becomes hard to trace later on
-	EPrints->abort( "Requires message argument" ) if !defined $message;
 
 	push @{$self->{messages}},{type=>$type,content=>$message};
 }
@@ -463,7 +429,7 @@ sub render_messages
 {	
 	my( $self ) = @_;
 
-	my $chunk = $self->{session}->make_element( "div", id => "ep_messages" );
+	my $chunk = $self->{session}->make_doc_fragment;
 
 	my @old_messages;
 	my $cuser = $self->{session}->current_user;
@@ -500,31 +466,3 @@ sub action_not_allowed
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

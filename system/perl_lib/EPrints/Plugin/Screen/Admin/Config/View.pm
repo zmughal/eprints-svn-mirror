@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Admin::Config::View
-
-=cut
-
 package EPrints::Plugin::Screen::Admin::Config::View;
 
 use EPrints::Plugin::Screen;
@@ -66,7 +60,7 @@ sub redirect_to_me_url
 {
 	my( $self ) = @_;
 
-	return $self->SUPER::redirect_to_me_url."&configfile=".$self->{processor}->{configfile};
+	return $self->SUPER::redirect_to_me_url."&eprintid=".$self->{processor}->{eprintid};
 }
 
 sub render
@@ -87,18 +81,18 @@ sub render
 	my $doc_link = $self->{session}->render_link("http://eprints.org/d/?keyword=${1}ConfigFile&filename=".$self->{processor}->{configfile});
 	$page->appendChild( $self->{session}->html_phrase( "Plugin/Screen/Admin/Config/View:documentation", link=>$doc_link ));
 
-	if( defined $edit_screen && $edit_screen->can_be_viewed )
+	if( $edit_screen->can_be_viewed )
 	{
-		my $edit_config_button = $edit_screen->render_action_button( {
+		my $form = $edit_screen->render_form;
+		$page->appendChild( $form );
+		my $edit_config_button = $edit_screen->render_action_button( 
+		{
 			screen => $edit_screen,
 			screen_id => $edit_screen_id,
-			hidden => {
-				configfile => $self->{processor}->{configfile},
-			}
 		} );
 		my $buttons = $self->{session}->make_element( "div" );
 		$buttons->appendChild( $edit_config_button );
-		$page->appendChild( $edit_config_button );
+		$form->appendChild( $buttons );
 	}
 	else
 	{
@@ -148,31 +142,3 @@ sub register_furniture
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -3,7 +3,7 @@ $c->{set_eprint_automatic_fields} = sub
 {
 	my( $eprint ) = @_;
 
-	my $type = $eprint->value( "type" );
+	my $type = $eprint->get_value( "type" );
 	if( $type eq "monograph" || $type eq "thesis" )
 	{
 		unless( $eprint->is_set( "institution" ) )
@@ -27,6 +27,8 @@ $c->{set_eprint_automatic_fields} = sub
 		# thesis are usually unpublished.
 	}
 
+
+
 	my @docs = $eprint->get_all_documents();
 	my $textstatus = "none";
 	if( scalar @docs > 0 )
@@ -42,5 +44,7 @@ $c->{set_eprint_automatic_fields} = sub
 		}
 	}
 	$eprint->set_value( "full_text_status", $textstatus );
+
+
 };
 

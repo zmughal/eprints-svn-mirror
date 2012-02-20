@@ -1,12 +1,4 @@
-=head1 NAME
-
-EPrints::Plugin::Import::TextFile
-
-=cut
-
 package EPrints::Plugin::Import::TextFile;
-
-use Encode;
 
 use strict;
 
@@ -14,13 +6,10 @@ our @ISA = qw/ EPrints::Plugin::Import /;
 
 $EPrints::Plugin::Import::DISABLE = 1;
 
-our %BOM2ENC = map { Encode::encode($_, "\x{feff}") => $_ } qw(
-		UTF-8
-		UTF-16BE
-		UTF-16LE
-		UTF-32BE
-		UTF-32LE
-	);
+if( $^V gt v5.8.0 )
+{
+	eval "use File::BOM";
+}
 
 sub new
 {
@@ -39,46 +28,24 @@ sub input_fh
 	my( $self, %opts ) = @_;
 
 	my $fh = $opts{fh};
-	my $is_bom = 0;
 
 	if( $^V gt v5.8.0 and seek( $fh, 0, 1 ) )
 	{
-		binmode($fh); # should be no-op
-		use bytes;
+		# Strip the Byte Order Mark and set the encoding appropriately
+		# See http://en.wikipedia.org/wiki/Byte_Order_Mark
+		File::BOM::defuse($fh);
 
+		# Read a line from the file handle and reset the fp
+		my $start = tell( $fh );
 		my $line = <$fh>;
-		seek( $fh, 0, 0 )
-			or die "Unable to reset file handle after BOM/CRLF read";
+		seek( $fh, $start, 0 )
+			or die "Unable to reset file handle for crlf detection.";
 
 		# If the line ends with return add the crlf layer
 		if( $line =~ /\r$/ )
 		{
 			binmode( $fh, ":crlf" );
 		}	
-
-		# Detect the Byte Order Mark and set the encoding appropriately
-		# See http://en.wikipedia.org/wiki/Byte_Order_Mark
-		for(2..4)
-		{
-			if( defined( my $enc = $BOM2ENC{substr($line,0,$_)} ) )
-			{
-				$is_bom = 1;
-				seek( $fh, $_, 0 );
-				binmode($fh, ":encoding($enc)");
-				last;
-			}
-		}
-	}
-
-	if( !$is_bom )
-	{
-		my $enc = "UTF-8";
-		if( $opts{encoding} )
-		{
-			my %available = map { $_ => 1 } Encode->encodings( ":all" );
-			$enc = $opts{encoding} if $available{$opts{encoding}};
-		}
-		binmode($fh, ":encoding($enc)");
 	}
 
 	return $self->input_text_fh( %opts );
@@ -92,31 +59,3 @@ sub input_text_fh
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

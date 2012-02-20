@@ -1,5 +1,10 @@
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -44,16 +49,12 @@ sub get_test_id
 	return $ids[0];
 }
 
-=item $repository = EPrints::Test->repository()
+=item $repository = EPrints::Test::get_test_repository()
 
 Returns the first repository object.
 
 =cut
 
-sub repository
-{
-	&get_test_repository;
-}
 sub get_test_repository
 {
 	my $repoid = get_test_id();
@@ -82,10 +83,6 @@ sub get_test_session
 	return $session;
 }
 
-=item $size = EPrints::Test::mem_size()
-
-Returns the current resident memory size.
-
 =item $size = EPrints::Test::mem_increase( [ $previous ] )
 
 Returns the change in memory size in bytes since it was $previous bytes. If $previous isn't given uses the memory size the last time mem_increase was called.
@@ -96,12 +93,10 @@ eval "use GTop";
 my $MEM_PREVIOUS = 0;
 if( $@ )
 {
-	*mem_size = sub { -1 };
 	*mem_increase = sub { -1 };
 }
 else
 {
-	*mem_size = sub { return GTop->new->proc_mem( $$ )->resident };
 	*mem_increase = sub {
 		$MEM_PREVIOUS = $_[0] if scalar(@_);
 
@@ -171,31 +166,3 @@ sub get_test_dataobj
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

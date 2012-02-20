@@ -1,14 +1,7 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Staff::EPrintSearch
-
-=cut
-
 
 package EPrints::Plugin::Screen::Staff::EPrintSearch;
 
-use EPrints::Plugin::Screen::Search;
-@ISA = ( 'EPrints::Plugin::Screen::Search' );
+@ISA = ( 'EPrints::Plugin::Screen::AbstractSearch' );
 
 use strict;
 
@@ -28,6 +21,24 @@ sub new
 	return $self;
 }
 
+sub search_dataset
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_repository->get_dataset( "eprint" );
+}
+
+sub search_filters
+{
+	my( $self ) = @_;
+
+	return;
+}
+
+sub allow_export { return 1; }
+
+sub allow_export_redir { return 1; }
+
 sub can_be_viewed
 {
 	my( $self ) = @_;
@@ -35,74 +46,57 @@ sub can_be_viewed
 	return $self->allow( "staff/eprint_search" );
 }
 
-sub properties_from
+sub from
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{dataset} = $self->repository->dataset( "eprint" );
-	$self->{processor}->{searchid} = "staff";
+	my $sconf = {
+		staff => 1,
+		dataset_id => "eprint",
+		citation => $self->{session}->get_repository->get_conf( "search","advanced","citation" ),
+		order_methods => $self->{session}->get_repository->get_conf( "search","advanced","order_methods" ),
+		default_order => $self->{session}->get_repository->get_conf( "search","advanced","default_order"),
+	};
+		
+	my $adv_fields = $self->{session}->get_repository->get_conf( "search","advanced","search_fields" );
+	$sconf->{"search_fields"} = [
+		{ meta_fields => [ "eprintid" ] },
+		{ meta_fields => [ "userid.username" ] },
+		{ meta_fields => [ "userid.name" ] },
+		{ meta_fields => [ "eprint_status" ], default=>'archive buffer' },
+		{ meta_fields => [ "dir" ] },
+		@{$adv_fields},
+	];
 
-	$self->SUPER::properties_from;
+	$self->{processor}->{sconf} = $sconf;
+
+	$self->SUPER::from;
 }
 
-sub default_search_config
+sub _vis_level
 {
 	my( $self ) = @_;
 
-	my $sconf = EPrints::Utils::clone(
-			$self->repository->config( "search", "advanced" )
-		);
-
-	delete $sconf->{preamble_phrase};
-	delete $sconf->{title_phrase};
-
-	$sconf->{staff} = 1;
-
-	unshift @{$sconf->{search_fields}},
-			{ meta_fields => [qw( eprintid )] },
-			{ meta_fields => [qw( userid.username )] },
-			{ meta_fields => [qw( userid.name )] },
-			{ meta_fields => [qw( eprint_status )], default=>"archive buffer" },
-			{ meta_fields => [qw( dir )] };
-
-	if( $self->param( "extra_fields" ) )
-	{
-		unshift @{$sconf->{search_fields}}, @{$self->param( "extra_fields" )};
-	}
-
-	return $sconf;
+	return "staff";
 }
 
-# suppress dataset=
-sub hidden_bits
+sub get_controls_before
 {
-	return shift->EPrints::Plugin::Screen::AbstractSearch::hidden_bits();
+	my( $self ) = @_;
+
+	return $self->get_basic_controls_before;	
 }
 
-=head1 COPYRIGHT
+sub render_result_row
+{
+	my( $self, $session, $result, $searchexp, $n ) = @_;
 
-=for COPYRIGHT BEGIN
+	return $result->render_citation_link_staff(
+			$self->{processor}->{sconf}->{citation},  #undef unless specified
+			n => [$n,"INTEGER"] );
+}
 
-Copyright 2000-2011 University of Southampton.
 
-=for COPYRIGHT END
 
-=for LICENSE BEGIN
 
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

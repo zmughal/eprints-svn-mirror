@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -34,6 +39,8 @@ BEGIN
 }
 
 use EPrints::MetaField;
+
+
 
 sub get_sql_type
 {
@@ -86,18 +93,17 @@ sub from_search_form
 {
 	my( $self, $session, $prefix ) = @_;
 
-	my $value = $session->param( $prefix );
-	return $value unless EPrints::Utils::is_set( $value );
+	my $val = $session->param( $prefix );
+	return unless defined $val;
 
-	my $regexp = $self->property( "regexp" );
-	my $range = qr/-|(?:\.\.)/;
+	my $number = '[0-9]+\.?[0-9]*';
 
-	if( $value !~ /^(?:$regexp$range?)|(?:$regexp?$range$regexp)$/ )
+	if( $val =~ m/^($number)?\-?($number)?/ )
 	{
-		return( undef,undef,undef, $session->html_phrase( "lib/searchfield:int_err" ) );
+		return( $val );
 	}
-
-	return( $value );
+			
+	return( undef,undef,undef, $session->html_phrase( "lib/searchfield:int_err" ) );
 }
 
 sub render_search_value
@@ -106,10 +112,9 @@ sub render_search_value
 
 	my $type = $self->get_type;
 
-	my $regexp = $self->property( "regexp" );
-	my $range = qr/-|(?:\.\.)/;
+	my $number = '[0-9]+\.?[0-9]*';
 
-	if( $value =~ m/^($regexp)$range($regexp)$/ )
+	if( $value =~ m/^($number)-($number)$/ )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc:".$type."_between",
@@ -117,14 +122,14 @@ sub render_search_value
 			to => $session->make_text( $2 ) );
 	}
 
-	if( $value =~ m/^$range($regexp)$/ )
+	if( $value =~ m/^-($number)$/ )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc:".$type."_orless",
 			to => $session->make_text( $1 ) );
 	}
 
-	if( $value =~ m/^($regexp)$range$/ )
+	if( $value =~ m/^($number)-$/ )
 	{
 		return $session->html_phrase(
 			"lib/searchfield:desc:".$type."_ormore",
@@ -140,14 +145,13 @@ sub get_search_conditions_not_ex
 		$search_mode ) = @_;
 	
 	# N
-	# N..
-	# ..N
-	# N..N
+	# N-
+	# -N
+	# N-N
 
-	my $regexp = $self->property( "regexp" );
-	my $range = qr/-|(?:\.\.)/;
+	my $number = '[0-9]+\.?[0-9]*';
 
-	if( $search_value =~ m/^$regexp$/ )
+	if( $search_value =~ m/^$number$/ )
 	{
 		return EPrints::Search::Condition->new( 
 			'=', 
@@ -156,10 +160,13 @@ sub get_search_conditions_not_ex
 			$search_value );
 	}
 
-	my( $lower, $higher ) = $search_value =~ m/^($regexp)?$range($regexp)?$/;
+	unless( $search_value=~ m/^($number)?\-($number)?$/ )
+	{
+		return EPrints::Search::Condition->new( 'FALSE' );
+	}
 
 	my @r = ();
-	if( defined $lower )
+	if( defined $1 && $1 ne "" )
 	{
 		push @r, EPrints::Search::Condition->new( 
 				'>=',
@@ -167,7 +174,8 @@ sub get_search_conditions_not_ex
 				$self,
 				$1);
 	}
-	if( defined $higher )
+
+	if( defined $2 && $2 ne "" )
 	{
 		push @r, EPrints::Search::Condition->new( 
 				'<=',
@@ -176,18 +184,13 @@ sub get_search_conditions_not_ex
 				$2 );
 	}
 
-	if( !@r )
+	if( scalar @r == 1 ) { return $r[0]; }
+	if( scalar @r == 0 )
 	{
 		return EPrints::Search::Condition->new( 'FALSE' );
 	}
-	elsif( @r == 1 )
-	{
-		return $r[0];
-	}
-	else
-	{
-		return EPrints::Search::Condition->new( "AND", @r );
-	}
+
+	return EPrints::Search::Condition->new( "AND", @r );
 }
 
 sub get_search_group { return 'number'; } 
@@ -198,7 +201,6 @@ sub get_property_defaults
 	my %defaults = $self->SUPER::get_property_defaults;
 	$defaults{digits} = $EPrints::MetaField::FROM_CONFIG;
 	$defaults{text_index} = 0;
-	$defaults{regexp} = qr/-?[0-9]+/;
 	return %defaults;
 }
 
@@ -237,38 +239,8 @@ sub form_value_basic
 
 	my $value = $self->SUPER::form_value_basic( $session, $basename, $object );
 
-	return defined $value && $value =~ $self->property( "regexp" ) ?
-			$value :
-			undef;
+	return defined $value && $value =~ /^-?[0-9]+$/ ? $value : undef;
 }
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

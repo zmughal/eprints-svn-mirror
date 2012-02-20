@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -61,6 +66,9 @@ sub get_system_field_info
 		{ name=>"id", type=>"counter", required=>1, import=>0, can_clone=>1,
 			sql_counter=>"savedsearchid" },
 
+		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
+			default_value=>1 },
+
 		{ name=>"userid", type=>"itemref", 
 			datasetid=>"user", required=>1 },
 
@@ -116,7 +124,7 @@ sub create
 	return EPrints::DataObj::SavedSearch->create_from_data( 
 		$session, 
 		{ userid=>$userid },
-		$session->dataset( "saved_search" ) );
+		$session->get_repository->get_dataset( "saved_search" ) );
 }
 
 ######################################################################
@@ -143,6 +151,10 @@ sub commit
 		# don't do anything if there isn't anything to do
 		return( 1 ) unless $force;
 	}
+	if( $self->{non_volatile_change} )
+	{
+		$self->set_value( "rev_number", ($self->get_value( "rev_number" )||0) + 1 );	
+	}
 
 	my $success = $self->SUPER::commit( $force );
 
@@ -155,7 +167,7 @@ sub commit
 
 =item $user = $saved_search->get_user
 
-Return the EPrints::DataObj:;User which owns this saved search.
+Return the EPrints::User which owns this saved search.
 
 =cut
 ######################################################################
@@ -175,7 +187,7 @@ sub get_user
 		}
 	}
 
-	$self->{user} = EPrints::DataObj::User->new( 
+	$self->{user} = EPrints::User->new( 
 		$self->{session}, 
 		$self->get_value( "userid" ) );
 
@@ -308,7 +320,7 @@ sub send_out_alert
 		my( $session, $dataset, $item, $info ) = @_;
 
 		my $p = $session->make_element( "p" );
-		$p->appendChild( $item->render_citation_link( $session->config( "saved_search_citation" )));
+		$p->appendChild( $item->render_citation_link( $session->get_repository->get_conf( "saved_search_citation" )));
 		$info->{matches}->appendChild( $p );
 #		$info->{matches}->appendChild( $session->make_text( $item->get_url ) );
 	};
@@ -370,7 +382,7 @@ sub process_set
 		return;
 	}
 
-	my $subs_ds = $session->dataset( "saved_search" );
+	my $subs_ds = $session->get_repository->get_dataset( "saved_search" );
 
 	my $searchexp = EPrints::Search->new(
 		session => $session,
@@ -389,7 +401,7 @@ sub process_set
 	my $list = $searchexp->perform_search;
 	$list->map( $fn, {} );
 
-	my $statusfile = $session->config( "variables_path" ).
+	my $statusfile = $session->get_repository->get_conf( "variables_path" ).
 		"/alert-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, ">$statusfile" ) )
@@ -432,7 +444,7 @@ sub get_last_timestamp
 		return;
 	}
 
-	my $statusfile = $session->config( "variables_path" ).
+	my $statusfile = $session->get_repository->get_conf( "variables_path" ).
 		"/alert-".$frequency.".timestamp";
 
 	unless( open( TIMESTAMP, $statusfile ) )
@@ -481,12 +493,11 @@ sub has_owner
 
 sub get_url
 {
-	my( $self, $staff ) = @_;
+	my( $self , $staff ) = @_;
 
-	my $searchexp = $self->{session}->plugin( "Search" )->thaw( $self->value( "spec" ) );
-	return undef if !defined $searchexp;
+	return undef if( $self->get_value("public") ne "TRUE" );
 
-	return $searchexp->search_url;
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" )."/saved_search?savedsearchid=".$self->get_id;
 }
 
 =pod
@@ -496,31 +507,3 @@ sub get_url
 =cut
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

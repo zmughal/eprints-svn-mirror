@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -54,7 +59,7 @@ sub get_system_field_info
 
 	return 
 	( 
-		{ name=>"subjectid", type=>"id", required=>1, can_clone=>1, maxlength=>128 },
+		{ name=>"subjectid", type=>"text", required=>1, text_index=>0, can_clone=>1, maxlength=>128 },
 
 		{ name=>"rev_number", type=>"int", required=>1, can_clone=>0,
 			default_value=>1 },
@@ -69,10 +74,10 @@ sub get_system_field_info
 		},
 
 		# should be a itemid?
-		{ name=>"parents", type=>"id", required=>1,
+		{ name=>"parents", type=>"text", required=>1, text_index=>0, 
 			multiple=>1 },
 
-		{ name=>"ancestors", type=>"id", required=>0,
+		{ name=>"ancestors", type=>"text", required=>0, text_index=>0,
 			multiple=>1, export_as_xml=>0 },
 
 		{ name=>"depositable", type=>"boolean", required=>1,
@@ -111,7 +116,7 @@ sub new
 			depositable => "FALSE" 
 		};
 		my $name;
-		foreach my $langid ( @{$session->config( "languages" )} )
+		foreach my $langid ( @{$session->get_repository->get_conf( "languages" )} )
 		{
  			my $top_level_name = EPrints::XML::to_string( 
 				$session->get_repository->get_language( $langid )->phrase( 
@@ -128,7 +133,7 @@ sub new
 	}
 
 	return $session->get_database->get_single( 
-			$session->dataset( "subject" ), 
+			$session->get_repository->get_dataset( "subject" ), 
 			$subjectid );
 
 }
@@ -154,7 +159,7 @@ sub new_from_data
 	return $class->SUPER::new_from_data(
 			$session,
 			$known,
-			$session->dataset( "subject" ) );
+			$session->get_repository->get_dataset( "subject" ) );
 }
 
 
@@ -178,7 +183,7 @@ sub commit
 {
 	my( $self, $force ) = @_;
 
-	my @ancestors = $self->_get_ancestors( {} );
+	my @ancestors = $self->_get_ancestors();
 	$self->set_value( "ancestors", \@ancestors );
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
@@ -264,7 +269,7 @@ sub remove_all
 {
 	my( $session ) = @_;
 
-	my $ds = $session->dataset( "subject" );
+	my $ds = $session->get_repository->get_dataset( "subject" );
 	my @subjects = $session->get_database->get_all( $ds );
 	foreach( @subjects )
 	{
@@ -304,10 +309,10 @@ sub create
 		  "ancestors"=>[],
 		  "depositable"=>($depositable ? "TRUE" : "FALSE" ) };
 
-	return EPrints::DataObj::Subject->create_from_data( 
+	return EPrints::User->create_from_data( 
 		$session, 
 		$data,
-		$session->dataset( "subject" ) );
+		$session->get_repository->get_dataset( "subject" ) );
 }
 
 ######################################################################
@@ -356,46 +361,24 @@ END
 
 sub _get_ancestors
 {
-	my( $self, $seen ) = @_;
-
-	return () if exists $seen->{$self->{data}->{subjectid}};
-	$seen->{$self->{data}->{subjectid}} = undef;
+	my( $self ) = @_;
 
 	my @ancestors = ($self->{data}->{subjectid});
+	my %seen = ($self->{data}->{subjectid} => undef);
 
 	foreach my $parent ( $self->get_parents() )
 	{
-		push @ancestors, $parent->_get_ancestors( $seen );
+		foreach( $parent->_get_ancestors() )
+		{
+			next if exists $seen{$_};
+			push @ancestors, $_;
+			$seen{$_} = undef;
+		}
 	}
 
 	return @ancestors;
 }
 
-=item $subject = $subject->top()
-
-Returns the subject that is at the top of this subject's tree (which may be this subject).
-
-Returns undef if the subject is not part of a tree.
-
-=cut
-
-sub top
-{
-	my( $self ) = @_;
-
-	foreach my $id ($self->id, @{$self->value( "ancestors" )})
-	{
-		my $subject = $self->{dataset}->dataobj( $id );
-		next if !defined $subject;
-		foreach my $parentid (@{$subject->value( "parents" )})
-		{
-			return $subject
-				if $parentid eq $EPrints::DataObj::Subject::root_subject;
-		}
-	}
-
-	return undef;
-}
 
 ######################################################################
 =pod
@@ -480,7 +463,7 @@ sub get_parents
 	{
 		push @parents, new EPrints::DataObj::Subject( $self->{session}, $_ );
 	}
-	return grep { defined } ( @parents );
+	return( @parents );
 }
 
 
@@ -746,7 +729,7 @@ sub subject_label
 
 	while( $tag ne $EPrints::DataObj::Subject::root_subject )
 	{
-		my $ds = $session->dataset();
+		my $ds = $session->get_repository->get_dataset();
 		my $data = $session->{database}->get_single( $ds, $tag );
 		
 		# If we can't find it, the tag must be invalid.
@@ -820,7 +803,7 @@ sub get_all
 		}
 	};
 	
-	my $ds = $session->dataset( "subject" );
+	my $ds = $session->get_repository->get_dataset( "subject" );
 
 	# Retrieve all of the subjects
 	my $results = $ds->search( custom_order => "name_name" );
@@ -993,32 +976,4 @@ sub render
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

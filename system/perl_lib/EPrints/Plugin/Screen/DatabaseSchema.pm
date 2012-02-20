@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::DatabaseSchema
-
-=cut
-
 
 package EPrints::Plugin::Screen::DatabaseSchema;
 
@@ -61,7 +55,7 @@ sub render
 			$session->html_phrase( "cgi/users/status:cachedate" ),
 			$session->html_phrase( "cgi/users/status:cachesize" ) ) );
 
-	my $cache_ds = $session->dataset( "cachemap" );
+	my $cache_ds = $session->get_repository->get_dataset( "cachemap" );
 	foreach my $name ($session->get_database->get_tables)
 	{
 		next unless $name =~ /^cache(\d+)$/;
@@ -92,7 +86,7 @@ sub render
 
 	my %all_tables = map { $_ => 1 } $session->get_database->get_tables;
 
-	my $langs = $session->config( "languages" );
+	my $langs = $session->get_repository->get_conf( "languages" );
 
 	$html->appendChild( $session->html_phrase( "cgi/users/status:dataset_tables" ) );
 
@@ -101,7 +95,7 @@ sub render
 
 	foreach my $datasetid (sort { $a cmp $b } $session->get_repository->get_sql_dataset_ids())
 	{
-		my $dataset = $session->dataset( $datasetid );
+		my $dataset = $session->get_repository->get_dataset( $datasetid );
 
 		my $table_name = $dataset->get_sql_table_name;
 		delete $all_tables{$table_name};
@@ -224,31 +218,3 @@ sub render
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::EPrint::Deposit
-
-=cut
-
 package EPrints::Plugin::Screen::EPrint::Deposit;
 
 @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
@@ -125,8 +119,6 @@ sub render
 	my $owner  = $priv & 4;
 	my $editor = $priv & 8;
 
-	my $div = $self->{session}->make_element("div",class=>"ep_form_button_bar");
-
 	if( scalar @{$problems} == 0 || $editor )
 	{
 		my $action = "deposit";
@@ -147,24 +139,20 @@ sub render
 
 		$form->appendChild( $self->{session}->html_phrase( "deposit_agreement_text" ) );
 	
-		$div->appendChild( $self->{session}->render_action_buttons(
+		$form->appendChild( $self->{session}->render_action_buttons(
 			$action => $self->{session}->phrase( "priv:action/eprint/deposit" ),
 			save => $self->{session}->phrase( "priv:action/eprint/deposit_later" ),
 			_order => [$action, "save"],
 		) );
-		
-		$form->appendChild($div);
 	}
 	else
 	{
 		$form->appendChild( $self->html_phrase( "action:save:description" ) );
 
-		$div->appendChild( $self->{session}->render_action_buttons(
+		$form->appendChild( $self->{session}->render_action_buttons(
 			save => $self->{session}->phrase( "priv:action/eprint/deposit_later" ),
 			_order => [qw( save )],
 		) );
-
-		$form->appendChild($div);
 	}
 
 	return $page;
@@ -286,31 +274,3 @@ sub action_save
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

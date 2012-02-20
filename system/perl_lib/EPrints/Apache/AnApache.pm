@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -27,8 +32,6 @@ request object.
 
 package EPrints::Apache::AnApache;
 
-use EPrints::Const qw( :http );
-
 use Exporter;
 @ISA	 = qw(Exporter);
 @EXPORT  = qw(OK AUTH_REQUIRED FORBIDDEN DECLINED SERVER_ERROR NOT_FOUND DONE);
@@ -36,17 +39,11 @@ use Exporter;
 use ModPerl::Registry;
 use Apache2::Util;
 use Apache2::SubProcess;
+use Apache2::Const;
 use Apache2::Connection;
 use Apache2::RequestUtil;
 use Apache2::MPM;
 use Apache2::Directive;
-
-# Backwards compatibility - use HTTP_ constants instead of :common constants
-use constant {
-	AUTH_REQUIRED => EPrints::Const::HTTP_UNAUTHORIZED,
-	FORBIDDEN => EPrints::Const::HTTP_FORBIDDEN,
-	SERVER_ERROR => EPrints::Const::HTTP_INTERNAL_SERVER_ERROR,
-};
 
 use strict;
 
@@ -205,103 +202,4 @@ sub send_status_line
 	$request->status( $code );
 }
 
-=item $rc = EPrints::Apache::AnApache::ranges( $r, $maxlength, $chunks )
-
-Populates the byte-ranges in $chunks requested by the client.
-
-$maxlength is the length, in bytes, of the resource.
-
-Returns the appropriate byte-range result code or OK if no "Range" header is set.
-
-=cut
-
-sub ranges
-{
-	my( $r, $maxlength, $chunks ) = @_;
-
-	my $ranges = EPrints::Apache::AnApache::header_in( $r, "Range" );
-	return OK if !defined $ranges;
-
-	$ranges =~ s/\s+//g;
-	return HTTP_RANGE_NOT_SATISFIABLE if $ranges !~ s/^bytes=//;
-	return HTTP_RANGE_NOT_SATISFIABLE if $ranges =~ /[^0-9,\-]/;
-
-	my @ranges = map { [split /\-/, $_] } split(/,/, $ranges);
-	return HTTP_RANGE_NOT_SATISFIABLE if !@ranges;
-
-	# handle -500 and 9500-
-	# check for broken ranges (in which case we give-up)
-	for(@ranges)
-	{
-		return HTTP_RANGE_NOT_SATISFIABLE if @$_ > 2;
-		return HTTP_RANGE_NOT_SATISFIABLE if !length($_->[0]) && !length($_->[1]);
-		if( !defined $_->[1] || !length $_->[1] )
-		{
-			$_->[1] = $maxlength-1;
-		}
-		if( !length($_->[0]) )
-		{
-			$_->[0] = $maxlength-$_->[1];
-			$_->[1] = $maxlength-1;
-		}
-		return HTTP_RANGE_NOT_SATISFIABLE if $_->[0] >= $maxlength;
-		return HTTP_RANGE_NOT_SATISFIABLE if $_->[1] >= $maxlength;
-		return HTTP_RANGE_NOT_SATISFIABLE if $_->[0] > $_->[1];
-	}
-
-	@ranges = sort { $a->[0] <=> $b->[0] } @ranges;
-
-	for(my $i = 0; $i < $#ranges;)
-	{
-		my( $l, $r ) = @ranges[$i,$i+1];
-		# left range is superset of right range
-		if( $$l[1] >= $$r[1] )
-		{
-			splice(@ranges,$i+1,1);
-		}
-		# left range overlaps right range
-		elsif( $$l[1] >= $$r[0] )
-		{
-			$$l[1] = $$r[1];
-			splice(@ranges,$i+1,1);
-		}
-		else
-		{
-			++$i;
-		}
-	}
-
-	@$chunks = @ranges;
-
-	return HTTP_PARTIAL_CONTENT;
-}
-
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

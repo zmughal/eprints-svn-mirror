@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Component::Upload
-
-=cut
-
 package EPrints::Plugin::InputForm::Component::Upload;
 
 use EPrints::Plugin::InputForm::Component;
@@ -25,34 +19,6 @@ sub new
 	return $self;
 }
 
-sub wishes_to_export
-{
-	my( $self ) = @_;
-
-	my $plugin = $self->{processor}->{notes}->{upload_plugin}->{plugin};
-	
-	return $plugin ? $plugin->wishes_to_export : $self->SUPER::wishes_to_export;
-}
-
-sub export_mimetype
-{
-	my( $self ) = @_;
-
-	my $plugin = $self->{processor}->{notes}->{upload_plugin}->{plugin};
-	
-	return $plugin ? $plugin->export_mimetype : $self->SUPER::export_mimetype;
-}
-
-sub export
-{
-	my( $self ) = @_;
-
-	my $plugin = $self->{processor}->{notes}->{upload_plugin}->{plugin};
-	
-	return $plugin ? $plugin->export : $self->SUPER::export;
-}
-
-
 # only returns a value if it belongs to this component
 sub update_from_form
 {
@@ -69,28 +35,22 @@ sub update_from_form
 	if( $session->internal_button_pressed )
 	{
 		my $internal = $self->get_internal_button;
-		my @screen_opts = $self->{processor}->list_items(
-			"upload_methods",
-			params => {
-				processor => $self->{processor},
-				parent => $self,
-			},
-		);
-		my @methods = map { $_->{screen} } @screen_opts;
-		my $method_ok = 0;
-		foreach my $plugin (@methods)
+		if( $internal =~ m/^add_format_(.+)$/ )
 		{
-			my $method = $plugin->get_id;
-			next if $internal !~ /^$method\_([^:]+)$/;
-			my $action = $1;
-			$method_ok = 1;
-			local $self->{processor}->{action} = $action;
-			$plugin->{prefix} = join '_', $self->{prefix}, $plugin->get_id;
-			$plugin->from();
-			$self->{processor}->{notes}->{upload_plugin}->{plugin} = $plugin;
-			$self->{processor}->{notes}->{upload_plugin}->{ctab} = $method;
-			$self->{processor}->{notes}->{upload_plugin}->{state_params} = $plugin->get_state_params;
-			last;
+			my $method = $1;
+			my @plugins = $self->_get_upload_plugins(
+					prefix => $self->{prefix},
+					dataobj => $self->{dataobj},
+				);
+			foreach my $plugin (@plugins)
+			{
+				if( $plugin->get_id eq $method )
+				{
+					$plugin->update_from_form( $processor );
+					return;
+				}
+			}
+			EPrints::abort( "'$method' is not a supported upload method" );
 		}
 	}
 
@@ -101,7 +61,7 @@ sub get_state_params
 {
 	my( $self, $processor ) = @_;
 
-	my @params;
+	my $params = "";
 
 	my $tounroll = {};
 	if( $processor->{notes}->{upload_plugin}->{to_unroll} )
@@ -116,20 +76,6 @@ sub get_state_params
 		{
 			$tounroll->{$1} = 1;
 		}
-	}
-	my $ctab = $processor->{notes}->{upload_plugin}->{ctab};
-	if( $ctab )
-	{
-		push @params, $self->{prefix}."_tab", $ctab;
-	}
-
-	my $uri = URI->new( 'http:' );
-	$uri->query_form( @params );
-
-	my $params = $uri->query ? '&' . $uri->query : '';
-	if( $processor->{notes}->{upload_plugin}->{state_params} )
-	{
-		$params .= $processor->{notes}->{upload_plugin}->{state_params};
 	}
 
 	return $params;
@@ -174,41 +120,73 @@ sub render_content
 	my $session = $self->{session};
 	my $f = $session->make_doc_fragment;
 	
-	my @screen_opts = $self->{processor}->list_items( 
-			"upload_methods",
-			params => {
-				processor => $self->{processor},
-				parent => $self,
-			},
+	my @methods = $self->_get_upload_plugins(
+			prefix => $self->{prefix},
+			dataobj => $self->{dataobj}
 		);
-	my @methods = map { $_->{screen} } @screen_opts;
 
 	my $html = $session->make_doc_fragment;
 
 	# no upload methods so don't do anything
-	return $html if @screen_opts == 0;
+	return $html if @methods == 0;
 
-	my $ctab = $self->{session}->param( $self->{prefix} . "_tab" );
-	$ctab = '' if !defined $ctab;
-
-	my @labels;
-	my @tabs;
-	my $current;
-	for(my $i = 0; $i < @methods; ++$i)
+	my $tabs = [];
+	my $labels = {};
+	my $links = {};
+	foreach my $plugin ( @methods )
 	{
-		my $plugin = $methods[$i];
-		$plugin->{prefix} = join '_', $self->{prefix}, $plugin->get_id;
-		push @labels, $plugin->render_title();
-		my $div = $session->make_element( "div", class => "ep_block" );
-		push @tabs, $div;
-		$div->appendChild( $plugin->render( $self->{prefix} ) );
-		$current = $i if $ctab eq $plugin->get_id;
+		my $name = $plugin->get_id;
+		push @$tabs, $name;
+		$labels->{$name} = $plugin->render_tab_title();
+		$links->{$name} = "";
 	}
 
-	$html->appendChild( $self->{session}->xhtml->tabs( \@labels, \@tabs,
-		basename => $self->{prefix},
-		current => $current,
-	) );
+	my $newdoc = $self->{session}->make_element( 
+			"div", 
+			class => "ep_upload_newdoc" );
+	$html->appendChild( $newdoc );
+	my $tab_block = $session->make_element( "div", class=>"ep_only_js" );	
+	$tab_block->appendChild( 
+		$self->{session}->render_tabs( 
+			id_prefix => $self->{prefix}."_upload",
+			current => $tabs->[0],
+			tabs => $tabs,
+			labels => $labels,
+			links => $links,
+		));
+	$newdoc->appendChild( $tab_block );
+		
+	my $panel = $self->{session}->make_element( 
+			"div", 
+			id => $self->{prefix}."_upload_panels", 
+			class => "ep_tab_panel" );
+	$newdoc->appendChild( $panel );
+
+	my $first = 1;
+	foreach my $plugin ( @methods )
+	{
+		my $inner_panel;
+		if( $first )
+		{
+			$inner_panel = $self->{session}->make_element( 
+				"div", 
+				id => $self->{prefix}."_upload_panel_".$plugin->get_id );
+		}
+		else
+		{
+			# padding for non-javascript enabled browsers
+			$panel->appendChild( 
+				$session->make_element( "div", style=>"height: 1em", class=>"ep_no_js" ) );
+			$inner_panel = $self->{session}->make_element( 
+				"div", 
+				class => "ep_no_js",
+				id => $self->{prefix}."_upload_panel_".$plugin->get_id );	
+		}
+		$panel->appendChild( $inner_panel );
+
+		$inner_panel->appendChild( $plugin->render_add_document() );
+		$first = 0;
+	}
 
 	if( defined $self->{_documents} )
 	{
@@ -232,6 +210,51 @@ sub doc_fields
 	}
 	
 	return @fields;
+}
+
+sub _get_upload_plugins
+{
+	my( $self, %opts ) = @_;
+
+	my %plugins;
+
+	my @plugins;
+	if( defined $self->{config}->{methods} )
+	{
+		METHOD: foreach my $method (@{$self->{config}->{methods}})
+		{
+			my $plugin = $self->{session}->plugin( "InputForm::UploadMethod::$method", %opts );
+			if( !defined $plugin )
+			{
+				$self->{session}->get_repository->log( "Unknown upload method in Component::Upload: '$method'" );
+				next METHOD;
+			}
+			push @plugins, $plugin;
+		}
+	}
+	else
+	{
+		METHOD: foreach my $plugin ( $self->{session}->plugin_list( type => 'InputForm' ) )
+		{
+			$plugin = $self->{session}->plugin( $plugin, %opts );
+			next METHOD if !$plugin->isa( "EPrints::Plugin::InputForm::UploadMethod" );
+			next METHOD if ref($plugin) eq "EPrints::Plugin::InputForm::UploadMethod";
+			push @plugins, $plugin;
+		}
+	}
+
+	foreach my $plugin ( @plugins )
+	{
+		foreach my $appearance ( @{$plugin->{appears}} )
+		{
+			$plugins{ref($plugin)} = [$appearance->{position},$plugin];
+		}
+	}
+
+	return
+		map { $plugins{$_}->[1] }
+		sort { $plugins{$a}->[0] <=> $plugins{$b}->[0] || $a cmp $b }
+		keys %plugins;
 }
 
 sub parse_config
@@ -264,31 +287,3 @@ sub parse_config
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

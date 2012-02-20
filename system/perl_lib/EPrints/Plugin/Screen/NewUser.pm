@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::NewUser
-
-=cut
-
 
 package EPrints::Plugin::Screen::NewUser;
 
@@ -64,7 +58,7 @@ sub action_create
 	my( $self ) = @_;
 
 	my $session = $self->{session};
-	my $ds = $session->dataset( "user" );
+	my $ds = $session->get_repository->get_dataset( "user" );
 
 	my $candidate_username = $session->param( "username" );
 
@@ -85,7 +79,7 @@ sub action_create
 		return;
 	}
 
-	my $usertype = $session->config( "default_user_type" ); 
+	my $usertype = $session->get_repository->get_conf( "default_user_type" ); 
 
 	# Attempt to create a new account
 
@@ -103,9 +97,8 @@ sub action_create
 		return;
 	}
 
-	$self->{processor}->{dataset} = $ds;
-	$self->{processor}->{dataobj} = $self->{processor}->{user};
-	$self->{processor}->{screenid} = "Workflow::Edit";
+	$self->{processor}->{userid} = $self->{processor}->{user}->get_id;
+	$self->{processor}->{screenid} = "User::Staff::Edit";
 }
 
 sub render
@@ -127,7 +120,7 @@ sub render
 	my $form = $session->render_form( "GET" );
 	$form->appendChild( 
 		$session->render_hidden_field ( "screen", "NewUser" ) );		
-	my $ds = $session->dataset( "user" );
+	my $ds = $session->get_repository->get_dataset( "user" );
 	my $username_field = $ds->get_field( "username" );
 	my $usertype_field = $ds->get_field( "usertype" );
 	my $div = $session->make_element( "div", style=>"margin-bottom: 1em" );
@@ -150,31 +143,3 @@ sub render
 }	
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::EPrint::RejectWithEmail
-
-=cut
-
 package EPrints::Plugin::Screen::EPrint::RejectWithEmail;
 
 our @ISA = ( 'EPrints::Plugin::Screen::EPrint' );
@@ -140,9 +134,26 @@ sub render
 		$textarea->appendChild( $self->{session}->html_phrase( "mail_bounce_reason" ) ); 
 		$reason->appendChild( $textarea );
 
+
+		# remove any markup:
+		my $title = $self->{session}->make_text( 
+			EPrints::Utils::tree_to_utf8( 
+				$eprint->render_description() ) );
+
+		my $eprintid = $eprint->get_id;
+		my $home = $self->{session}->get_repository->get_conf( "userhome" );
+		my $target = $home."?eprintid=$eprintid&screen=EPrint::View";	
+		my $edit_link = $self->{session}->render_link( $target );
+
+		my $content = $self->{session}->html_phrase(
+			"mail_bounce_body",
+			title => $title,
+			reason => $reason,
+			edit_link => $edit_link );
+
 		my $body = $self->{session}->html_phrase(
 			"mail_body",
-			content => $self->render_body( reason => $reason ) );
+			content => $content );
 
 		my $to_user = $user;
 		my $from_user =$self->{session}->current_user;
@@ -171,27 +182,6 @@ sub render
 	return( $page );
 }	
 
-sub render_body
-{
-	my( $self, %parts ) = @_;
-
-	my $eprint = $self->{processor}->{eprint};
-	my $repo = $self->{session};
-
-	$parts{title} = $repo->make_text(
-			EPrints::Utils::tree_to_utf8( $eprint->render_description() )
-		) if !defined $parts{title};
-	
-	$parts{edit_link} = $repo->render_link( $eprint->get_control_url() )
-		if !defined $parts{edit_link};
-
-	$parts{reason} = $repo->make_text( scalar($repo->param( "reason" )) )
-		if !defined $parts{reason};
-
-	return $repo->html_phrase(
-		"mail_bounce_body",
-		%parts );
-}
 
 sub action_send
 {
@@ -217,10 +207,26 @@ sub action_send
 
 	# Successfully transferred, mail the user with the reason
 
-	my $content = $self->render_body;
+	my $content;
 	my $mail_ok = do {
 		# change language temporarily to the user's language
 		local $self->{session}->{lang} = $user->language();
+
+		my $title = $self->{session}->make_text( 
+			EPrints::Utils::tree_to_utf8( 
+				$eprint->render_description() ) );
+		
+		my $eprintid = $eprint->get_id;
+		my $home = $self->{session}->get_repository->get_conf( "userhome" );
+		my $target = $home."?eprintid=$eprintid&screen=EPrint::View";	
+		my $edit_link = $self->{session}->render_link( $target );
+
+		$content = $self->{session}->html_phrase(
+			"mail_bounce_body",
+			title => $title,
+			reason => $self->{session}->make_text( 
+				$self->{session}->param( "reason" ) ),
+			edit_link => $edit_link );
 
 		$user->mail(
 			"cgi/users/edit_eprint:subject_bounce",
@@ -246,31 +252,3 @@ sub action_send
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

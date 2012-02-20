@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2009 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -55,10 +60,6 @@ The current time + 365 days, if the B<mtime> value is set.
 
 The B<mtime> of the file object, if set.
 
-=item Accept-Ranges
-
-Sets Accept-Ranges to bytes.
-
 =back
 
 =head2 Recognised HTTP Headers
@@ -79,7 +80,7 @@ If differs from the B<hash> value of the file object returns "304 Not Modified".
 
 =cut
 
-use EPrints::Const qw( :http );
+use EPrints::Apache::AnApache; # exports apache constants
 use APR::Date ();
 use APR::Base64 ();
 
@@ -98,7 +99,7 @@ sub handler
 
 	# Now get the file object itself
 	my $fileobj = $dataobj->get_stored_file( $filename );
-	return HTTP_NOT_FOUND unless defined $fileobj;
+	return NOT_FOUND unless defined $fileobj;
 
 	my $url = $fileobj->get_remote_copy();
 	if( defined $url )
@@ -117,12 +118,15 @@ sub handler
 
 	$r->content_type( $content_type );
 
+	$repo->set_cookies();
+
 	if( $fileobj->is_set( "hash" ) )
 	{
 		my $etag = $r->headers_in->{'if-none-match'};
 		if( defined $etag && $etag eq $fileobj->value( "hash" ) )
 		{
-			return HTTP_NOT_MODIFIED;
+			$r->status_line( "304 Not Modified" );
+			return 304;
 		}
 		EPrints::Apache::AnApache::header_out(
 			$r,
@@ -149,7 +153,8 @@ sub handler
 			my $ims_time = APR::Date::parse_http( $ims );
 			if( $ims_time && $cur_time && $ims_time >= $cur_time )
 			{
-				return HTTP_NOT_MODIFIED;
+				$r->status_line( "304 Not Modified" );
+				return 304;
 			}
 		}
 		EPrints::Apache::AnApache::header_out(
@@ -162,6 +167,11 @@ sub handler
 			"Expires" => Apache2::Util::ht_time( $r->pool, time() + 365 * 86400 )
 		);
 	}
+
+	EPrints::Apache::AnApache::header_out( 
+		$r,
+		"Content-Length" => $content_length
+	);
 
 	# Can use download=1 to force a download
 	my $download = $repo->param( "download" );
@@ -180,84 +190,7 @@ sub handler
 		);
 	}
 
-	EPrints::Apache::AnApache::header_out(
-		$r,
-		"Accept-Ranges" => "bytes"
-	);
-
-	# did the file retrieval fail?
-	my $rv;
-
-	my @chunks;
-	my $rres = EPrints::Apache::AnApache::ranges( $r, $content_length, \@chunks );
-	if( $rres == HTTP_PARTIAL_CONTENT && @chunks == 1 )
-	{
-		$r->status( $rres );
-		my $chunk = shift @chunks;
-		EPrints::Apache::AnApache::header_out( $r,
-			"Content-Range" => sprintf( "bytes %d-%d/%d",
-				@$chunk[0,1],
-				$content_length
-			) );
-		EPrints::Apache::AnApache::header_out( 
-			$r,
-			"Content-Length" => $chunk->[1] - $chunk->[0] + 1
-		);
-		$rv = eval { $fileobj->get_file(
-				sub { print $_[0] }, # CALLBACK
-				$chunk->[0], # OFFSET
-				$chunk->[1] - $chunk->[0] + 1 ) # n bytes
-			};
-	}
-	elsif( $rres == HTTP_PARTIAL_CONTENT && @chunks > 1 )
-	{
-		$r->status( $rres );
-		my $boundary = '4876db1cd4aa85af6';
-		my @boundaries;
-		my $body_length = 0;
-		$r->content_type( "multipart/byteranges; boundary=$boundary" );
-		for(@chunks)
-		{
-			$body_length += $_->[1] - $_->[0] + 1; # 0-0 means byte zero
-			push @boundaries, sprintf("\r\n--%s\r\nContent-type: %s\r\nContent-range: bytes %d-%d/%d\r\n\r\n",
-				$boundary,
-				$content_type,
-				@$_,
-				$content_length
-			);
-			$body_length += length($boundaries[$#boundaries]);
-		}
-		push @boundaries, "\r\n--$boundary--\r\n";
-		$body_length += length($boundaries[$#boundaries]);
-		EPrints::Apache::AnApache::header_out( 
-			$r,
-			"Content-Length" => $body_length
-		);
-		for(@chunks)
-		{
-			print shift @boundaries;
-			$rv = eval { $fileobj->get_file(
-					sub { print $_[0] }, # CALLBACK
-					$_->[0], # OFFSET
-					$_->[1] - $_->[0] + 1 ) # n bytes
-				};
-			last if !$rv;
-		}
-		print shift( @boundaries ) if $rv;
-	}
-	elsif( $rres == HTTP_RANGE_NOT_SATISFIABLE )
-	{
-		return HTTP_RANGE_NOT_SATISFIABLE;
-	}
-	else # OK normal response
-	{
-		EPrints::Apache::AnApache::header_out( 
-			$r,
-			"Content-Length" => $content_length
-		);
-		$rv = eval { $fileobj->get_file( sub { print $_[0] } ) };
-	}
-
+	my $rv = eval { $fileobj->write_copy_fh( \*STDOUT ); };
 	if( $@ )
 	{
 		# eval threw an error
@@ -278,31 +211,3 @@ sub handler
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -4,12 +4,15 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
 =pod
-
-=for Pod2Wiki
 
 =head1 NAME
 
@@ -19,86 +22,6 @@ B<EPrints::Workflow> - Models the submission process used by an repository.
 
 The workflow class handles loading the workflow configuration for a 
 single repository. 
-
-=head1 WORKFLOW FORMAT
-
-=over 4
-
-=item component
-
-Parents: L</stage>
-
-Children: L</field>
-
-Attributes: type
-
-	<component type="Field::Multi">
-		<field ref="title" />
-		<field ref="abstract" />
-	</component>
-
-=item field
-
-Parents: L</component>
-
-Children: L</sub_field>
-
-Attributes: ref
-
-	<field ref="title" input_cols="40" />
-
-C<field> includes a metafield in the workflow. Any property can be set for the field by supplying it as an attribute.
-
-=item flow
-
-Parents: L</workflow>
-
-Children: L</stage>
-
-	<flow>
-		<stage ref="files" />
-		<stage ref="details" />
-	</flow>
-
-=item stage
-
-Parents: L</workflow>, L</flow>
-
-Children: L</component>
-
-Attributes: ref, name
-
-	<stage name="details">
-		<component><field ref="title"/></component>
-	</stage>
-
-=item sub_field
-
-Parents: L</field>
-
-C<sub_field> allows properties to be set for sub-fields of L<EPrints::MetaField::Compound> and sub-classed field types.
-
-See L</field> for possible attributes.
-
-=item workflow
-
-Children: L</flow>, L</stage>
-
-	<workflow xmlns="http://eprints.org/ep3/workflow">
-		<flow>
-			...
-		</flow>
-		<stage name="files">
-			...
-		</stage>
-		<stage name="details">
-			...
-		</stage>
-	</workflow>
-
-=back
-
-=head1 METHODS
 
 =over 4
 
@@ -145,7 +68,6 @@ sub new
 	$self->{dataset} = $params{item}->get_dataset;
 	$self->{item} = $params{item};
 	$self->{workflow_id} = $workflow_id;
-	$self->{processor} = $params{processor};
 
 	$params{session} = $session;
 	$params{current_user} = $session->current_user;
@@ -252,9 +174,6 @@ sub _read_stages
 		{
 			EPrints::abort( $self->description." - <element> definition has no name attribute.\n".$element->toString );
 		}
-
-		next unless defined $self->{stage_number}->{$stage_id};
-
 		$self->{stages}->{$stage_id} = new EPrints::Workflow::Stage( $element, $self, $stage_id );
 		foreach my $field_id ( $self->{stages}->{$stage_id}->get_fields_handled )
 		{
@@ -400,7 +319,7 @@ sub update_from_form
 	return if $quiet;
 
 	# Deposit performs a full validation, so don't repeat any warnings here
-	return if defined $new_stage && $new_stage eq 'deposit';
+	return if $new_stage eq 'deposit';
 
 	my @problems = $stage_obj->validate( $processor );
 
@@ -436,6 +355,17 @@ sub render
 #	}
 	
 	my $fragment = $self->{session}->make_doc_fragment;
+		
+	my $hidden_fields = {
+		stage => $self->get_stage_id,
+	};
+
+	foreach my $name ( keys %$hidden_fields )
+	{
+		$fragment->appendChild( $self->{session}->render_hidden_field(
+		$name,
+		$hidden_fields->{$name} ) );
+	}
 
 	# Add the stage components
 
@@ -504,21 +434,13 @@ sub link_problem_xhtml
 	if( EPrints::XML::is_dom( $node, "Element" ) )
 	{
 		my $class = $node->getAttribute( "class" );
-		if( $class && $class=~m/^ep_problem_field:(.*)$/ )
+		if( $class=~m/^ep_problem_field:(.*)$/ )
 		{
 			my $stage = $self->{field_stages}->{$1};
 			return if( !defined $stage );
 			my $keyfield = $self->{dataset}->get_key_field();
 			my $kf_sql = $keyfield->get_sql_name;
-			my $url = URI->new( $self->{session}->current_url );
-			$url->query_form(
-				screen => $screenid,
-				dataset => $self->{dataset}->id,
-				dataobj => $self->{item}->id,
-				$kf_sql => $self->{item}->id,
-				stage => $stage
-			);
-			$url->fragment( $1 );
+			my $url = "?screen=$screenid&$kf_sql=".$self->{item}->get_id."&stage=$stage#$1";
 			if( defined $new_stage && $new_stage eq $stage )
 			{
 				$url = "#$1";
@@ -613,97 +535,6 @@ sub get_workflow_config
 	return $confhash->{$id}->{workflow};
 }
 
-=item $repository->add_workflow_flow( $workflowid, $id, $types, $stages )
-
-Add a flow to the workflow which is applicable for the types in types and contains the stages in stages. 
-
-The $id is used to remove everything relating to this is from the workflow. 
-
-=cut
-
-sub add_workflow_flow
-{
-	my( $repository, $filename, $id, $types, $stages ) = @_;
-
-	my $workflow = EPrints::XML::parse_xml( $filename );
-
-	my $flow = ($workflow->getElementsByTagName("flow"))[0];
-	if(!defined $flow)
-	{
-		return 1;
-	} 
-	
-        my $xml_handler = EPrints::XML->new(
-		$repository,
-		doc=>$workflow->ownerDocument()
-		);
-	
-	my $test = "type";
-	if (!(ref($types) eq 'ARRAY')) 
-	{
-		$test .= "='".$types."'";	
-	}
-	else
-	{
-		$test .= ".one_of(";
-		foreach my $type(@{$types}) 
-		{
-			$test .= "'$type',";
-		}
-		$test = substr $test, 0,-1;
-		$test .=')';
-	}
-	
-	my $stages_dom = $xml_handler->create_document_fragment;
-	if (!(ref($stages) eq 'ARRAY')) 
-	{
-		my $stage_node = $xml_handler->create_element("stage",ref=>"$stages");
-		$stages_dom->appendChild($stage_node);
-	}
-	else
-	{
-		foreach my $stage(@{$stages}) 
-		{
-			my $stage_node = $xml_handler->create_element("stage",ref=>"$stage");
-			$stages_dom->appendChild($stage_node);
-		}
-	}
-
-	my $count = 0;
-	my $replace = 0;
-	my $when_node = $xml_handler->create_element("epc:when",test=>$test,required_by=>$id);
-	$when_node->appendChild($stages_dom);
-	
-	my $choose_node = $xml_handler->create_element("epc:choose");
-	my $otherwise_node = $xml_handler->create_element("epc:otherwise");
-	
-	foreach my $element ( $flow->getChildNodes ) {
-		my $name = $element->nodeName;
-		if ($name eq "stage" && $count < 1) {
-			$flow->appendChild($choose_node);
-			$choose_node->appendChild($when_node);
-			$choose_node->appendChild($otherwise_node);
-			$replace = 1;
-			$count++;
-		} elsif ($name eq "epc:choose" && $count < 1) {
-			$count++;
-			my $blank_node = $xml_handler->create_document_fragment;
-			$blank_node->appendChild($when_node);
-			foreach my $sub_node ( $element->getChildNodes ) {
-				$blank_node->appendChild($sub_node);
-				$element->removeChild($sub_node);
-			}
-			$element->appendChild($blank_node);
-		}
-		if ($replace) {
-			$flow->removeChild($element);
-			$otherwise_node->appendChild($element);
-		}
-	}
-	
-	return EPrints::XML::_write_xml($workflow,$filename);
-
-}
 
 1;
 
@@ -713,32 +544,4 @@ sub add_workflow_flow
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

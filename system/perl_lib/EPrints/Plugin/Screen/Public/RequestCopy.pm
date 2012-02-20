@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::Public::RequestCopy
-
-=cut
-
 package EPrints::Plugin::Screen::Public::RequestCopy;
 
 @ISA = ( 'EPrints::Plugin::Screen' );
@@ -124,7 +118,7 @@ sub action_request
 	my $reason = $session->param( "reason" );
 	$data->{reason} = $reason if EPrints::Utils::is_set( $reason );
 
-	my $request = $session->dataset( "request" )->create_object( $session, $data );
+	my $request = $session->get_repository->get_dataset( "request" )->create_object( $session, $data );
 
 	my $history_data = {
 		datasetid=>"request",
@@ -142,7 +136,7 @@ sub action_request
 	}
 
 	# Log request creation event
-	my $history_ds = $session->dataset( "history" );
+	my $history_ds = $session->get_repository->get_dataset( "history" );
 	$history_ds->create_object( $session, $history_data );
 
 	# Send request email
@@ -162,7 +156,7 @@ sub action_request
 		# Contact is registered user and EPrints holds requested document
 		# Send email to contact with accept/reject links
 
-		my $url =  $session->config( "http_cgiurl" ) .
+		my $url =  $session->get_repository->get_conf( "http_cgiurl" ) .
 			"/users/home?screen=Request::Respond&requestid=" . $request->get_id;
 
 		$mail->appendChild( $session->html_phrase( "request/request_email:links",
@@ -268,8 +262,8 @@ sub render
 
 	my $form = $session->render_input_form(
 		fields => [ 
-			$session->dataset( "request" )->get_field( "requester_email" ),
-			$session->dataset( "request" )->get_field( "reason" ),
+			$session->get_repository->get_dataset( "request" )->get_field( "requester_email" ),
+			$session->get_repository->get_dataset( "request" )->get_field( "reason" ),
 		],
 		show_names => 1,
 		show_help => 1,
@@ -315,31 +309,3 @@ sub render_document
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -13,7 +13,7 @@ my $given = $session->param( "_name_given" );
 my $id = $session->param( "_id" );
 
 my $database = $session->get_database;
-my $dataset = $session->dataset( "eprint" );
+my $dataset = $session->get_repository->get_dataset( "eprint" );
 my $name_field = $dataset->get_field( "creators_name" );
 my $id_field = $dataset->get_field( "creators_id" );
 
@@ -75,8 +75,9 @@ while( my @row = $sth->fetchrow_array )
 		$frag->appendChild( $session->make_text( " " ) );
 		$frag->appendChild( $id_field->render_single_value( $session, $id ) );
 	}
-
-	$frag->appendChild( $session->html_phrase( 'cgi/lookup/name:authored', count => $session->make_text( $cnt ) ) );
+	my $small = $session->make_element( "small" );
+	$frag->appendChild( $small );
+	$small->appendChild( $session->make_text( " (author of ".$cnt." item".($cnt>1?"s":"")." in this repository)" ) );
 
 	$item->{xhtml} = $frag;
 	$item->{values} = [

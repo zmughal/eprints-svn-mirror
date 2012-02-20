@@ -1,5 +1,10 @@
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -48,15 +53,11 @@ sub new
 
 	my $self = bless $session, $class;
 
-	$EPrints::HANDLE = EPrints->new();
-	$EPrints::HANDLE->{repository}->{$self->get_id} = $self;
-
 	my $method = $opts->{method} || "GET";
 	my $path = defined $opts->{path} ? $opts->{path} : "";
 	my $query = defined $opts->{query} ? $opts->{query} : "";
-	$opts->{dir_config}->{EPrints_ArchiveID} = $session->get_id;
 
-	my $uri = URI->new( $session->config( "base_url" ) );
+	my $uri = URI->new( $session->get_repository->get_conf( "base_url" ) );
 	if( $path !~ m#^/# )
 	{
 		$path = $uri->path . "/" . $path;
@@ -78,11 +79,7 @@ sub new
 	$self->{query} = $cgi;
 	$self->{offline} = 0;
 
-	$self->{request} = EPrints::Test::RequestRec->new(
-			%$opts,
-			uri => $uri->path,
-			args => $uri->query,
-		);
+	$self->{request} = EPrints::Test::RequestRec->new( uri => $uri->path );
 
 	$ENV{REQUEST_METHOD} = $method;
 
@@ -132,49 +129,25 @@ sub send_http_header
 #	Test::More::diag( "send_http_header()" );
 }
 
+sub send_page
 {
-no warnings;
-sub EPrints::Page::send
-{
-	my( $self ) = @_;
+	my( $self, %httpopts ) = @_;
 
-	$VAR{$self->{repository}}->{"stdout"} .= $self->{page};
-}
-
-sub Apache2::Util::ht_time
-{
-	my( $self, $pool, $time, $fmt, $gmt ) = @_;
-
-	return POSIX::strftime("%a, %d %b %Y %H:%M:%S %Z", gmtime($time));
-}
+#	Test::More::diag( "send_page()" );
+	$VAR{$self}->{"stdout"} .= <<END;
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+END
+	if( $self->{page}->isa( "EPrints::Page::Text" ) )
+	{
+		$VAR{$self}->{"stdout"} .= $self->{page}->{page_text};
+		delete $self->{page};
+	}
+	else
+	{
+		$VAR{$self}->{"stdout"} .= EPrints::XML::to_string( $self->{page}->{page_dom}, undef, 1 );
+		delete $self->{page};
+	}
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

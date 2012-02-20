@@ -68,17 +68,4 @@ $status = "running" if $daemon->is_running();
 $status = "stalled" if $daemon->has_stalled();
 print "indexer: $status\n";
 
-print "epm: ";
-{
-my $first = 1;
-$repo->dataset( 'epm' )->dataobj_class->map($repo, sub {
-	my( undef, undef, $epm ) = @_;
-
-	print "; " if !$first;
-	$first = 0;
-	print $epm->value( "epmid" ) . "=" . $epm->value( "version" );
-});
-}
-print "\n";
-
 exit;

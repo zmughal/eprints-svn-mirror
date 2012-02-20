@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::InputForm::Component::Field
-
-=cut
-
 package EPrints::Plugin::InputForm::Component::Field;
 
 use EPrints::Plugin::InputForm::Component;
@@ -32,31 +26,12 @@ sub parse_config
 
 	if( scalar @fields != 1 )
 	{
-		push @{$self->{problems}}, $self->{repository}->html_phrase( "Plugin/InputForm/Component/Field:error_missing_field",
-			xml => $self->{repository}->xml->create_text_node( $self->{repository}->xml->to_string( $config_dom ) )
-		);
+		EPrints::abort( "Bad configuration for Field Component\n".$config_dom->toString );
 	}
 	else
 	{
 		$self->{config}->{field} = $self->xml_to_metafield( $fields[0] );
 	}
-}
-
-sub wishes_to_export
-{
-	my( $self ) = @_;
-
-	return $self->{session}->param( $self->{prefix} . "_export" );
-}
-
-sub export
-{
-	my( $self ) = @_;
-
-	my $frag = $self->render_content;
-
-	print $self->{session}->xhtml->to_xhtml( $frag );
-	$self->{session}->xml->dispose( $frag );
 }
 
 =pod
@@ -109,8 +84,12 @@ sub validate
 
 	my $field = $self->{config}->{field};
 	
-	my $for_archive = defined($field->{required}) &&
-		$field->{required} eq "for_archive";
+	my $for_archive = 0;
+	
+	if( $field->{required} eq "for_archive" )
+	{
+		$for_archive = 1;
+	}
 	
 	my @problems;
 
@@ -161,6 +140,8 @@ sub validate
 
 	push @problems, $self->{dataobj}->validate_field( $field->{name} );
 
+	$self->{problems} = \@problems;
+
 	return @problems;
 }
 
@@ -180,7 +161,7 @@ sub is_required
 	my $req = $self->{config}->{field}->{required};
 	# my $staff_mode = $self->{workflow}->get_parameter( "STAFF_MODE" );
 	
-	return( defined $req && $req == 1 );
+	return( $req == 1 );
 	
 	# || ( $req eq "for_archive" && $staff_mode ) );
 }
@@ -286,9 +267,7 @@ sub render_content
 		$value = $self->{default};
 	}
 
-	my $frag = $self->{session}->make_doc_fragment;
-
-	$frag->appendChild( $self->{config}->{field}->render_input_field( 
+	return $self->{config}->{field}->render_input_field( 
 			$self->{session}, 
 			$value, 
 			$self->{dataobj}->get_dataset,
@@ -296,13 +275,7 @@ sub render_content
 			undef,
 			$self->{dataobj},
 			$self->{prefix},
- 	) );
-
-	$frag->appendChild( $self->{session}->make_javascript( <<EOJ ) );
-new Component_Field ('$self->{prefix}');
-EOJ
-
-	return $frag;
+ 	);
 }
 
 sub could_collapse
@@ -321,31 +294,3 @@ sub get_field
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

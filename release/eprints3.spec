@@ -1,35 +1,44 @@
-%define _epname eprints3
-%define _epversion __RPMVERSION__
-%define _eprelease 1
-%define _epuser eprints
-%define _epgroup eprints
-%define _epbase_path /opt/eprints3
-%define _eppackage __TARBALL__
+%define source_name eprints3
+%define user eprints
+%define user_group eprints
+# This is the standard path used by the upstream
+%define install_path /opt/eprints3
+%define package __TARBALL__
 
-Name: %{_epname}
-Version: %{_epversion}
-Release: %{_eprelease}%{?dist}
+Name: eprints3
+Version: __RPMVERSION__
+Release: 1%{?dist}
 Summary: Open Access Repository Software
 License: GPL
 Group: Applications/Communications
 URL: http://software.eprints.org/
-Source0: %{_eppackage}.tar.gz
+Source0: %{package}.tar.gz
 BuildArch: noarch
 # Patch0: %{source_name}-%{version}.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-buildroot
-BuildRequires: perl
+BuildRequires: httpd >= 2.0.52
+BuildRequires: mod_perl >= 2.0.0
+BuildRequires: perl >= 2:5.8.0
+BuildRequires: perl(DBI) 
+BuildRequires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
+BuildRequires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
+BuildRequires: perl(MIME::Lite)
+BuildRequires: perl(XML::LibXML) >= 1.63
+BuildRequires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+BuildRequires: /usr/bin/pdftotext
 Requires: httpd >= 2.0.52
 Requires: mod_perl >= 2.0.0
 Requires: perl >= 2:5.8.0
 Requires: perl(DBI)
 Requires: perl(DBD::mysql) perl(MIME::Base64) perl(Net::SMTP)
-Requires: perl(Time::HiRes) perl(CGI) perl(Digest::MD5)
-Requires: perl(XML::LibXML) >= 1.63 perl(XML::LibXSLT)
-Requires: perl(XML::SAX)
-Requires: tetex-latex wget gzip tar ImageMagick unzip elinks
-Requires: poppler-utils
+Requires: perl(XML::Parser) perl(Time::HiRes) perl(CGI)
+Requires: perl(MIME::Lite)
+# Requires: perl(Readonly) # Not found???
+Requires: perl(XML::LibXML) >= 1.63
+Requires: antiword tetex-latex wget gzip tar ImageMagick unzip elinks
+Requires: /usr/bin/pdftotext
 Requires: chkconfig
-Provides: %{name}
+Provides: eprints3
 # Some modules are dynamically loaded by eprints, which confuses AutoReq
 AutoReq: 0
 # All eprint's perl modules are private and shouldn't be AutoProvided
@@ -51,12 +60,12 @@ integration with other systems.
 # %patch 
 
 %build
-pushd %{_eppackage}
-./configure --prefix=%{_epbase_path} --with-user=%{_epuser} --with-group=%{_epgroup} --with-smtp-server=localhost --disable-user-check --disable-group-check
+pushd %{package}
+./configure --prefix=%{install_path} --with-user=%{user} --with-group=%{user_group} --with-apache=2 --with-smtp-server=localhost --disable-user-check --disable-group-check
 pushd perl_lib
 # We ought to use the system libraries
 mv URI/OpenURL.pm OpenURL.pm
-rm -rf URI.pm URI Unicode Proc MIME/Lite.pm
+rm -rf URI.pm URI Unicode Proc MIME
 mkdir URI
 mv OpenURL.pm URI/
 popd
@@ -65,19 +74,19 @@ popd
 %install
 rm -rf $RPM_BUILD_ROOT
 
-pushd %{_eppackage}
-mkdir -p ${RPM_BUILD_ROOT}%{_epbase_path}
+pushd %{package}
+mkdir -p ${RPM_BUILD_ROOT}%{install_path}
 echo 'Installing into:'
-echo $RPM_BUILD_ROOT%{_epbase_path}
-DESTDIR=$RPM_BUILD_ROOT%{_epbase_path}
+echo $RPM_BUILD_ROOT%{install_path}
+DESTDIR=$RPM_BUILD_ROOT%{install_path}
 export DESTDIR
 make install
 popd
 
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m755 $RPM_BUILD_ROOT%{_epbase_path}/bin/epindexer $RPM_BUILD_ROOT/etc/rc.d/init.d/epindexer
+install -m755 $RPM_BUILD_ROOT%{install_path}/bin/epindexer $RPM_BUILD_ROOT/etc/rc.d/init.d/epindexer
 
-APACHE_CONF=%{_epbase_path}/cfg/apache.conf
+APACHE_CONF=%{install_path}/cfg/apache.conf
 mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d
 cat > $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf << "EOF"
 # This includes the eprints Apache configuration which enables virtual hosts on
@@ -91,13 +100,13 @@ chmod 644 $RPM_BUILD_ROOT/etc/httpd/conf.d/eprints3.conf
 # file in the same directory as normal packaged files
 # We also take the opportunity to make only those directories that need
 # be writable by the eprints user
-find $RPM_BUILD_ROOT%{_epbase_path} -type f -print |
+find $RPM_BUILD_ROOT%{install_path} -type f -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
 	grep -v "SystemSettings.pm$" |
 	grep -v "/etc/httpd/conf.d/eprints3.conf" |
-	grep -v "^%{_epbase_path}/var" |
-	grep -v "^%{_epbase_path}/cfg" |
-	grep -v "^%{_epbase_path}/archives" > %{name}-%{version}-filelist
+	grep -v "^%{install_path}/var" |
+	grep -v "^%{install_path}/cfg" |
+	grep -v "^%{install_path}/archives" > %{name}-%{version}-filelist
 if [ "$(cat %{name}-%{version}-filelist)X" = "X" ] ; then
 	echo "ERROR: EMPTY FILE LIST"
 	exit -1
@@ -105,48 +114,46 @@ fi
 
 # Strip directories from the file list (otherwise they get left behind on
 # erase)
-find $RPM_BUILD_ROOT%{_epbase_path} -type d -print |
+find $RPM_BUILD_ROOT%{install_path} -type d -print |
 	sed "s@^$RPM_BUILD_ROOT@@g" |
-	grep -v "^%{_epbase_path}/var" |
-	grep -v "^%{_epbase_path}/cfg" |
-	grep -v "^%{_epbase_path}/archives" |
+	grep -v "^%{install_path}/var" |
+	grep -v "^%{install_path}/cfg" |
+	grep -v "^%{install_path}/archives" |
 	sed "s/^/\%dir /" >> %{name}-%{version}-filelist
 
-mkdir $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}
-touch $RPM_BUILD_ROOT%{_epbase_path}/cfg/{apache,apache_ssl}.conf
+mkdir $RPM_BUILD_ROOT%{install_path}/cfg/{apache,apache_ssl}
+touch $RPM_BUILD_ROOT%{install_path}/cfg/{apache,apache_ssl}.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}-%{version}-filelist
 %defattr(-,root,root)
-%doc %{_eppackage}/AUTHORS %{_eppackage}/CHANGELOG %{_eppackage}/COPYING %{_eppackage}/NEWS %{_eppackage}/README %{_eppackage}/VERSION
+%doc %{package}/AUTHORS %{package}/CHANGELOG %{package}/COPYING %{package}/NEWS %{package}/README %{package}/VERSION
 %attr(0644,root,root) /etc/httpd/conf.d/eprints3.conf
 %attr(0755,root,root) /etc/rc.d/init.d/epindexer
-%config %{_epbase_path}/perl_lib/EPrints/SystemSettings.pm
+%config %{install_path}/perl_lib/EPrints/SystemSettings.pm
 # archives, needs to persist permissions to sub-directories
-%dir %attr(02775,%{_epuser},%{_epgroup}) %{_epbase_path}/archives
+%dir %attr(02775,%{user},%{user_group}) %{install_path}/archives
 # var needs to be writable by eprints and apache
-%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/var
+%dir %attr(0775,%{user},%{user_group}) %{install_path}/var
 # cfg needs to be writable by generate_apacheconf
-%dir %attr(0755,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg
-%dir %attr(0755,%{_epuser},%{_epgroup}) %{_epbase_path}/cfg/cfg.d
-# lib needs to be writable for eprints and apache (epms)
-%dir %attr(0775,%{_epuser},%{_epgroup}) %{_epbase_path}/lib
-%ghost %{_epbase_path}/cfg/apache.conf
-%ghost %{_epbase_path}/cfg/apache_ssl.conf
-%ghost %{_epbase_path}/cfg/apache
-%ghost %{_epbase_path}/cfg/apache_ssl
-# %ghost %{_epbase_path}/var/indexer.log*
+%dir %attr(0755,%{user},%{user_group}) %{install_path}/cfg
+%dir %attr(0755,%{user},%{user_group}) %{install_path}/cfg/cfg.d
+%ghost %{install_path}/cfg/apache.conf
+%ghost %{install_path}/cfg/apache_ssl.conf
+%ghost %{install_path}/cfg/apache
+%ghost %{install_path}/cfg/apache_ssl
+# %ghost %{install_path}/var/indexer.log*
 
 %pre
-/usr/sbin/groupadd %{_epgroup} 2>/dev/null || /bin/true
-/usr/sbin/useradd -d %{_epbase_path} -g %{_epgroup} -M %{_epuser} -G apache 2>/dev/null || /bin/true
+/usr/sbin/groupadd %{user_group} 2>/dev/null || /bin/true
+/usr/sbin/useradd -d %{install_path} -g %{user_group} -M %{user} -G apache 2>/dev/null || /bin/true
 /usr/sbin/usermod -a -G eprints apache
 
 %post
-pushd %{_epbase_path} > /dev/null
-/bin/su -c ./bin/generate_apacheconf %{_epuser}
+pushd %{install_path} > /dev/null
+/bin/su -c ./bin/generate_apacheconf %{user}
 popd > /dev/null
 /sbin/chkconfig --add epindexer
 

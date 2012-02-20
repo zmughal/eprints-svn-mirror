@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -432,88 +437,5 @@ sub EPrints::Session::new
 
 $INC{"EPrints/Session.pm"} = "EPrints/BackCompatibility.pm";
 
-package EPrints::Platform;
-
-$INC{"EPrints/Platform.pm"} = "EPrints/BackCompatibility.pm";
-
-sub chmod { EPrints->system->chmod( @_ ) }
-sub chown { EPrints->system->chown( @_ ) }
-sub getpwnam { EPrints->system->getpwnam( @_ ) }
-sub getgrnam { EPrints->system->getgrnam( @_ ) }
-sub test_uid { EPrints->system->test_uid( @_ ) }
-sub mkdir { EPrints->system->mkdir( @_ ) }
-sub exec { EPrints->system->exec( @_ ) }
-sub read_exec { EPrints->system->read_exec( @_ ) }
-sub read_perl_script { EPrints->system->read_perl_script( @_ ) }
-sub get_hash_name { EPrints->system->get_hash_name( @_ ) }
-sub free_space { EPrints->system->free_space( @_ ) }
-sub proc_exists { EPrints->system->proc_exists( @_ ) }
-sub join_path { EPrints->system->join_path( @_ ) }
-
-package EPrints::Repository;
-
-# phrase-based dynamic_templates.pl
-sub render_toolbar {
-	EPrints::ScreenProcessor->new(
-			session => shift,
-		)->render_toolbar;
-}
-
-sub freshen_citation
-{
-	my( $self, $dsid, $fileid ) = @_;
-}
-
-sub get_citation_spec
-{
-	my( $self, $dataset, $style ) = @_;
-
-	my $citation = $dataset->citation( $style );
-	return undef if !defined $citation;
-
-	EPrints->abort( "get_citation_spec is deprecated and only works with EPC citations: ".$dataset->id.".".$style.": you should be calling render_citation()" )
-		if !$citation->isa( "EPrints::Citation::EPC" );
-
-	return $self->clone_for_me( $citation->{style}, 1 )
-}
-
-sub get_citation_type
-{
-	my( $self, $dataset, $style ) = @_;
-
-	my $citation = $dataset->citation( $style );
-	return undef if !defined $citation;
-
-	return $citation->type;
-}
-
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -31,18 +36,6 @@ use EPrints;
 
 use strict;
 
-sub archive_id
-{
-	my( $repo, $any ) = @_;
-
-	my $v1 = $repo->config( "oai", "archive_id" );
-	my $v2 = $repo->config( "oai", "v2", "archive_id" );
-
-	$v1 ||= $repo->config( "host" );
-	$v2 ||= $v1;
-
-	return $any ? ($v1, $v2) : $v2;
-}
 
 
 ######################################################################
@@ -63,7 +56,20 @@ sub make_header
 	my ( $session, $eprint, $oai2 ) = @_;
 
 	my $header = $session->make_element( "header" );
-	my $oai_id = archive_id( $session );
+	my $oai_id;
+	if( $oai2 )
+	{
+		$oai_id = $session->get_repository->get_conf( 
+			"oai", 
+			"v2", 
+			"archive_id" );
+	}
+	else
+	{
+		$oai_id = $session->get_repository->get_conf( 
+			"oai", 
+			"archive_id" );
+	}
 	
 	$header->appendChild( $session->render_data_element(
 		6,
@@ -97,7 +103,7 @@ sub make_header
 			return $header;
 		}
 
-		my $viewconf = $session->config( "oai","sets" );
+		my $viewconf = $session->get_repository->get_conf( "oai","sets" );
         	foreach my $info ( @{$viewconf} )
         	{
 			my @values = $eprint->get_values( $info->{fields} );
@@ -131,7 +137,6 @@ sub make_header
 				}
 				else
 				{
-					$v = $afield->get_id_from_value( $session, $v );
 					@l = ( encode_setspec( $v ) );
 				}
 
@@ -245,7 +250,8 @@ identifier is suitable.
 sub from_oai_identifier
 {
         my( $session , $oai_identifier ) = @_;
-		my( $arcid, $arcid2 ) = archive_id( $session, 1 );
+        my $arcid = $session->get_repository->get_conf( "oai", "archive_id" );
+        my $arcid2 = $session->get_repository->get_conf( "oai", "v2", "archive_id" );
         if( $oai_identifier =~ /^oai:($arcid|$arcid2):(\d+)$/ )
         {
                 return( $2 );
@@ -308,8 +314,13 @@ Converts a string into hex. eg. "A" becomes "41".
 
 sub text2bytestring
 {
-	use bytes;
-	return join '', map { sprintf("%02X", ord($_) ) } split //, $_[0];
+	my( $string ) = @_;
+	my $encstring = "";
+	for(my $i=0; $i<length($string); $i++)
+	{
+		$encstring.=sprintf("%02X", ord(substr($string, $i, 1)));
+	}
+	return $encstring;
 }
 
 
@@ -325,9 +336,14 @@ Does the reverse of text2bytestring.
 
 sub bytestring2text
 {
-	my( $text ) = @_;
-	$text =~ s/(..)/pack("H*", $1)/eg;
-	return $text;
+	my( $encstring ) = @_;
+
+	my $string = "";
+	for(my $i=0; $i<length($encstring); $i+=2)
+	{
+		$string.=pack("H*",substr($encstring,$i,2));
+	}
+	return $string;
 }
 
 
@@ -340,32 +356,4 @@ sub bytestring2text
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

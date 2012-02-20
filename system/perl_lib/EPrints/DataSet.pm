@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -14,125 +19,34 @@
 
 =head1 NAME
 
-B<EPrints::DataSet> - a set of records with the same metadata scheme
+B<EPrints::DataSet> - a dataset is a set of records in the eprints system with
+the same metadata.
 
 =head1 SYNOPSIS
 
-	my $dataset = $repository->dataset( "inbox" );
+	my $dataset = $repository->get_dataset( "inbox" );
 
 	print sprintf("There are %d records in the inbox\n",
 		$dataset->count);
 
-	$string = $dataset->base_id; # eprint
-	$string = $dataset->id; # inbox
-
-	$dataobj = $dataset->create_dataobj( $data );
-	$user = $dataset->dataobj( 23 );
-
-	$search = $dataset->prepare_search( %options );
-	$list = $dataset->search( %options ); # prepare_search( %options )->execute
-	$list = $dataset->search; # match ALL
-
-	$metafield = $dataset->field( $fieldname );
-	$metafield = $dataset->key_field;
-	@metafields = $dataset->fields; 
-
-	$dataset->search->map( sub {}, $ctx );
-	$n = $dataset->search->count; 
-	$ids = $dataset->search->ids;
-	$list = $dataset->list( \@ids );
-
 =head1 DESCRIPTION
 
-This module describes a dataset.
+This module describes an EPrint dataset.
 
-A repository has several datasets that make up the repository's metadata schema.
+A repository has several datasets that make up the repository's database.
 The list of dataset ids can be obtained from the repository object
 (see L<EPrints::Repository>).
 
 A normal dataset (eg. "user") has a package associated with it 
-(eg. L<EPrints::DataObj::User>) which must be a subclass of L<EPrints::DataObj> 
+(eg. EPrints::DataObj::User) which must be a subclass of EPrints::DataObj 
 and a number of SQL tables which are prefixed with the dataset name.
-Most datasets also have a set of associated L<EPrints::MetaField>'s which
-may be optional or required depending on the type eg. books have editors
+Most datasets also have a set of associated EPrints::MetaField's which
+may be optional or compulsary depending on the type eg. books have editors
 but posters don't but they are both EPrints.
 
 The fields contained in a dataset are defined by the data object and by
 any additional fields defined in cfg.d. Some datasets don't have any
-fields.
-
-Some datasets are "virtual" datasets made from others. Examples include 
-"inbox", "archive", "buffer" and "deletion" which are all virtual datasets 
-of of the "eprint" dataset. That is to say "inbox" is a subset of "eprint" 
-and by inference contains L<EPrints::DataObj::EPrint>. You can define your 
-own virtual datasets which opperate on existing datasets.
-
-=head1 CREATING CUSTOM DATASETS
-
-New datasets can be defined in a configuration file, e.g.
-
-	$c->{datasets}->{bread} = {
-		class => "EPrints::DataObj::Bread",
-		sqlname => "bread",
-	};
-
-This defines a dataset with the id C<bread> (must be unique). The dataobj package (class) to instantiate objects with is C<EPrints::DataObj::Bread>, which must be a sub-class of L<EPrints::DataObj>. Lastly, the database tables used by the dataset will be called 'bread' or prefixed 'bread_'.
-
-Other optional properties:
-
-	columns - an array ref of field ids to default the user view to
-	datestamp - field id to use to sort this dataset
-	import - is the dataset importable?
-	index - is the dataset text-indexed?
-	order - is the dataset orderable?
-	virtual - completely virtual dataset (no database tables)
-
-To make one dataset a virtual dataset of another (as 'inbox' is to 'eprint') use the following properties:
-
-	confid - the super-dataset this is a virtual sub-dataset of
-	dataset_id_field - the field containing the sub-dataset id
-	filters - an array ref of filters to apply when retrieving records
-
-As with system datasets, the L<EPrints::MetaField>s can be defined via L<EPrints::DataObj/get_system_field_info> or via configuration:
-
-	$c->add_dataset_field(
-		"bread",
-		{ name => "breadid", type => "counter", sql_counter => "bread" }
-	);
-	$c->add_dataset_field(
-		"bread",
-		{ name => "toasted", type => "bool", }
-	);
-	$c->add_dataset_field(
-		"bread",
-		{ name => "description", type => "text", }
-	);
-
-See L<EPrints::RepositoryConfig/add_dataset_field> for details on C<add_dataset_field>.
-
-Creating a fully-operational dataset will require more configuration files. You will probably want at least a L<workflow|EPrints::Workflow>, L<citations|EPrints::Citation> for the summary page, search results etc, and permissions and searching settings:
-
-	push @{$c->{user_roles}->{admin}}, qw(
-		+bread/create
-		+bread/edit
-		+bread/view
-		+bread/destroy
-		+bread/details
-	);
-	push @{$c->{plugins}->{"Export::SummaryPage"}->{params}->{accept}}, qw(
-		dataobj/bread
-	);
-	$c->{datasets}->{bread}->{search}->{simple} = {
-		search_fields => {
-			id => "q",
-			meta_fields => [qw(
-				breadid
-				description
-			)],
-		},
-	};
-
-=begin InternalDoc
+fields while others may just be "virtual" datasets made from others.
 
 =over 4
 
@@ -151,8 +65,6 @@ EPrints::DataSet objects are cached by the related EPrints::Repository
 object and usually obtained by calling.
 
 $ds = $repository->get_dataset( "inbox" );
-
-=end InternalDoc
 
 =head1 METHODS
 
@@ -195,7 +107,7 @@ $ds = $repository->get_dataset( "inbox" );
 package EPrints::DataSet;
 
 use EPrints;
-use EPrints::Const qw( :trigger );
+use EPrints::Const;
 
 use strict;
 
@@ -211,8 +123,8 @@ my $INFO = {
 	event_queue => {
 		sqlname => "event_queue",
 		class => "EPrints::DataObj::EventQueue",
-		datestamp => "start_time",
-		columns => [qw( status start_time pluginid action params )],
+		datestamp => "datestamp",
+		columns => [qw( datestamp status pluginid action params )],
 	},
 	upload_progress => {
 		sqlname => "upload_progress",
@@ -227,12 +139,6 @@ my $INFO = {
 		sqlname => "import",
 		class => "EPrints::DataObj::Import",
 		datestamp => "datestamp",
-	},
-	issue => {
-		sqlname => "issue",
-		class => "EPrints::DataObj::Issue",
-		datestamp => "timestamp",
-		columns => [qw( parent description status )],
 	},
 	metafield => {
 		sqlname => "mf", # identifiers get too long
@@ -261,7 +167,6 @@ my $INFO = {
 		class => "EPrints::DataObj::User",
 		import => 1,
 		index => 1,
-		order => 1,
 		datestamp => "joined",
 	},
 	archive => {
@@ -271,7 +176,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'archive', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -283,11 +187,9 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'buffer', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
-		columns => [qw( eprintid type status_changed userid )], # default columns for Review screen
 	},
 	inbox => {
 		sqlname => "eprint",
@@ -296,7 +198,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'inbox', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -308,7 +209,6 @@ my $INFO = {
 		confid => "eprint",
 		import => 1,
 		index => 1,
-		order => 1,
 		filters => [ { meta_fields => [ 'eprint_status' ], value => 'deletion', describe=>0 } ],
 		dataset_id_field => "eprint_status",
 		datestamp => "lastmod",
@@ -317,14 +217,12 @@ my $INFO = {
 		sqlname => "eprint",
 		class => "EPrints::DataObj::EPrint",
 		index => 1,
-		order => 1,
 		datestamp => "lastmod",
 	},
 	document => {
 		sqlname => "document",
 		class => "EPrints::DataObj::Document",
 		import => 1,
-		order => 1,
 		index => 1,
 	},
 	subject => {
@@ -332,7 +230,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Subject",
 		import => 1,
 		index => 1,
-		order => 1,
 	},
 	history => {
 		sqlname => "history",
@@ -364,17 +261,10 @@ my $INFO = {
 		index => 1,
 		datestamp => "datestamp",
 	},
-	epm => {
-		sqlname => "epm",
-		class => "EPrints::DataObj::EPM",
-		virtual => 1,
-	},
 };
 
 ######################################################################
 =pod
-
-=begin InternalDoc
 
 =item $ds = EPrints::DataSet->new( %properties )
 
@@ -436,8 +326,6 @@ Whether this dataset should be indexed.
 Whether you can import into this dataset.
 
 =back
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -524,13 +412,9 @@ sub new
 	return $self;
 }
 
-=begin InternalDoc
-
 =item $info = EPrints::DataSet::get_system_dataset_info()
 
 Returns a hash reference of core system datasets.
-
-=end InternalDoc
 
 =cut
 
@@ -563,14 +447,10 @@ sub base_id
 	return $self->{confid};
 }
 
-=begin InternalDoc
-
 =item $field = $ds->process_field( $data [, $system ] )
 
 Creates a new field in this dataset based on $data. If $system is true defines
 the new field as a "core" field.
-
-=end InternalDoc
 
 =cut
 
@@ -578,9 +458,9 @@ sub process_field
 {
 	my( $self, $fielddata, $system ) = @_;
 
-	if( !defined $fielddata->{provenance} )
+	if( !defined $fielddata->{providence} )
 	{
-		$fielddata->{provenance} = $system ? "core" : "config";
+		$fielddata->{providence} = $system ? "core" : "config";
 	}
 
 	my $field = EPrints::MetaField->new( 
@@ -599,13 +479,9 @@ sub process_field
 	return $field;
 }
 
-=begin InternalDoc
-
 =item $ds->register_field( $field [, $system ] )
 
 Register a new field with this dataset.
-
-=end InternalDoc
 
 =cut
 
@@ -620,7 +496,7 @@ sub register_field
 		my $old_field = $self->{field_index}->{$fieldname};
 		if(
 			$system ||
-			$old_field->property( "provenance" ) ne "core" ||
+			$old_field->property( "providence" ) ne "core" ||
 			!$field->property( "replace_core" )
 		  )
 		{
@@ -637,13 +513,9 @@ sub register_field
 	}
 }
 
-=begin InternalDoc
-
 =item $ds->unregister_field( $field )
 
 Unregister a field from this dataset.
-
-=end InternalDoc
 
 =cut
 
@@ -675,6 +547,20 @@ sub field
 
 	# magic fields which can be searched but do
 	# not really exist.
+	if( $fieldname eq $EPrints::Utils::FULLTEXT )
+	{
+		if( !defined $self->{fulltext_field} )
+		{
+			$self->{fulltext_field} = EPrints::MetaField->new( 
+				dataset=>$self , 
+				name=>$fieldname,
+				multiple=>1,
+				type=>"fulltext" );
+			$self->{fulltext_field}->set_property( "multiple",1 );
+			$self->{fulltext_field}->final;
+		}
+		return $self->{fulltext_field};
+	}
 	if( $fieldname =~ m/^_/ )
 	{
 		my $field = EPrints::MetaField->new( 
@@ -698,13 +584,9 @@ sub field
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $bool = $ds->has_field( $fieldname )
 
 True if the dataset has a field of that name.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -723,15 +605,11 @@ sub has_field
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $ordertype = $ds->default_order
 
 Return the id string of the default order for this dataset. 
 
 For example "bytitle" for eprints.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -774,7 +652,7 @@ sub count
 {
 	my( $self, $session ) = @_;
 
-	if( $self->get_filters )
+	if( defined $self->get_filters )
 	{
 		my $searchexp = EPrints::Search->new(
 			allow_blank => 1,
@@ -793,14 +671,10 @@ sub count
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $tablename = $ds->get_sql_table_name
 
 Return the name of the main SQL Table containing this dataset.
 the other SQL tables names are based on this name.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -821,14 +695,10 @@ sub get_sql_table_name
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $tablename = $ds->get_sql_index_table_name
 
 Return the name of the SQL table which contains the free text indexing
 information.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -842,14 +712,10 @@ sub get_sql_index_table_name
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $tablename = $ds->get_sql_grep_table_name
 
 Reutrn the name of the SQL table which contains the strings to
 be used with LIKE in a final pass of a search.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -863,15 +729,11 @@ sub get_sql_grep_table_name
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $tablename = $ds->get_sql_rindex_table_name
 
 Reutrn the name of the SQL table which contains the reverse text
 indexing information. (Used for deleting freetext indexes when
 removing a record).
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -885,14 +747,10 @@ sub get_sql_rindex_table_name
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $tablename = $ds->get_ordervalues_table_name( $langid )
 
 Return the name of the SQL table containing values used for ordering
 this dataset.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -907,15 +765,11 @@ sub get_ordervalues_table_name
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $tablename = $ds->get_sql_sub_table_name( $field )
 
 Returns the name of the SQL table which contains the information
 on the "multiple" field. $field is an EPrints::MetaField belonging
 to this dataset.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -964,29 +818,38 @@ sub key_field
 }
 
 
-=item $dataobj = $ds->make_dataobj( $epdata )
+######################################################################
+=pod
+
+=item $obj = $ds->make_object( $session, $data )
 
 Return an object of the class associated with this dataset, always
-a subclass of L<EPrints::DataObj>.
+a subclass of EPrints::DataObj.
 
-$epdata is a hash of values for fields in this dataset.
+$data is a hash of values for fields of a record in this dataset.
 
-Returns $epdata if no class is associated with this dataset.
+Return $data if no class associated with this dataset.
 
 =cut
+######################################################################
 
-sub make_object { $_[0]->make_dataobj( $_[2] ) }
-sub make_dataobj
+sub make_object
 {
-	my( $self, $epdata ) = @_;
+	my( $self , $session , $data ) = @_;
 
 	my $class = $self->get_object_class;
 
-	return $epdata if !defined $class;
+	# If this table dosn't have an associated class, just
+	# return the data.	
 
-	return $class->new_from_data(
-		$self->{repository},
-		$epdata,
+	if( !defined $class ) 
+	{
+		return $data;
+	}
+
+	return $class->new_from_data( 
+		$session,
+		$data,
 		$self );
 }
 
@@ -1022,13 +885,9 @@ sub create_dataobj
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $class = $ds->get_object_class;
 
 Return the perl class to which objects in this dataset belong.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1043,13 +902,9 @@ sub dataobj_class
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $obj = $ds->get_object( $session, $id );
 
 Return the object from this dataset with the given id, or undefined.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1098,15 +953,11 @@ sub dataobj
 	return $dataobj;
 }
 
-=begin InternalDoc
-
 =item $dataobj = EPrints::DataSet->get_object_from_uri( $session, $uri )
 
 Returns a the dataobj identified by internal URI $uri.
 
 Returns undef if $uri isn't an internal URI or the object is no longer available.
-
-=end InternalDoc
 
 =cut
 
@@ -1119,7 +970,7 @@ sub get_object_from_uri
 
 	$datasetid = URI::Escape::uri_unescape( $datasetid );
 
-	my $dataset = $session->dataset( $datasetid );
+	my $dataset = $session->get_repository->get_dataset( $datasetid );
 	return unless defined $dataset;
 
 	$id = URI::Escape::uri_unescape( $id );
@@ -1132,36 +983,28 @@ sub get_object_from_uri
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $xhtml = $ds->render_name( $session )
 
 Return a piece of XHTML describing this dataset, in the language of
 the current session.
-
-=end InternalDoc
 
 =cut
 ######################################################################
 
 sub render_name
 {
-	my( $self ) = @_;
+	my( $self, $session ) = @_;
 
-	return $self->{repository}->html_phrase( "datasetname_".$self->id() );
+        return $session->html_phrase( "datasetname_".$self->id() );
 }
 
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $ds->map( $session, $fn, $info )
 
 Maps the function $fn onto every record in this dataset. See 
 Search for a full explanation.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1196,16 +1039,12 @@ sub repository
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $ds->reindex( $session )
 
 Recommits all the items in this dataset. This could take a real long 
 time on a large set of records.
 
 Really should not be called reindex anymore as it doesn't.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1229,13 +1068,9 @@ sub reindex
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item @ids = EPrints::DataSet::get_dataset_ids()
 
 Deprecated, use $repository->get_dataset_ids().
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1250,13 +1085,9 @@ sub get_dataset_ids
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item @ids = EPrints::DataSet::get_sql_dataset_ids()
 
 Deprecated, use $repository->get_sql_dataset_ids().
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1271,13 +1102,39 @@ sub get_sql_dataset_ids
 ######################################################################
 =pod
 
-=begin InternalDoc
+=item $n = $ds->count_indexes
+
+Return the number of indexes required for the main SQL table of this
+dataset. Used to check it's not over 32 (the current maximum allowed
+by MySQL)
+
+Assumes things either have 1 or 0 indexes which might not always
+be true.
+
+=cut
+######################################################################
+
+sub count_indexes
+{
+	my( $self ) = @_;
+
+	my $n = 0;
+	foreach my $field ( $self->get_fields( 1 ) )
+	{
+		next if $field->get_property( "multiple" );
+		next if $field->isa( "EPrints::MetaField::Compound" );
+		next unless( defined $field->get_sql_index );
+		$n++;
+	}
+	return $n;
+}
+		
+######################################################################
+=pod
 
 =item @ids = $dataset->get_item_ids( $session )
 
 Return a list of the id's of all items in this set.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1286,7 +1143,7 @@ sub get_item_ids
 {
 	my( $self, $session ) = @_;
 
-	if( $self->get_filters )
+	if( defined $self->get_filters )
 	{
 		my $searchexp = EPrints::Search->new(
 			allow_blank => 1,
@@ -1333,7 +1190,7 @@ sub get_filters
 
 	my $f = $self->{filters};
 
-	return defined $f ? @{$f} : ();
+	return defined $f ? @{$f} : undef;
 }
 
 sub indexable
@@ -1343,23 +1200,12 @@ sub indexable
 	return $self->{index};
 }
 
-sub ordered
-{
-	my( $self ) = @_;
-
-	return $self->{order};
-}
-
 ######################################################################
 =pod
-
-=begin InternalDoc
 
 =item $bool = $dataset->is_virtual()
 
 Returns whether this dataset is virtual (i.e. has no database tables).
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1374,14 +1220,10 @@ sub is_virtual
 ######################################################################
 =pod
 
-=begin InternalDoc
-
 =item $field = $dataset->get_datestamp_field()
 
 Returns the datestamp field for this dataset which may be used for incremental
 harvesting. Returns undef if no such field is available.
-
-=end InternalDoc
 
 =cut
 ######################################################################
@@ -1417,30 +1259,6 @@ sub prepare_search
 
 Short-cut to L</prepare_search>( %options )->execute.
 
-=over 4
-
-=item "satisfy_all"=>1 
-
-Satify all conditions specified. 0 means satisfy any of the conditions specified. Default is 1
-
-=item "staff"=>1
-
-Do search as an adminstrator means you get everything back
-
-=item "custom_order" => "field1/-field2/field3"
-
-Order the search results by field order. prefixing the field name with a "-" results in reverse ordering
-
-=item "search_fields" => \@({meta_fields=>[ "field1", "field2" "document.field3" ], merge=>"ANY", match=>"EX", value=>"bees"}, {meta_fields=>[ "field4" ], value=>"honey"});
-
-Return values where field1 field2 or field3 is "bees" and field2  is "honey" (assuming satisfy all is set)
-
-=item "limit" => 10
-
-Only return 10 results
-
-=back
-
 =cut
 
 sub search
@@ -1467,13 +1285,9 @@ sub list
 	);
 }
 
-=begin InternalDoc
-
 =item $fields = $dataset->columns()
 
 Returns the default list of fields to show the user when browsing this dataset in a table. Returns an array ref of L<EPrints::MetaField> objects.
-
-=end InternalDoc
 
 =cut
 
@@ -1493,15 +1307,11 @@ sub columns
 	return $columns;
 }
 
-=begin InternalDoc
-
 =item $dataset->run_trigger( TRIGGER_ID, %params )
 
 Runs all of the registered triggers for TRIGGER_ID on this dataset.
 
 %params is passed to the trigger functions.
-
-=end InternalDoc
 
 =cut
 
@@ -1527,108 +1337,6 @@ sub run_trigger
 	}
 }
 
-=begin InternalDoc
-
-=item $sconf = $dataset->_simple_search_config()
-
-Returns a simple search configuration based on the dataset's fields.
-
-=end InternalDoc
-
-=cut
-
-sub _simple_search_config
-{
-	my( $self ) = @_;
-
-	return {
-		search_fields => [{
-			id => "q",
-			meta_fields => [
-				map { $_->name }
-				grep { !$_->is_virtual && $_->property( "text_index" ) }
-				$self->fields
-			],
-			match => "IN",
-		}],
-		show_zero_results => 1,
-		order_methods => {
-			byid => $self->key_field->name,
-		},
-		default_order => "byid",
-	};
-}
-
-=begin InternalDoc
-
-=item $sconf = $dataset->_advanced_search_config()
-
-Returns an advanced search configuration based on the dataset's fields.
-
-=end InternalDoc
-
-=cut
-
-sub _advanced_search_config
-{
-	my( $self ) = @_;
-
-	return {
-		search_fields => [
-			map { { meta_fields => [$_->name] } }
-			grep { !$_->is_virtual && $_->property( "text_index" ) }
-			$self->fields
-		],
-		show_zero_results => 1,
-		order_methods => {
-			byid => $self->key_field->name,
-		},
-		default_order => "byid",
-	};
-}
-
-=begin InternalDoc
-
-=item $citation = $dataset->citation( $style )
-
-Returns the citation object (if any) for $style.
-
-=end InternalDoc
-
-=cut
-
-sub citation
-{
-	my( $self, $id ) = @_;
-
-	my $repo = $self->repository;
-
-	$id = "default" if !defined $id;
-
-	my $citation = $repo->{citations}->{$self->base_id}->{$id};
-	if( !defined $citation )
-	{
-		# warn?
-		$repo->log( "Unknown citation style '$id' for ".$self->base_id." dataset: using default" );
-		$citation = $repo->{citations}->{$self->base_id}->{"default"};
-	}
-
-	if( !defined $citation )
-	{
-		$repo->log( "No default citation style for ".$self->base_id." dataset" );
-		return;
-	}
-
-	# reload the citation if it needs to be
-	if( !$repo->{fresh}->{$citation} )
-	{
-		$repo->{fresh}->{$citation} = 1;
-		$citation->freshen;
-	}
-
-	return $citation;
-}
-
 ######################################################################
 1;
 ######################################################################
@@ -1637,32 +1345,4 @@ sub citation
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

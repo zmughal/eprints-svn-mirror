@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -56,9 +61,6 @@ sub process
 	{
 		my $name = $node->tagName;
 		$name =~ s/^epc://;
-
-		return $params{session}->xml->create_document_fragment
-			if $node->hasAttribute( "disabled" ) && $node->getAttribute( "disabled" );
 
 		if( $name=~m/^(if|comment|choose|print|debug|phrase|pin|foreach|set)$/ )
 		{
@@ -201,8 +203,6 @@ sub _process_phrase
 	my %pins = ();
 	foreach my $param ( $node->getChildNodes )
 	{
-	        next if( EPrints::XML::is_dom( $param, "Text" ) || EPrints::XML::is_dom( $param, "CDataSection" ) );
-
 		my $tagname = $param->tagName;
 		$tagname =~ s/^epc://;
 		next unless( $tagname eq "param" );
@@ -344,7 +344,7 @@ sub _process_foreach
 		$list = [ $list ];
 	}
 
-	if( UNIVERSAL::isa( $type, "EPrints::MetaField" ) && $type->get_property( "multiple" ) )
+	if( ref( $type ) =~ m/EPrints::MetaField/ && $type->get_property( "multiple" ) )
 	{
 		$type = $type->clone;
 		$type->set_property( "multiple", 0 );
@@ -357,7 +357,9 @@ sub _process_foreach
 		my $thistype = $type;
 		if( !defined $thistype || $thistype eq "ARRAY" )
 		{
-			$thistype = ref( $item ) =~ /^XML::/ ? "XHTML" : "STRING";
+			$thistype = ref( $item );
+			$thistype = "STRING" if( $thistype eq "" ); 	
+			$thistype = "XHTML" if( $thistype =~ /^XML::/ );
 		}
 		$newparams{"index"} = [ $index, "INTEGER" ];
 		$newparams{$iterator} = [ $item, $thistype ];
@@ -519,32 +521,4 @@ sub split_script_attribute
 
 =cut
 ######################################################################
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 

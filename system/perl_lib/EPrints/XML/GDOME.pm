@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -35,12 +40,6 @@ $EPrints::XML::LIB_LEN = length("XML::GDOME::");
 		my $name = shift->getNodeName(@_);
 		$name =~ s/^.*://;
 		return $name;
-	};
-
-*XML::GDOME::Document::setDocumentElement = sub {
-		my( $self, $node ) = @_;
-		$node->parentNode->removeChild( $node );
-		$self->appendChild( $node );
 	};
 
 # Need to clone children for DocumentFragment::cloneNode 
@@ -136,34 +135,25 @@ sub event_parse
 {
 	my( $fh, $handler ) = @_;	
 	
-	my $parser = new XML::Parser(
-		Style => "Subs",
-		ErrorContext => 5,
-		Handlers => {
-		Start => sub { 
-			my( $p, $v, %a ) = @_; 
-			my $attr = {};
-			foreach my $k ( keys %a )
-			{
-				my( $prefix, $localname ) = split /:/, $k;
-				($prefix,$localname) = ('',$prefix) if !$localname;
-				$attr->{'{}'.$k} = { Prefix=>$prefix, LocalName=>$localname, Name=>$k, Value=>$a{$k} };
-			}
-			my( $prefix, $localname ) = split /:/, $v;
-			($prefix,$localname) = ('',$prefix) if !$localname;
-			$handler->start_element( { Prefix=>$prefix, LocalName=>$localname, Name=>$v, Attributes=>$attr } );
-		},
-		End => sub { 
-			my( $p, $v ) = @_; 
-			my( $prefix, $localname ) = split /:/, $v;
-			($prefix,$localname) = ('',$prefix) if !$localname;
-			$handler->end_element( { Prefix=>$prefix, LocalName=>$localname, Name=>$v } );
-		},
-		Char => sub { 
-			my( $p, $data ) = @_; 
-			$handler->characters( { Data=>$data } );
-		},
-	} );
+        my $parser = new XML::Parser(
+                Style => "Subs",
+                ErrorContext => 5,
+                Handlers => {
+                        Start => sub { 
+				my( $p, $v, %a ) = @_; 
+				my $attr = {};
+				foreach my $k ( keys %a ) { $attr->{$k} = { Name=>$k, Value=>$a{$k} }; }
+				$handler->start_element( { Name=>$v, Attributes=>$attr } );
+			},
+                        End => sub { 
+				my( $p, $v ) = @_; 
+				$handler->end_element( { Name=>$v } );
+			},
+                        Char => sub { 
+				my( $p, $data ) = @_; 
+				$handler->characters( { Data=>$data } );
+			},
+                } );
 
 	$parser->parse( $fh );
 }
@@ -286,31 +276,3 @@ sub to_string
 }
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

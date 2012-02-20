@@ -5,6 +5,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -48,8 +53,6 @@ sub new
 {
 	my( $class, %opts ) = @_;
 
-	$opts{problems} = [] if !exists $opts{problems};
-
 	my $self = $class->SUPER::new( %opts );
 
 	$self->{name} = "Base component plugin: This should have been subclassed";
@@ -67,22 +70,9 @@ sub new
 		$self->{dataset} = $opts{dataobj}->get_dataset;
 		$self->parse_config( $opts{xml_config} );
 	}
+	$self->{problems} = [];	
 
 	return $self;
-}
-
-sub set_note
-{
-	my( $self, $name, $value ) = @_;
-
-	$self->{processor}->{notes}->{$self->{prefix}}->{$name} = $value;
-}
-
-sub note
-{
-	my( $self, $name ) = @_;
-
-	return $self->{processor}->{notes}->{$self->{prefix}}->{$name};
 }
 
 =pod
@@ -96,8 +86,6 @@ Parses the supplied DOM object and populates $component->{config}
 sub parse_config
 {
 	my( $self, $config_dom ) = @_;
-
-	return 1;
 }
 
 =pod
@@ -227,19 +215,18 @@ sub get_internal_button
 
 	my $internal_button = $self->{session}->get_internal_button;
 
-	return "" unless defined $internal_button;
+	return undef unless defined $internal_button;
 
 	my $prefix = $self->{prefix}."_";
-	return "" unless $internal_button =~ s/^$prefix//;
+	return undef unless $internal_button =~ s/^$prefix//;
 
 	return $internal_button;
 }
 
-sub problems
+sub get_problems
 {
 	my( $self ) = @_;
-
-	return @{$self->{problems}};
+	return $self->{problems};
 }
 
 =pod
@@ -269,56 +256,6 @@ sub get_name
 	my( $self ) = @_;
 }
 
-=item $bool = $component->wishes_to_export
-
-See L<EPrints::Plugin::Screen/wishes_to_export>.
-
-=cut
-
-sub wishes_to_export
-{
-	shift->EPrints::Plugin::Screen::wishes_to_export( @_ );
-}
-
-=item $mime_type = $component->export_mimetype
-
-See L<EPrints::Plugin::Screen/export_mimetype>.
-
-=cut
-
-sub export_mimetype
-{
-	my( $self ) = @_;
-
-	binmode(STDOUT, ":utf8");
-
-	return "text/html; charset=UTF-8";
-}
-
-=item $component->export
-
-See L<EPrints::Plugin::Screen/export>.
-
-=cut
-
-sub export
-{
-	shift->EPrints::Plugin::Screen::export( @_ );
-}
-
-=item $xhtml = $component->render
-
-Renders the component in its surround.
-
-=cut
-
-sub render
-{
-	my( $self ) = @_;
-
-	return $self->get_surround->render( $self, $self->{session} );
-}
-
 =pod
 
 =item $title = $component->render_title( $surround )
@@ -344,8 +281,6 @@ Returns the DOM for the content of this component.
 sub render_content
 {
 	my( $self, $surround ) = @_;
-
-	return $self->{repository}->xml->create_document_fragment;
 }
 
 =pod
@@ -390,105 +325,63 @@ sub xml_to_metafield
 {
 	my( $self, $xml, $dataset ) = @_;
 
-	my $repo = $self->{repository};
-
 	if( !defined $dataset )
 	{
 		$dataset = $self->{dataset};
 	}
 
+	# Do a few validation checks.
+	if( $xml->nodeName ne "field" )
+	{
+		EPrints::abort(
+			"xml_to_metafield config error: Not a field node" );
+	}
 	my $ref = $xml->getAttribute( "ref" );	
 	if( !EPrints::Utils::is_set( $ref ) )
 	{
-		# xml_to_metafield config error: No field ref attribute
-		push @{$self->{problems}}, $repo->html_phrase( "Plugin/InputForm/Component:error_missing_field_ref",
-			xml => $repo->xml->create_text_node( $repo->xml->to_string( $xml ) ),
-		);
-		return;
+		EPrints::abort(
+			"xml_to_metafield config error: No field ref attribute" );
 	}
 
 	my $field = $dataset->get_field( $ref );
 	
 	if( !defined $field )
 	{
-		# xml_to_metafield config error: Invalid field ref attribute($ref)
-		push @{$self->{problems}}, $repo->html_phrase( "Plugin/InputForm/Component:error_invalid_field_ref",
-			ref => $repo->xml->create_text_node( $ref ),
-			xml => $repo->xml->create_text_node( $repo->xml->to_string( $xml ) ),
-		);
-		return;
+		EPrints::abort(
+			"xml_to_metafield config error: Invalid field ref attribute($ref)" );
 	}
 
-	my %props;
-
-	# e.g. required input_lookup_url input_lookup_params top options
-	# input_boxes input_add_boxes input_ordered
-	foreach my $attr ($xml->attributes)
+	my $cloned = 0;
+	foreach my $prop ( qw/ required input_lookup_url input_lookup_params top options
+                               input_boxes input_add_boxes input_ordered / )
 	{
-		my $value = $attr->nodeValue;
-		next if !EPrints::Utils::is_set( $value );
-		my $name = $attr->nodeName;
-		if( $name eq "required" )
-		{
-			$value = $value eq "yes";
-		}
-		elsif( $name eq "options" )
-		{
-			$value = [split ',', $value];
-		}
-		$props{$name} = $value;
+		my $setting = $xml->getAttribute( $prop );
+		next unless EPrints::Utils::is_set( $setting );
+
+		if( $prop eq "required" && $setting eq "yes" ) { $setting = 1; }
+		if( $prop eq "required" && $setting eq "no" ) { $setting = 0; }
+		if( $prop eq "options" ) { $setting = [split( ",", $setting )]; }
+		
+		if( !$cloned ) { $field = $field->clone; $cloned = 1; }	
+		$field->set_property( $prop, $setting );
 	}
-	foreach my $child ( $xml->childNodes )
+	foreach my $child ( $xml->getChildNodes )
 	{
-		my $name = $child->nodeName;
-		if( $name eq "help" )
+		if( $child->nodeName eq "help" )
 		{
-			$props{help_xhtml} = EPrints::XML::contents_of( $child );
+			if( !$cloned ) { $field = $field->clone; $cloned = 1; }	
+			$field->set_property( 
+				"help_xhtml", 
+				EPrints::XML::contents_of( $child ) );
 		}
-		elsif( $name eq "title" )
+		if( $child->nodeName eq "title" )
 		{
-			$props{title_xhtml} = EPrints::XML::contents_of( $child );
-		}
-		elsif( $name eq "sub_field" )
-		{
-			if( !$field->isa( "EPrints::MetaField::Compound" ) )
-			{
-				push @{$self->{problems}}, $self->{repository}->xml->create_text_node(
-					"xml_to_metafield config error: can only create a nested field definition for Compound fields (".$field->name." is not of type compound)"
-				);
-				return;
-			}
-			my $c = $child->cloneNode( 1 );
-			$c->setName( "field" );
-			my $sub_name = $c->getAttribute( "ref" );
-			$c->setAttribute( "ref", $field->name . "_" . $sub_name );
-			my $sub_field = $self->xml_to_metafield( $c, $dataset );
-			return if !defined $sub_field;
-			$sub_field = $sub_field->clone;
-			$props{$sub_field} = $sub_field;
-			EPrints::XML::dispose( $c );
+			if( !$cloned ) { $field = $field->clone; $cloned = 1; }	
+			$field->set_property( 
+				"title_xhtml", 
+				EPrints::XML::contents_of( $child ) );
 		}
 	}
-
-	return $field if !%props;
-
-	$field = $field->clone;
-	while(my( $name, $value ) = each %props)
-	{
-		if( UNIVERSAL::isa( $value, "EPrints::MetaField" ) )
-		{
-			foreach my $f (@{$field->property( "fields_cache" )})
-			{
-				$f = $value, last if $f->name eq $value->name;
-			}
-		}
-		elsif( $field->has_property( $name ) )
-		{
-			$field->set_property( $name, $value );
-		}
-		# should maybe warn here?
-	}
-
 	return $field;
 }
 
@@ -512,31 +405,3 @@ sub get_state_fragment
 
 ######################################################################
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

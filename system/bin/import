@@ -1,10 +1,12 @@
-#!/usr/bin/perl -w
-
-use FindBin;
-use lib "$FindBin::Bin/../perl_lib";
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
 
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -64,17 +66,21 @@ If this is an integer then it is assumed to be the userid of the user, otherwise
 
 You may wish to create one or more "bulk import" users and make imported eprint records belong to them.
 
-=item B<--arg key=value>
-
-Add an argument to the import plugin. May be repeated. Effects depend on the import plugin.
-
 =item B<--parse-only>
 
 Don't import, just check the file.
 
 =item B<--migration>
 
-Turn on all the options needed to correctly import an XML data file exported from version 2, using the migration toolkit. Implies --enable-web-imports --enable-file-imports --force
+Turn on all the options needed to correctly import an XML data file exported from version 2, using the migration toolkit. This is the same as using --enable-import-ids --enable-import-datestamps --enable-file-imports --force
+
+=item B<--enable-import-ids>
+
+By default import will generate a new eprintid, or userid for each record. This option tells it to use the id spcified in the imported data. This is generally used for importing into a new repository from an old one.
+
+=item B<--enable-import-datestamps>
+
+Normally import will set the datestamp the the time the eprint was imported. This option causes it to take the datestamp from the imported data, if available.
 
 =item B<--enable-file-imports>
 
@@ -121,6 +127,7 @@ Output version information and exit.
 =back   
 
 
+__GENERICPOD__
 
 =cut
 
@@ -143,11 +150,10 @@ my $user = undef;
 my $parse_only = 0;
 my $enable_file_imports = 0;
 my $enable_web_imports = 0;
-my $enable_import_fields = 0;
+my $enable_import_ids = 0;
+my $enable_import_datestamps = 0;
 my $migration = 0;
 my $update = 0;
-my %opt_args;
-my @actions;
 
 Getopt::Long::Configure("permute");
 
@@ -165,12 +171,12 @@ GetOptions(
 	'parse-only' => \$parse_only,
 	'enable-file-imports' => \$enable_file_imports,
 	'enable-web-imports' => \$enable_web_imports,
+	'enable-import-ids' => \$enable_import_ids,
+	'enable-import-datestamps' => \$enable_import_datestamps,
 	'migration' => \$migration,
 	'update' => \$update,
-	'arg=s' => \%opt_args,
-	'action=s' => \@actions,
 ) || pod2usage( 2 );
-EPrints::Utils::cmd_version() if $version;
+EPrints::Utils::cmd_version( "export_xml" ) if $version;
 pod2usage( 1 ) if $help;
 pod2usage( -exitstatus => 0, -verbose => 2 ) if $man;
 pod2usage( 2 ) if( scalar @ARGV != 2 && scalar @ARGV !=4 );
@@ -183,7 +189,12 @@ if( $migration )
 	$force = 1;
 	$enable_file_imports = 1;
 	$enable_web_imports = 1;
-	$enable_import_fields = 1;
+	$enable_import_ids = 1;
+	$enable_import_datestamps = 1;
+}
+if( $update )
+{
+	$enable_import_ids = 1;
 }
 
 if( $scripted ) { $noise = 0; }
@@ -213,12 +224,19 @@ if( $enable_web_imports )
 	# doesn't use a setter method!
 	$session->get_repository->{config}->{enable_web_imports} = 1;
 }
-if( $enable_import_fields )
-{
-	$session->get_repository->{config}->{enable_import_fields} = 1;
+if( $enable_import_ids ) 
+{ 
+	# doesn't use a setter method!
+	$session->get_repository->{config}->{enable_import_ids} = 1;
+}
+if( $enable_import_datestamps ) 
+{ 
+	# doesn't use a setter method!
+	$session->get_repository->{config}->{enable_import_datestamps} = 1;
 }
 
-my $ds = $session->dataset( $datasetid ) ;
+
+my $ds = $session->get_repository->get_dataset( $datasetid ) ;
 if( !defined $ds )
 {
 	print STDERR "Unknown Dataset ID: $datasetid\n";
@@ -296,33 +314,13 @@ END
 	}
 }
 
-my $count = 0;
-
 my $handler = EPrints::CLIProcessor->new(
 	session => $session,
-	epdata_to_dataobj => sub {
-		my( $epdata, %opts ) = @_;
-
-		if( $opts{dataset}->base_id eq "eprint" )
-		{
-			$epdata->{userid} = $userobj->id if defined $userobj;
-		}
-
-		print "EPRINTS_IMPORT: ITEM_PARSED\n" if $scripted;
-
-		$count++, return if $parse_only;
-
-		my $item = $opts{dataset}->create_dataobj( $epdata );
-		return if !defined $item;
-
-		print "EPRINTS_IMPORT: ITEM_IMPORTED ".$item->get_id."\n" if $scripted;
-
-		$count++, return $item;
-	},
+	scripted => $scripted,
 );
 
 my $pluginid = "Import::".$ipluginid;
-my $plugin = $session->plugin( $pluginid, parse_only=>$parse_only, Handler=>$handler );
+my $plugin = $session->plugin( $pluginid, parse_only=>$parse_only, update=>$update, Handler=>$handler );
 
 if( !defined $plugin )
 {
@@ -333,7 +331,7 @@ if( !defined $plugin )
 	exit 1;
 }
 	
-my $req_plugin_type = ($single ? "dataobj/" : "list/").$ds->confid;
+my $req_plugin_type = "list/".$ds->confid;
 	
 unless( $plugin->can_produce( $req_plugin_type ) )
 {
@@ -350,18 +348,6 @@ if( $plugin->broken )
 	exit 1;
 }
 
-my %arguments = %{$plugin->param( "arguments" )};
-foreach my $argid ( keys %opt_args )
-{
-	if( !exists $arguments{$argid} )
-	{
-		print STDERR "Plugin $pluginid does not accept argument $argid\n";
-		$session->terminate();
-		exit 1;
-	}
-	$arguments{$argid} = $opt_args{$argid};
-}
-
 if( $scripted )
 {
 	print "EPRINTS_IMPORT: BEGIN\n";
@@ -370,17 +356,19 @@ if( $scripted )
 # improve ordervalues insertion performance
 $session->cache_subjects;
 
-my $list = eval { $plugin->input_file(
-		%arguments,
+eval {
+$plugin->input_file(
 		dataset=>$ds,
 		filename=>$filename,
 		user=>$userobj,
-		actions=>\@actions,
-) };
+	);
+};
 if( $@ )
 {
 	$handler->message( "error", $session->make_text( "Unhandled exception in ".$plugin->{id}.": $@" ) );
 }
+
+my $count = $parse_only ? $handler->{parsed} : $handler->{wrote};
 
 if( $scripted )
 {
@@ -400,39 +388,30 @@ if( $count > 0 )
 			print "Number of records imported: $count\n";
 			if( $noise > 1 )
 			{
-				print join( ",", @{$list->ids})."\n";
+				print join( ",", @{$handler->{ids}})."\n";
 			}
 		}
+	}
+	if( @{$handler->{ids}} && defined $userobj && $ds->confid eq "eprint" )
+	{
+		my $user_id = $userobj->get_id;
+
+		my $list = EPrints::List->new(
+			session => $session,
+			dataset => $ds,
+			ids => $handler->{ids}
+		);
+
+		$list->map(
+			sub {
+				my( $session, $dataset, $eprint ) = @_;
+				$eprint->set_value( "userid", $user_id );
+				$eprint->commit;
+			} );
+
+		$list->dispose;
 	}
 }
 
 $session->terminate();
 exit;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-License for more details.
-
-You should have received a copy of the GNU General Public License
-along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

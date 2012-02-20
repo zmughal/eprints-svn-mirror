@@ -1,9 +1,3 @@
-=head1 NAME
-
-EPrints::Plugin::Screen::AbstractSearch
-
-=cut
-
 package EPrints::Plugin::Screen::AbstractSearch;
 
 @ISA = ( 'EPrints::Plugin::Screen' );
@@ -63,7 +57,6 @@ sub export_url
 
 	$url->query_form(
 		screen => $self->{processor}->{screenid},
-		dataset => $self->search_dataset->id,
 		_action_export => 1,
 		output => $format,
 		exp => $self->{processor}->{search}->serialise,
@@ -152,9 +145,7 @@ sub search_filters
 {
 	my( $self ) = @_;
 
-	my $filters = $self->{processor}->{filters};
-
-	return defined $filters ? @$filters : ();
+	return;
 }
 
 
@@ -168,23 +159,25 @@ sub from
 	# maybe this can be removed later, but for a minor release this seems safest.
 	if( !EPrints::Utils::is_set( $self->{processor}->{action} ) )
 	{
-		my %params = map { $_ => 1 } $self->{session}->param();
-		delete $params{screen};
-		delete $params{dataset};
-		if( scalar keys %params )
+		my @paramlist = $self->{session}->param();
+		my $has_params = 0;
+		$has_params = 1 if( scalar @paramlist );
+		$has_params = 0 if( scalar @paramlist == 1 && $paramlist[0] eq 'screen' );
+		if( $has_params )
 		{
 			$self->{processor}->{action} = "search";
 		}
 	}
 
-	$self->{processor}->{search} = EPrints::Search->new(
+	$self->{processor}->{search} = new EPrints::Search(
 		keep_cache => 1,
+		for_web => 1,
 		session => $self->{session},
 		filters => [$self->search_filters],
 		dataset => $self->search_dataset,
 		%{$self->{processor}->{sconf}} );
 
-
+	$self->{actions} = [qw/ update search newsearch export_redir export /]; 
 	if( 	$self->{processor}->{action} eq "search" || 
 	 	$self->{processor}->{action} eq "update" || 
 	 	$self->{processor}->{action} eq "export" || 
@@ -293,6 +286,7 @@ sub _get_export_plugins
 {
 	my( $self, $include_not_advertised ) = @_;
 
+	my $is_advertised = 1;
 	my %opts =  (
 			type=>"Export",
 			can_accept=>"list/".$self->{processor}->{search}->{dataset}->confid, 
@@ -367,88 +361,15 @@ sub render_links
 	return $links;
 }
 
-sub render_export_links
-{
-	my( $self ) = @_;
-
-	my $repo = $self->{repository};
-	my $xml = $repo->xml;
-
-	my $q = $repo->param( "q" );
-	return $xml->create_document_fragment if !defined $q;
-
-	my $mime_type = $self->{processor}->{export_plugin}->param( "mimetype" );
-	my $offset = $self->{processor}->{export_offset};
-	my $n = $self->{processor}->{export_n};
-
-	my $links = $xml->create_document_fragment;
-
-	my $base_url = $repo->current_url( host => 1, query => 1 );
-	my @query = $base_url->query_form;
-	foreach my $i (reverse(0 .. int($#query/2)))
-	{
-		splice(@query, $i*2, 2) if $query[$i*2] eq 'search_offset';
-	}
-	$base_url->query_form( @query );
-	$base_url->query( undef ) if !@query;
-
-	$links->appendChild( $xml->create_element( 'link',
-		rel => 'first',
-		type => $mime_type,
-		href => "$base_url",
-		) );
-	if( $offset >= $n )
-	{
-		$links->appendChild( $xml->create_text_node( "\n" ) );
-		$links->appendChild( $xml->create_element( 'link',
-			rel => 'prev',
-			type => $mime_type,
-			href => "$base_url&search_offset=".($offset-$n),
-			) );
-	}
-	if( $self->{processor}->{results}->count >= ($offset+$n) )
-	{
-		$links->appendChild( $xml->create_text_node( "\n" ) );
-		$links->appendChild( $xml->create_element( 'link',
-			rel => 'next',
-			type => $mime_type,
-			href => "$base_url&search_offset=".($offset+$n),
-			) );
-	}
-	$links->appendChild( $xml->create_text_node( "\n" ) );
-	$links->appendChild( $xml->create_element( 'opensearch:Query',
-		role => 'request',
-		searchTerms => $q,
-		startIndex => $self->{processor}->{export_offset},
-		) );
-	$links->appendChild( $xml->create_text_node( "\n" ) );
-	$links->appendChild( $xml->create_data_element( 'opensearch:itemsPerPage',
-		$self->{processor}->{export_n},
-		) );
-	$links->appendChild( $xml->create_text_node( "\n" ) );
-	$links->appendChild( $xml->create_data_element( 'opensearch:startIndex',
-		$self->{processor}->{export_offset},
-		) );
-	$links->appendChild( $xml->create_text_node( "\n" ) );
-	$links->appendChild( $xml->create_element( 'link',
-		rel => 'self',
-		type => $self->{processor}->{export_plugin}->param( "mimetype" ),
-		href => $repo->current_url( host => 1, query => 1 ),
-		) );
-	$links->appendChild( $xml->create_text_node( "\n" ) );
-	$links->appendChild( $xml->create_element( 'link',
-		rel => 'search',
-		type => 'application/opensearchdescription+xml',
-		title => $repo->phrase( "lib/searchexpression:search" ),
-		href => $repo->current_url( host => 1, path => 'cgi', 'opensearchdescription' ),
-		) );
-
-	return $links;
-}
-
 sub render_export_bar
 {
 	my( $self ) = @_;
+
+	if( !defined $self->{processor}->{results} || 
+		ref($self->{processor}->{results}) ne "EPrints::List" )
+	{
+                return $self->{session}->make_doc_fragment;
+	}
 
 	my @plugins = $self->_get_export_plugins;
 	my $cacheid = $self->{processor}->{results}->{cache_id};
@@ -512,12 +433,16 @@ sub render_export_bar
 	$button->appendChild( $session->render_button(
 			name=>"_action_export_redir",
 			value=>$session->phrase( "lib/searchexpression:export_button" ) ) );
+	$button->appendChild( 
+		$session->render_hidden_field( "screen", $self->{processor}->{screenid} ) ); 
+	$button->appendChild( 
+		$session->render_hidden_field( "order", $order ) ); 
+	$button->appendChild( 
+		$session->render_hidden_field( "cache", $cacheid ) ); 
+	$button->appendChild( 
+		$session->render_hidden_field( "exp", $escexp, ) );
 
 	my $form = $self->{session}->render_form( "GET" );
-	$form->appendChild( $self->render_hidden_bits );
-	$form->appendChild( $session->render_hidden_field( "order", $order ) ); 
-	$form->appendChild( $session->render_hidden_field( "cache", $cacheid ) ); 
-	$form->appendChild( $session->render_hidden_field( "exp", $escexp, ) );
 	$form->appendChild( $session->html_phrase( "lib/searchexpression:export_section",
 					feeds => $feeds,
 					tools => $tools,
@@ -532,36 +457,21 @@ sub render_export_bar
 sub get_basic_controls_before
 {
 	my( $self ) = @_;
-
-	my $repo = $self->repository;
-
-	my @controls_before;
-
 	my $cacheid = $self->{processor}->{results}->{cache_id};
 	my $escexp = $self->{processor}->{search}->serialise;
 
-	my $baseurl = $self->{session}->get_url;
-	$baseurl->query_form( $self->hidden_bits );
-
-	{
-		my $url = $baseurl->clone;
-		$url->query_form(
-			$url->query_form,
-			cache => $cacheid,
-			exp => $escexp,
-			order => $self->{processor}->{search}->{custom_order},
-			_action_update => 1,
-		);
-		push @controls_before, {
-				url => "$url",
-				label => $repo->html_phrase( "lib/searchexpression:refine" ),
-			};
-	}
-
-	push @controls_before, {
-			url => $baseurl->clone,
-			label => $repo->html_phrase( "lib/searchexpression:new" ),
-		};
+	my $baseurl = $self->{session}->get_uri . "?cache=$cacheid&exp=$escexp&screen=".$self->{processor}->{screenid};
+	$baseurl .= "&order=".$self->{processor}->{search}->{custom_order};
+	my @controls_before = (
+		{
+			url => "$baseurl&_action_update=1",
+			label => $self->{session}->html_phrase( "lib/searchexpression:refine" ),
+		},
+		{
+			url => $self->{session}->get_uri . "?screen=".$self->{processor}->{screenid},
+			label => $self->{session}->html_phrase( "lib/searchexpression:new" ),
+		}
+	);
 
 	return @controls_before;
 }
@@ -576,6 +486,12 @@ sub get_controls_before
 sub paginate_opts
 {
 	my( $self ) = @_;
+
+	if( !defined $self->{processor}->{results} || 
+		ref($self->{processor}->{results}) ne "EPrints::List" )
+	{
+                return $self->{session}->make_doc_fragment;
+	}
 
 	my %bits = ();
 
@@ -615,7 +531,8 @@ sub paginate_opts
 	$form->appendChild( $self->{session}->render_button(
 			name=>"_action_search",
 			value=>$self->{session}->phrase( "lib/searchexpression:reorder_button" ) ) );
-	$form->appendChild( $self->render_hidden_bits );
+	$form->appendChild( 
+		$self->{session}->render_hidden_field( "screen", $self->{processor}->{screenid} ) ); 
 	$form->appendChild( 
 		$self->{session}->render_hidden_field( "exp", $escexp, ) );
 
@@ -625,7 +542,7 @@ sub paginate_opts
 		above_results => $export_div,
 		controls_after => $order_div,
 		params => { 
-			$self->hidden_bits,
+			screen => $self->{processor}->{screenid},
 			_action_search => 1,
 			cache => $cacheid,
 			exp => $escexp,
@@ -650,9 +567,9 @@ sub render_results
 	my( $self ) = @_;
 
 	if( !defined $self->{processor}->{results} || 
-		!$self->{processor}->{results}->isa( "EPrints::List" ) )
+		ref($self->{processor}->{results}) ne "EPrints::List" )
 	{
-		return $self->{session}->make_doc_fragment;
+                return $self->{session}->make_doc_fragment;
 	}
 
 	my %opts = $self->paginate_opts;
@@ -699,10 +616,14 @@ sub render_search_form
 	my( $self ) = @_;
 
 	my $form = $self->{session}->render_form( "get" );
+	$form->appendChild( 
+		$self->{session}->render_hidden_field ( "screen", $self->{processor}->{screenid} ) );		
 
-	$form->appendChild( $self->render_hidden_bits );
-
-	$form->appendChild( $self->render_preamble );
+	my $pphrase = $self->{processor}->{sconf}->{"preamble_phrase"};
+	if( defined $pphrase )
+	{
+		$form->appendChild( $self->{"session"}->html_phrase( $pphrase ));
+	}
 
 	$form->appendChild( $self->render_controls );
 
@@ -720,18 +641,6 @@ sub render_search_form
 	return( $form );
 }
 
-sub render_preamble
-{
-	my( $self ) = @_;
-
-	my $pphrase = $self->{processor}->{sconf}->{"preamble_phrase"};
-	if( defined $pphrase )
-	{
-		return $self->{"session"}->html_phrase( $pphrase );
-	}
-
-	return $self->{session}->make_doc_fragment;
-}
 
 sub render_search_fields
 {
@@ -818,7 +727,6 @@ sub render_order_menu
 	my( $self ) = @_;
 
 	my $raworder = $self->{processor}->{search}->{custom_order};
-	$raworder = "" if !defined $raworder;
 
 	my $order = $self->{processor}->{sconf}->{default_order};
 
@@ -857,6 +765,7 @@ sub wishes_to_export
 	return 0 unless $self->{processor}->{search_subscreen} eq "export";
 
 	my $format = $self->{session}->param( "output" );
+	my $n = $self->{session}->param( "n" );
 
 	my @plugins = $self->_get_export_plugins( 1 );
 		
@@ -871,10 +780,9 @@ sub wishes_to_export
 		return;
 	}
 	
-	$self->{processor}->{export_format} = $format;
 	$self->{processor}->{export_plugin} = $self->{session}->plugin( "Export::$format" );
-	$self->{processor}->{export_offset} = $self->{session}->param( "search_offset" );
-	$self->{processor}->{export_n} = $self->{session}->param( "n" );
+	$self->{processor}->{export_format} = $format;
+	$self->{processor}->{export_n} = $n;
 	
 	return 1;
 }
@@ -885,17 +793,10 @@ sub export
 	my( $self ) = @_;
 
 	my $results = $self->{processor}->{results};
-
-	my $offset = $self->{processor}->{export_offset};
 	my $n = $self->{processor}->{export_n};
-
-	if( EPrints::Utils::is_set( $offset ) || EPrints::Utils::is_set( $n ) )
+	if( $n && $n > 0 )
 	{
-		$offset = 0 if !EPrints::Utils::is_set( $offset );
-		$n = $results->count if !EPrints::Utils::is_set( $n );
-		$offset += 0 if defined $offset;
-		$n += 0 if defined $n;
-		my $ids = $results->get_ids( $offset, $n );
+		my $ids = $results->get_ids( 0, $n );
 		$results = EPrints::List->new(
 			session => $self->{session},
 			dataset => $results->{dataset},
@@ -904,18 +805,16 @@ sub export
 
 	my $format = $self->{processor}->{export_format};
 	my $plugin = $self->{session}->plugin( "Export::" . $format );
-
-	my %arguments = map {
-		$_ => scalar($self->{session}->param( $_ ))
-	} $plugin->arguments;
-
 	$plugin->initialise_fh( *STDOUT );
-	$plugin->output_list(
-		list => $results,
-		fh => *STDOUT,
-		links => $self->render_export_links,
-		%arguments
-	);
+
+	my %opts = ( fh => *STDOUT );
+	foreach my $arg_id ( $plugin->arguments() )
+	{
+		my $v = $self->{session}->param( $arg_id );
+		if( $v ) { $opts{$arg_id} = $v; }
+	}
+	$results->export( $format, %opts );
+
 }
 
 sub export_mimetype
@@ -931,31 +830,3 @@ sub export_mimetype
 
 
 1;
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
-

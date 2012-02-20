@@ -4,6 +4,11 @@
 #
 ######################################################################
 #
+#  __COPYRIGHT__
+#
+# Copyright 2000-2008 University of Southampton. All Rights Reserved.
+# 
+#  __LICENSE__
 #
 ######################################################################
 
@@ -221,7 +226,7 @@ sub create
 	return EPrints::DataObj::History->create_from_data( 
 		$session, 
 		$data,
-		$session->dataset( "history" ) );
+		$session->get_repository->get_dataset( "history" ) );
 }
 
 ######################################################################
@@ -387,7 +392,7 @@ sub get_user
 		}
 	}
 
-	$self->{user} = EPrints::DataObj::User->new( 
+	$self->{user} = EPrints::User->new( 
 		$self->{session}, 
 		$self->get_value( "userid" ) );
 
@@ -520,15 +525,15 @@ sub render_modify
 	my $width = $self->{session}->get_repository->get_conf( "max_history_width" ) || $DEFAULT_MAX_WIDTH;
 
 	my $r_file = $self->get_stored_file( "dataobj.xml" );
-	my $r_file_new = defined($r_file) ? $r_file->get_local_copy() : undef;
 
-	if( !defined $r_file || !defined $r_file_new )
+	unless( defined( $r_file ) )
 	{
 		my $div = $self->{session}->make_element( "div" );
 		$div->appendChild( $self->{session}->html_phrase( "lib/history:no_file" ) );
 		return $div;
 	}
 
+	my $r_file_new = $r_file->get_local_copy();
 	my $file_new = EPrints::XML::parse_xml( "$r_file_new" );
 	my $dom_new = $file_new->getFirstChild;
 
@@ -549,11 +554,6 @@ sub render_modify
 	}
 
 	my $r_file_old = $r_file->get_local_copy();
-	if( !defined $r_file_old )
-	{
-		return $self->render_create;
-	}
-
 	my $file_old = EPrints::XML::parse_xml( "$r_file_old" );
 	my $dom_old = $file_old->getFirstChild;
 
@@ -1185,32 +1185,4 @@ sub set_dataobj_xml
 =back
 
 =cut
-
-
-=head1 COPYRIGHT
-
-=for COPYRIGHT BEGIN
-
-Copyright 2000-2011 University of Southampton.
-
-=for COPYRIGHT END
-
-=for LICENSE BEGIN
-
-This file is part of EPrints L<http://www.eprints.org/>.
-
-EPrints is free software: you can redistribute it and/or modify it
-under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-EPrints is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
-License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
-
-=for LICENSE END
 
