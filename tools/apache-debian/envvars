@@ -1,0 +1,28 @@
+# envvars - default environment variables for apache2ctl
+
+# Since there is no sane way to get the parsed apache2 config in scripts, some
+# settings are defined via environment variables and then used in apache2ctl,
+# /etc/init.d/apache2, /etc/logrotate.d/apache2, etc.
+export APACHE_ROOT=${HOME}/eprints/apache
+export APACHE_ARGUMENTS="-d $APACHE_ROOT -f $APACHE_ROOT/httpd.conf"
+export APACHE_RUN_USER=$USER
+export APACHE_RUN_GROUP=$USER
+export APACHE_PID_FILE=$APACHE_ROOT/var/run/apache2.pid
+export APACHE_RUN_DIR=$APACHE_ROOT/var/run
+export APACHE_LOCK_DIR=$APACHE_ROOT/var/lock
+export APACHE_DOCUMENTS_ROOT=$APACHE_ROOT/var/www
+
+mkdir -p $APACHE_ROOT/logs
+mkdir -p $APACHE_RUN_DIR $APACHE_LOCK_DIR $APACHE_DOCUMENTS_ROOT
+
+## The locale used by some modules like mod_dav
+export LANG=C
+## Uncomment the following line to use the system default locale instead:
+#. /etc/default/locale
+
+export LANG
+
+## The command to get the status for 'apache2ctl status'.
+## Some packages providing 'www-browser' need '--dump' instead of '-dump'.
+#export APACHE_LYNX='www-browser -dump'
+
