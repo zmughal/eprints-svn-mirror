@@ -11,9 +11,11 @@ export APACHE_PID_FILE=$APACHE_ROOT/var/run/apache2.pid
 export APACHE_RUN_DIR=$APACHE_ROOT/var/run
 export APACHE_LOCK_DIR=$APACHE_ROOT/var/lock
 export APACHE_DOCUMENTS_ROOT=$APACHE_ROOT/var/www
+export APACHE_LOG_DIR=$APACHE_ROOT/logs
+export APACHE_SSL_DIR=$APACHE_ROOT/ssl
 
-mkdir -p $APACHE_ROOT/logs
-mkdir -p $APACHE_RUN_DIR $APACHE_LOCK_DIR $APACHE_DOCUMENTS_ROOT
+mkdir -p $APACHE_LOG_DIR $APACHE_SSL_DIR $APACHE_RUN_DIR \
+	$APACHE_LOCK_DIR $APACHE_DOCUMENTS_ROOT
 
 ## The locale used by some modules like mod_dav
 export LANG=C
@@ -26,3 +28,18 @@ export LANG
 ## Some packages providing 'www-browser' need '--dump' instead of '-dump'.
 #export APACHE_LYNX='www-browser -dump'
 
+# create self-signed SSL certificate
+if [ ! -f $APACHE_SSL_DIR/server.key ]
+then
+	openssl genrsa -out $APACHE_SSL_DIR/server.key 4096
+fi
+
+if [ ! -f $APACHE_SSL_DIR/server.csr ]
+then
+	openssl req -batch -subj /commonName=myrepo.localdomain -new -key $APACHE_SSL_DIR/server.key -out $APACHE_SSL_DIR/server.csr
+fi
+
+if [ ! -f $APACHE_SSL_DIR/server.crt ]
+then
+	openssl x509 -req -days 5000 -in $APACHE_SSL_DIR/server.csr -signkey $APACHE_SSL_DIR/server.key -out $APACHE_SSL_DIR/server.crt
+fi
