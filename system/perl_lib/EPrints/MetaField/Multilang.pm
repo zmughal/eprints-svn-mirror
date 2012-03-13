@@ -68,6 +68,15 @@ sub get_search_conditions_not_ex
 		$session, $dataset,$search_value,$match,$merge,$search_mode );
 }
 
+sub lang
+{
+	my( $self, $value ) = @_;
+
+	$value = $self->lang_value( undef, $value );
+
+	return defined $value ? $value->{lang} : undef;
+}
+
 =item $value = $field->lang_value( $langid, $value )
 
 Returns the most local language value for $langid.

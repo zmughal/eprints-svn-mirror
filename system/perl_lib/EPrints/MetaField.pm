@@ -925,6 +925,39 @@ sub render_value_withopts
 	return $self->render_single_value( $session, $value, $object );
 }
 
+=item $text = $field->to_text( $value [, %opts ] )
+
+Generate a plain-text representation of $value, equivalent to getting the text content of L</render_value>.
+
+Options:
+
+	dataobj - object value is from
+
+=cut
+
+sub to_text
+{
+	my( $self, $value, %opts ) = @_;
+
+	my $frag = $self->to_xhtml( $value, %opts );
+	my $text = $self->{repository}->xhtml->to_text_dump( $frag );
+	$self->{repository}->xml->dispose( $frag );
+
+	return $text;
+}
+
+=item $frag = $field->to_xhtml( $value [, %opts ] )
+
+See L</render_value>.
+
+=cut
+
+sub to_xhtml
+{
+	my( $self, $value, %opts ) = @_;
+
+	return $self->render_value( $self->{repository}, $value, $opts{alllangs}, $opts{link}, $opts{dataobj} );
+}
 
 ######################################################################
 =pod
@@ -2499,6 +2532,19 @@ sub get_search_conditions_not_ex
                        $dataset,
                        $self, 
                        $search_value );
+}
+
+=item $langid = $field->lang( $value )
+
+Returns the language of $value. Only makes sense for L<EPrints::MetaField::Multilang> fields.
+
+=cut
+
+sub lang
+{
+	my( $self, $value ) = @_;
+
+	return undef;
 }
 
 sub get_value

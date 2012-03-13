@@ -39,10 +39,12 @@ sub output_dataobj
 	my $r = "";
 	foreach( @{$data} )
 	{
-		next unless defined( $_->[1] );
-		my $v = $_->[1];
-		$v=~s/[\r\n]/ /g;
-		$r.=$_->[0].": $v\n";
+		my( $term, $v, $opts ) = @$_;
+		next if !defined $v;
+
+		$v =~ s/[\r\n]/ /g;
+		$term .= ".$opts->{lang}" if defined $opts->{lang};
+		$r .= "$term: $v\n";
 	}
 	$r.="\n";
 	return $r;
@@ -65,7 +67,8 @@ sub dataobj_to_html_header
 		$links->appendChild( $plugin->{session}->make_element(
 			"meta",
 			name => "DC.".$_->[0],
-			content => $_->[1] ) );
+			content => $_->[1],
+			%{$_->[2]} ) );
 		$links->appendChild( $plugin->{session}->make_text( "\n" ));
 	}
 	return $links;
@@ -75,54 +78,30 @@ sub dataobj_to_html_header
 
 sub convert_dataobj
 {
-	my( $plugin, $eprint ) = @_;
+	my( $self, $eprint ) = @_;
 
 	my $dataset = $eprint->{dataset};
 
-	my @dcdata = ();
-
-	push @dcdata, $plugin->simple_value( $eprint, title => "title" );
-
-	# grab the creators without the ID parts so if the site admin
-	# sets or unsets creators to having and ID part it will make
-	# no difference to this bit.
-
-	if( $eprint->exists_and_set( "creators_name" ) )
-	{
-		my $creators = $eprint->get_value( "creators_name" );
-		if( defined $creators )
-		{
-			foreach my $creator ( @{$creators} )
-			{	
-				next if !defined $creator;
-				push @dcdata, [ "creator", EPrints::Utils::make_name_string( $creator ) ];
-			}
-		}
-	}
+	my @dcdata = (
+		$self->simple_value( $eprint, title => "title" ),
+		$self->simple_value( $eprint, abstract => "description" ),
+		$self->simple_value( $eprint, creators_name => "creator" ),
+		$self->simple_value( $eprint, editors_name => "contributor" ),
+		$self->simple_value( $eprint, publisher => "publisher" ),
+		$self->simple_value( $eprint, type => "type" ),
+		$self->simple_value( $eprint, official_url => "relation" ),
+		);
 
 	if( $eprint->exists_and_set( "subjects" ) )
 	{
-		my $subjectid;
-		foreach $subjectid ( @{$eprint->get_value( "subjects" )} )
+		foreach my $subjectid ( @{$eprint->get_value( "subjects" )} )
 		{
-			my $subject = EPrints::DataObj::Subject->new( $plugin->{session}, $subjectid );
+			my $subject = EPrints::DataObj::Subject->new( $self->{session}, $subjectid );
 			# avoid problems with bad subjects
-				next unless( defined $subject ); 
-			push @dcdata, [ "subject", EPrints::Utils::tree_to_utf8( $subject->render_description() ) ];
-		}
-	}
-
-	push @dcdata, $plugin->simple_value( $eprint, abstract => "description" );
-	push @dcdata, $plugin->simple_value( $eprint, publisher => "publisher" );
-
-	if( $eprint->exists_and_set( "editors_name" ) )
-	{
-		my $editors = $eprint->get_value( "editors_name" );
-		if( defined $editors )
-		{
-			foreach my $editor ( @{$editors} )
+			next unless( defined $subject ); 
+			foreach my $item (@{$subject->field_value( "name" )})
 			{
-				push @dcdata, [ "contributor", EPrints::Utils::make_name_string( $editor ) ];
+				push @dcdata, [ subject => $item, { lang => $item->lang } ];
 			}
 		}
 	}
@@ -130,49 +109,32 @@ sub convert_dataobj
 	## Date for discovery. For a month/day we don't have, assume 01.
 	if( $eprint->exists_and_set( "date" ) )
 	{
-		my $date = $eprint->get_value( "date" );
-		if( defined $date )
-		{
-			$date =~ s/(-0+)+$//;
-			push @dcdata, [ "date", $date ];
-		}
+		push @dcdata, [ date => $eprint->field_value( "date" )->iso_8601, {} ];
 	}
-	
-	if( $eprint->exists_and_set( "type" ) )
+
+	if( $eprint->exists_and_set( "refereed" ) && $eprint->value( "refereed" ) eq "TRUE" )
 	{
-		push @dcdata, [ "type", EPrints::Utils::tree_to_utf8( $eprint->render_value( "type" ) ) ];
+		push @dcdata, [ type => "PeerReviewed", {} ];
 	}
-
-	my $ref = "NonPeerReviewed";
-	if( $eprint->exists_and_set( "refereed" ) && $eprint->get_value( "refereed" ) eq "TRUE" )
+	else
 	{
-		$ref = "PeerReviewed";
+		push @dcdata, [ type => "NonPeerReviewed", {} ];
 	}
-	push @dcdata, [ "type", $ref ];
 
-
-	my @documents = $eprint->get_all_documents();
-	my $mimetypes = $plugin->{session}->get_repository->get_conf( "oai", "mime_types" );
-	foreach( @documents )
+	foreach( $eprint->get_all_documents() )
 	{
-		my $format = $mimetypes->{$_->get_value("format")};
-		$format = $_->get_value("format") unless defined $format;
-		#$format = "application/octet-stream" unless defined $format;
-		push @dcdata, [ "format", $format ];
-		push @dcdata, [ "identifier", $_->get_url() ];
+		push @dcdata, [ "format", $_->value( "mime_type" ), {} ];
+		push @dcdata, [ "identifier", $_->get_url(), {} ];
 	}
 
-	# Most commonly a DOI or journal link
-	push @dcdata, $plugin->simple_value( $eprint, official_url => "relation" );
-	
 	# The citation for this eprint
 	push @dcdata, [ "identifier",
-		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ) ];
+		EPrints::Utils::tree_to_utf8( $eprint->render_citation() ), {} ];
 
 	# The URL of the abstract page
 	if( $eprint->is_set( "eprintid" ) )
 	{
-		push @dcdata, [ "relation", $eprint->get_url() ];
+		push @dcdata, [ "relation", $eprint->get_url(), {} ];
 	}
 
 	# dc.language not handled yet.
@@ -188,34 +150,13 @@ sub simple_value
 {
 	my( $self, $eprint, $fieldid, $term ) = @_;
 
-	my @dcdata;
-
 	return () if !$eprint->exists_and_set( $fieldid );
 
-	my $dataset = $eprint->dataset;
-	my $field = $dataset->field( $fieldid );
+	my @dcdata;
 
-	if( $field->isa( "EPrints::MetaField::Multilang" ) )
+	foreach my $item (@{$eprint->field_value( $fieldid )})
 	{
-		my( $values, $langs ) =
-			map { $_->get_value( $eprint ) }
-			@{$field->property( "fields_cache" )};
-		$values = [$values] if ref($values) ne "ARRAY";
-		$langs = [$langs] if ref($values) ne "ARRAY";
-		foreach my $i (0..$#$values)
-		{
-			push @dcdata, [ $term, $values->[$i], { lang => $langs->[$i] } ];
-		}
-	}
-	elsif( $field->property( "multiple" ) )
-	{
-		push @dcdata, map { 
-			[ $term, $_ ]
-		} @{ $field->get_value( $eprint ) };
-	}
-	else
-	{
-		push @dcdata, [ $term, $field->get_value( $eprint ) ];
+		push @dcdata, [ $term, $item, { lang => $item->lang } ];
 	}
 
 	return @dcdata;

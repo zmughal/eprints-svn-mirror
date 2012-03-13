@@ -2,6 +2,18 @@
 
 EPrints::Plugin::Export::Simple
 
+=head1 DESCRIPTION
+
+Exports the raw values from an eprint as a key-value list. This is primarily used to drive the <meta> tags included in the abstract page.
+
+Fields that are stored as hash references are processed using L<EPrints::MetaField/text_value> to get a simple text value (e.g. Names).
+
+To override the list of fields exported define the C<fields> parameter with an array reference of field names:
+
+	$c->{plugins}{'Export::Simple'}{params}{fields} = [qw( title abstract )];
+
+The citation and document URLs are always exported. To suppress these as well disable this plugin.
+
 =cut
 
 package EPrints::Plugin::Export::Simple;
@@ -21,6 +33,7 @@ sub new
 	$self->{name} = "Simple Metadata";
 	$self->{accept} = [ 'dataobj/eprint' ];
 	$self->{visible} = "all";
+	$self->{fields} = undef;
 
 	return $self;
 }
@@ -66,77 +79,33 @@ sub convert_dataobj
 
 	my @epdata = ();
 	my $dataset = $eprint->get_dataset;
-
-	foreach my $fieldname ( qw/
-creators_name
-creators_id
-editors_name
-editors_id
-type
-datestamp
-lastmod
-metadata_visibility
-latitude
-longitude
-corp_creators
-title
-ispublished
-subjects
-full_text_status
-monograph_type
-pres_type
-keywords
-note
-abstract
-date
-date_type
-series
-publication
-volume
-number
-publisher
-place_of_pub
-pagerange
-pages
-event_title
-event_location
-event_dates
-event_type
-id_number
-patent_applicant
-institution
-department
-thesis_type
-refereed
-isbn
-issn
-book_title
-official_url
-related_url_url
-related_url_type
-referencetext / )
+	my $fieldnames = $plugin->param( "fields" );
+	my @fields;
+	if( defined $fieldnames )
 	{
-		next unless $dataset->has_field( $fieldname );
+		@fields = map { $dataset->field( $_ ) } @$fieldnames;
+	}
+	else
+	{
+		@fields = grep {
+				$_->property( "export_as_xml" ) &&
+				!$_->is_virtual
+			} $dataset->fields;
+	}
+
+	foreach my $field (@fields)
+	{
+		my $fieldname = $field->name;
 		next unless $eprint->is_set( $fieldname );
 		my $field = $dataset->get_field( $fieldname );
-		my $value = $eprint->get_value( $fieldname );
-		if( $field->get_property( "multiple" ) )
+		my $value = $eprint->field_value( $fieldname );
+		foreach my $item (@{$value})
 		{
-			foreach my $item ( @{$value} )
-			{
-				if( $field->is_type( "name" ) )
-				{
-					push @epdata, [ $fieldname, ($item->{family}||"").", ".($item->{given}||"") ];
-				}
-				else
-				{
-					push @epdata, [ $fieldname, $item ];
-				}
-			}
-		}
-		else
-		{
-			push @epdata, [ $fieldname, $value ];
+			push @epdata, [ $fieldname,
+				$field->isa( "EPrints::MetaField::Name" ) ? 
+					"$item" :
+					$item->value
+				];
 		}
 	}
 

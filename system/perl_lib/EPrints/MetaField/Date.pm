@@ -495,6 +495,28 @@ sub render_xml_schema_type
 	return $type;
 }
 
+sub iso_8601
+{
+	my( $self, $value ) = @_;
+
+	return undef if !defined $value;
+
+	$value =~ s/^(\d{4}-\d\d-\d\d).(\d\d:\d\d:\d\d).?$/$1T$2Z/;
+
+	return $value;
+}
+
+sub year
+{
+	my( $self, $value ) = @_;
+
+	return undef if !defined $value;
+
+	$value =~ /^(\d{4})\b/;
+
+	return $1;
+}
+
 ######################################################################
 1;
 
