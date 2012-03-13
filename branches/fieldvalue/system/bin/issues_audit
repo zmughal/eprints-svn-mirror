@@ -1,0 +1,253 @@
+#!/usr/bin/perl -w
+
+use FindBin;
+use lib "$FindBin::Bin/../perl_lib";
+
+######################################################################
+#
+#
+######################################################################
+
+=pod
+
+=head1 NAME
+
+B<issues_audit> - Update the issues field of all eprints.
+
+=head1 SYNOPSIS
+
+B<issues_audit> I<repository_id> [B<options>] [eprint ids]
+
+=head1 DESCRIPTION
+
+This script updates the Issues field of all eprints 
+in the live archive and buffer. 
+
+This script should probably be called from your "cron" system, soon after
+midnight. Something like:
+
+ # 00:23 every morning
+ 23 0 * * * /opt/eprints3/bin/issues_audit my_repo_id
+
+This script will take longer as your repository grows, so initially you may 
+want to run it more frequently, or on very large systems you might move to
+just run it on Sundays.
+
+=head1 ARGUMENTS
+
+=over 8
+
+=item B<repository_id> 
+
+The ID of the eprint repository to use.
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exit.
+
+=item B<--man>
+
+Print the full manual page and then exit.
+
+=item B<--quiet>
+
+Be vewwy vewwy quiet. This option will supress all output unless an error occurs.
+
+=item B<--verbose>
+
+Explain in detail what is going on.
+May be repeated for greater effect.
+
+=item B<--version>
+
+Output version information and exit.
+
+=item B<--dry-run>
+
+Don't remove or create any issue objects.
+
+=item B<--noclear>
+
+Do not clear auto-discovered issues before starting.
+
+=item B<--clearall>
+
+Clear all issues - use with caution!
+
+=back   
+
+
+=cut
+
+use EPrints;
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+
+my %opt = (
+	verbose => 0,
+	quiet => 0,
+	clear => 1,
+);
+
+Getopt::Long::Configure("permute");
+
+GetOptions( \%opt,
+	'help|?',
+	'man',
+	'version',
+	'verbose+',
+	'silent',
+	'quiet+',
+	'dry-run|n',
+	'clear!',
+	'clearall',
+) || pod2usage( 2 );
+EPrints::Utils::cmd_version( "send_alerts" ) if $opt{version};
+pod2usage( 1 ) if $opt{help};
+pod2usage( -exitstatus => 0, -verbose => 2 ) if $opt{man};
+pod2usage( 2 ) if( @ARGV < 1 ); 
+
+my $noise = 1 + $opt{verbose} - $opt{quiet};
+
+# Set STDOUT to auto flush (without needing a \n)
+$|=1;
+
+my $repoid = shift @ARGV;
+my $repo = EPrints->new->repository( $repoid, noise => $noise )
+	or die "Failed to load repository: $repoid\n";
+
+
+##############################
+
+if( $opt{clearall} && !$opt{'dry-run'} )
+{
+	print STDERR "Clearing issues\n" if $noise;
+	$repo->dataset( 'issue' )->search->map(sub {
+			(undef, undef, my $issue) = @_;
+
+			$issue->remove;
+		});
+}
+elsif( $opt{clear} && !$opt{'dry-run'} )
+{
+	print STDERR "Clearing unresolved, discovered issues\n" if $noise;
+	$repo->dataset( 'issue' )->search(
+		filters => [
+			{ meta_fields => [qw( status )], value => 'discovered' },
+		])->map(sub {
+			(undef, undef, my $issue) = @_;
+
+			$issue->remove;
+		});
+}
+
+my $ds = $repo->dataset( 'eprint' );
+my $list;
+if( @ARGV )
+{
+	$list = EPrints::List->new(
+		session => $repo,
+		dataset => $ds,
+		ids => \@ARGV,
+	);
+}
+else
+{
+	$list = $ds->search(
+		filters => [
+			{ meta_fields => [qw( eprint_status )], value => "archive buffer",
+			match => "EQ", merge => "ANY", }
+		]);
+}
+
+# Get all available Issues plugins
+my( @list_plugins, @dataobj_plugins );
+foreach my $plugin ($repo->get_plugins(
+		type => "Issues",
+	))
+{
+	if( $plugin->can_accept( "list/eprint" ) )
+	{
+		push @list_plugins, $plugin;
+	}
+	elsif( $plugin->can_accept( "dataobj/eprint" ) )
+	{
+		push @dataobj_plugins, $plugin;
+	}
+}
+
+if( $opt{'dry-run'} )
+{
+	my $handler = EPrints::CLIProcessor->new(
+		epdata_to_dataobj => sub {
+			my( $epdata ) = @_;
+			printf("%s.%s %s: %s\n", $epdata->{datasetid}, $epdata->{objectid}, $epdata->{type}, $epdata->{description}) if $noise > 1;
+			return undef;
+	});
+	$_->set_handler( $handler ) for @list_plugins, @dataobj_plugins;
+}
+
+my %opts = (
+	dataset => $ds,
+	list => $list,
+);
+
+my $total = $list->count;
+my $i = 0;
+
+$list->map(sub {
+	(undef, undef, my $eprint) = @_;
+
+	$_->process_dataobj( $eprint, %opts ) for @list_plugins, @dataobj_plugins;
+
+	print STDERR sprintf("% 3s%%\r", sprintf("%d", $i++ / $total * 100))
+		if $noise > 1;
+});
+
+foreach my $plugin (@list_plugins)
+{
+	print STDERR "Finishing plugin ".$plugin->get_name()."\n" if $noise;
+	$plugin->finish( %opts );
+}
+
+#####################################
+
+exit;
+
+
+
+=head1 COPYRIGHT
+
+=for COPYRIGHT BEGIN
+
+Copyright 2000-2011 University of Southampton.
+
+=for COPYRIGHT END
+
+=for LICENSE BEGIN
+
+This file is part of EPrints L<http://www.eprints.org/>.
+
+EPrints is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+EPrints is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with EPrints.  If not, see L<http://www.gnu.org/licenses/>.
+
+=for LICENSE END
+
