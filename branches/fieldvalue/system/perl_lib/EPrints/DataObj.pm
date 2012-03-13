@@ -1111,6 +1111,22 @@ sub render_value
 	return $field->render_value( $self->{session}, $self->get_value($fieldname), $showall, undef,$self );
 }
 
+=item $value = $dataobj->field_value( $fieldname )
+
+Returns the given value as a L<EPrints::FieldValue>.
+
+=cut
+
+sub field_value
+{
+	my( $self, $fieldname ) = @_;
+
+	return undef if !$self->{dataset}->has_field( $fieldname );
+
+	my $field = $self->{dataset}->get_field( $fieldname );	
+
+	return EPrints::FieldValue->new( $field, $field->get_value( $self ) );
+}
 
 ######################################################################
 =pod

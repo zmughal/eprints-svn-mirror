@@ -37,89 +37,114 @@ sub new
 
 sub convert_dataobj
 {
-	my( $plugin, $dataobj ) = @_;
+	my( $self, $dataobj ) = @_;
 
-	my $data = ();
+	my @data;
 
 	# 0 Citation type
 	my $type = $dataobj->get_type;
-	$data->{0} = "Generic";
-	$data->{0} = "Book" if $type eq "book";
-	$data->{0} = "Book Section" if $type eq "book_section";
-	$data->{0} = "Conference Paper" if $type eq "conference_item";
-	$data->{0} = "Edited Book" if $type eq "book" && !$dataobj->is_set( "creators" ) && $dataobj->is_set( "editors" );
-	$data->{0} = "Journal Article" if $type eq "article";
-	$data->{0} = "Patent" if $type eq "patent";
-	$data->{0} = "Report" if $type eq "monograph";
-	$data->{0} = "Thesis" if $type eq "thesis";
+	if( $type eq "book" && !$dataobj->is_set( "creators" ) && $dataobj->is_set( "editors" ) )
+	{
+		push @data, [ 0 => "Edited Book" ];
+	}
+	elsif( $type eq "book" )
+	{
+		push @data, [ 0 => "Book" ];
+	}
+	elsif( $type eq "book_section" )
+	{
+		push @data, [ 0 => "Book Section" ];
+	}
+	elsif( $type eq "conference_item" )
+	{
+		push @data, [ 0 => "Conference Paper" ];
+	}
+	elsif( $type eq "article" )
+	{
+		push @data, [ 0 => "Journal Article" ];
+	}
+	elsif( $type eq "patent" )
+	{
+		push @data, [ 0 => "Patent" ];
+	}
+	elsif( $type eq "monograph" )
+	{
+		push @data, [ 0 => "Report" ];
+	}
+	elsif( $type eq "thesis" )
+	{
+		push @data, [ 0 => "Thesis" ];
+	}
+	else
+	{
+		push @data, [ 0 => "Generic" ];
+	}
 
 	# D Year
 	if( $dataobj->exists_and_set( "date" ) )
 	{
-		$dataobj->get_value( "date" ) =~ /^([0-9]{4})/;
-		$data->{D} = $1;
+		push @data, [ D => $dataobj->field_value( "date" )->year ];
 	}
 	# J Journal
-	if( $type eq "article" )
+	if( $type eq "article" && $dataobj->exists_and_set( "publication" ) )
 	{
-		$data->{J} = $dataobj->get_value( "publication" ) if $dataobj->exists_and_set( "publication" );
+		push @data, [ J => $dataobj->field_value( "publication" ) ];
 	}
 	# K Keywords
-	$data->{K} = $dataobj->get_value( "keywords" ) if $dataobj->exists_and_set( "keywords" );
+	push @data, $self->simple_value( $dataobj, keywords => "K" );
 	# T Title
-	$data->{T} = $dataobj->get_value( "title" ) if $dataobj->exists_and_set( "title" );
+	push @data, $self->simple_value( $dataobj, title => "T" );
 	# U URL
-	$data->{U} = $dataobj->get_url;
+	push @data, [ U => $dataobj->get_url ];
 	# X Abstract
-	$data->{X} = $dataobj->get_value( "abstract" ) if $dataobj->exists_and_set( "abstract" );
+	push @data, $self->simple_value( $dataobj, abstract => "X" );
 	# Z Notes
-	$data->{Z} = $dataobj->get_value( "note" ) if $dataobj->exists_and_set( "note" );
+	push @data, $self->simple_value( $dataobj, note => "Z" );
 	# 9 Thesis Type, Report Type
-	$data->{9} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "monograph_type" ) ) if $dataobj->exists_and_set( "monograph_type" );
-	$data->{9} = EPrints::Utils::tree_to_utf8( $dataobj->render_value( "thesis_type" ) ) if $dataobj->exists_and_set( "thesis_type" );
+	if( $dataobj->exists_and_set( "thesis_type" ) )
+	{
+		push @data, [ 9 => $dataobj->field_value( "thesis_type" ) ];
+	}
+	elsif( $dataobj->exists_and_set( "monograph_type" ) )
+	{
+		push @data, [ 9 => $dataobj->field_value( "monograph_type" ) ];
+	}
 
 	# A Author	
-	if( $dataobj->exists_and_set( "creators" ) )
-	{
-		foreach my $name ( @{ $dataobj->get_value( "creators" ) } )
-		{
-			# Family name first
-			push @{ $data->{A} }, EPrints::Utils::make_name_string( $name->{name}, 0 );
-		}
-	}
+	push @data, $self->simple_value( $dataobj, creators_name => "A" );
 
 	# A Corporate Author - a trailing comma MUST be added, see EndNote documentation
 	my $ds = $dataobj->get_dataset;
 	if( $dataobj->exists_and_set( 'corp_creators' ) )
 	{
-		foreach my $corp ( @{ $dataobj->get_value( 'corp_creators' ) } )
+		foreach my $item (@{$dataobj->field_value( "corp_creators" )})
 		{
-			push @{ $data->{A} }, $corp.",";
+			push @data, [ A => $item."," ];
 		}
 	}	
 
 	# B Conference Name, Department (Thesis), Series (Book, Report), Book Title (Book Section)
 	if( $type eq "conference_item")
 	{
-		$data->{B} = $dataobj->get_value( "event_title" ) if $dataobj->exists_and_set( "event_title" );
+		push @data, $self->simple_value( $dataobj, event_title => "B" );
 	}
 	elsif( $type eq "thesis" )
 	{
-		$data->{B} = $dataobj->get_value( "department" ) if $dataobj->exists_and_set( "department" );
+		push @data, $self->simple_value( $dataobj, department => "B" );
 	}
 	elsif( $type eq "book" || $type eq "monograph" )
 	{
-		$data->{B} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+		push @data, $self->simple_value( $dataobj, series => "B" );
 	}
 	elsif( $type eq "book_section" )
 	{
-		$data->{B} = $dataobj->get_value( "book_title" ) if $dataobj->exists_and_set( "book_title" );
+		push @data, $self->simple_value( $dataobj, book_title => "B" );
 	}
 
 	# C Conference Location, Country (Patent), City (Other Types)
 	if( $type eq "conference_item")
 	{
-		$data->{C} = $dataobj->get_value( "event_location" ) if $dataobj->exists_and_set( "event_location" );
+		push @data, $self->simple_value( $dataobj, event_location => "C" );
 	}
 	elsif( $type eq "patent" )
 	{
@@ -127,27 +152,23 @@ sub convert_dataobj
 	}
 	else
 	{
-		$data->{C} = $dataobj->get_value( "place_of_pub" ) if $dataobj->exists_and_set( "place_of_pub" );
+		push @data, $self->simple_value( $dataobj, place_of_pub => "C" );
 	}
 
 	# E Issuing Organisation (Patent), Editor (Other Types)
 	if( $type eq "patent")
 	{
-		$data->{E} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" );
+		push @data, $self->simple_value( $dataobj, institution => "E" );
 	}
 	elsif( $dataobj->exists_and_set( "editors" ) )
 	{
-		foreach my $name ( @{ $dataobj->get_value( "editors" ) } )
-		{
-			# Family name first
-			push @{ $data->{E} }, EPrints::Utils::make_name_string( $name->{name}, 0 );
-		}
+		push @data, $self->simple_value( $dataobj, editors_name => "E" );
 	}
 
 	# I Institution (Report), University (Thesis), Assignee (Patent), Publisher (Other Types)
 	if( $type eq "monograph" || $type eq "thesis" )
 	{
-		$data->{I} = $dataobj->get_value( "institution" ) if $dataobj->exists_and_set( "institution" );
+		push @data, $self->simple_value( $dataobj, institution => "I" );
 	}
 	elsif( $type eq "patent" )
 	{
@@ -155,7 +176,7 @@ sub convert_dataobj
 	}
 	else
 	{
-		$data->{I} = $dataobj->get_value( "publisher" ) if $dataobj->exists_and_set( "publisher" );
+		push @data, $self->simple_value( $dataobj, publisher => "I" );
 	}
 
 	# N Application Number (Patent), Issue (Other Types)
@@ -165,23 +186,23 @@ sub convert_dataobj
 	}
 	else
 	{
-		$data->{N} = $dataobj->get_value( "number" ) if $dataobj->exists_and_set( "number" );
+		push @data, $self->simple_value( $dataobj, number => "N" );
 	}	
 
 	# P Number of Pages (Book, Thesis), Pages (Other Types)
 	if( $type eq "book" || $type eq "thesis" )
 	{
-		$data->{P} = $dataobj->get_value( "pages" ) if $dataobj->exists_and_set( "pages" );
+		push @data, $self->simple_value( $dataobj, pages => "P" );
 	}
 	else
 	{
-		$data->{P} = $dataobj->get_value( "pagerange" ) if $dataobj->exists_and_set( "pagerange" );
+		push @data, $self->simple_value( $dataobj, pagerange => "P" );
 	}
 
 	# S Series (Book Section)
 	if( $type eq "book_section" )
 	{
-		$data->{S} = $dataobj->get_value( "series" ) if $dataobj->exists_and_set( "series" );
+		push @data, $self->simple_value( $dataobj, series => "S" );
 	}
 
 	# V Patent Version Number, Degree (Thesis), Volume (Other Types)
@@ -195,27 +216,27 @@ sub convert_dataobj
 	}
 	else
 	{
-		$data->{V} = $dataobj->get_value( "volume" ) if $dataobj->exists_and_set( "volume" );
+		push @data, $self->simple_value( $dataobj, volume => "V" );
 	}
 
 	# @ ISSN (Article), Patent Number, Report Number, ISBN (Book, Book Section)
 	if( $type eq "article" )
 	{
-		$data->{"@"} = $dataobj->get_value( "issn" ) if $dataobj->exists_and_set( "issn" );
+		push @data, $self->simple_value( $dataobj, issn => "@" );
 	}
 	elsif( $type eq "patent" || $type eq "monograph" )
 	{
-		$data->{"@"} = $dataobj->get_value( "id_number" ) if $dataobj->exists_and_set( "issn" );
+		push @data, $self->simple_value( $dataobj, id_number => "@" );
 	}
 	elsif( $type eq "book" || $type eq "book_section" )
 	{
-		$data->{"@"} = $dataobj->get_value( "isbn" ) if $dataobj->exists_and_set( "issn" );
+		push @data, $self->simple_value( $dataobj, isbn => "@" );
 	}
 
 	# F Label
-	$data->{F} = $plugin->{session}->get_repository->get_id . ":" . $dataobj->get_id;
+	push @data, [ F => $self->{session}->get_id . ":" . $dataobj->id ];
 
-	return $data;
+	return \@data;
 }
 
 sub output_dataobj
@@ -225,25 +246,25 @@ sub output_dataobj
 	my $data = $plugin->convert_dataobj( $dataobj );
 
 	my $out = "";
-	# forces '0' to be FIRST
-	foreach my $k ( sort { $a eq "0" ? -1 : $b eq "0" ? 1 : $a cmp $b } keys %{ $data } )
+	foreach(@$data)
 	{
-		if( ref( $data->{$k} ) eq "ARRAY" )
-		{
-			foreach my $v ( @{ $data->{$k} } )
-			{
-				$v=~s/[\r\n]/ /g;
-				$out .= "\%$k $v\n";
-			}
-		} else {
-			my $v = $data->{$k};
-			$v=~s/[\r\n]/ /g;
-			$out .= "\%$k $v\n";
-		}
+		my( $k, $v ) = @$_;
+
+		$v =~ s/[\r\n]/ /g;
+		$out .= "\%$k $v\n";
 	}
 	$out .= "\n";
 
 	return $out;
+}
+
+sub simple_value
+{
+	my( $self, $eprint, $fieldid, $term ) = @_;
+
+	return if !$eprint->exists_and_set( $fieldid );
+
+	return map { [ $term, $_ ] } @{$eprint->field_value( $fieldid )};
 }
 
 1;
