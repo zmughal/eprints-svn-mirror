@@ -11,7 +11,7 @@ $c->{datasets}->{tweet} = {
 	sqlname => "tweet",
 	sql_counter => "tweetid",
 	import => 1,
-	index => 1,
+	index => 0,
 };
 
 $c->{datasets}->{tweetstream} = {
@@ -25,6 +25,7 @@ $c->{datasets}->{tweetstream} = {
 #base metadata
 $c->add_dataset_field( 'tweet', { name=>"tweetid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tweetid" }, );
 $c->add_dataset_field( 'tweet', { name=>"twitterid", type=>"bigint", required=>1 }, );
+#$c->add_dataset_field( 'tweet', { name=>"datestamp", type=>"date" }, ); #stores the creation time of the object
 $c->add_dataset_field( 'tweet', { name=>"json_source", type=>"storable", required=>1, render_value => 'EPrints::DataObj::Tweet::render_json_source' }, ); #full source kept for futureproofing
 
 #extracted tweet metadata
@@ -41,7 +42,13 @@ $c->add_dataset_field( 'tweet', { name=>"text_is_enriched", type=>"boolean" }, )
 $c->add_dataset_field( 'tweet', { name=>"text_enriched", type=>"longtext", render_value => 'EPrints::DataObj::Tweet::render_text_enriched' }, );
 $c->add_dataset_field( 'tweet', { name=>"tweetees", type=>"text", multiple=>1 }, );
 $c->add_dataset_field( 'tweet', { name=>"hashtags", type=>"text", multiple=>1 }, );
+
+#store URLs from tweet
+$c->add_dataset_field( 'tweet', { name=>"urls_from_text", type=>"url", multiple => 1 }, );
+
+#store URL hops -- no longer used, but is valuable data.  Should be reenabled later.
 $c->add_dataset_field( 'tweet', { name=>"target_urls", type=>"url", multiple => 1 }, );
+#store URL hops -- no longer used, but is valuable data.  Should be reenabled later.
 $c->add_dataset_field( 'tweet', { 
 	name=>"url_redirects",
 	type=>"compound",
@@ -243,6 +250,8 @@ sub create_from_data
 
 	my $new_tweet = $class->SUPER::create_from_data( $session, $data, $dataset );
 
+	#$new_tweet->set_value( "datestamp", EPrints::Time::get_iso_timestamp() );
+
 	$new_tweet->update_triggers();
 	
 	if( scalar( keys %{$new_tweet->{changed}} ) > 0 )
@@ -352,6 +361,7 @@ sub commit
 		$self->set_value('hashtags', $self->hashtags);
 		$self->set_value('newborn', 'FALSE');
 		$self->set_value('text_is_enriched', 'FALSE');
+		$self->enrich_text;
 	}
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
@@ -509,8 +519,6 @@ sub process_json
 	my $time = str2time($tweet_data->{created_at});
 	$self->set_value('created_at',EPrints::Time::get_iso_timestamp($time));
 
-
-
 	return 1;
 }
 
@@ -536,71 +544,28 @@ sub hashtags
 	return \@tags;
 }
 
+#Note that this function does *not* look up URLs.  This is assumed done outside the object.
 sub enrich_text
 {
-        my ($self, $uri_cache, $log_data) = @_;
+        my ($self) = @_;
 
         my $message = $self->get_value('text');
         return unless $message;
 
         my $expanded_message = $message;
 
-	my @URLs;
-        my %redirects;
-        my $ua = LWP::UserAgent->new(timeout => 5);
+	my @URLS;
 
         my $finder = URI::Find->new(sub{
                 my($uri, $orig_uri) = @_;
 
-                my $target_uri = $orig_uri;
-
-		my @redirects;
-		my $response;
-
-		if ($uri_cache->{$uri})
-		{
-			@redirects = @{$uri_cache->{$uri}->{redirects}};
-			$response = $uri_cache->{$uri}->{response};
-
-			$log_data->{url_cache_lookups}++ if $log_data;
-		}
-		else
-		{
-			$response = $ua->head($uri);
-			@redirects = $response->redirects;
-
-			$uri_cache->{$uri}->{redirects} = \@redirects;
-			$uri_cache->{$uri}->{response} = $response;
-
-			$log_data->{url_follows}++ if $log_data;
-		}
-
-		if (scalar @redirects)
-		{
-			my @uri_chain;
-			foreach my $redirect (@redirects)
-			{
-				push @uri_chain, $redirect->request->uri->as_string;
-			}
-			push @uri_chain, $response->request->uri->as_string;
-
-			$target_uri = $response->request->uri->as_string;
-
-			foreach my $i (0 .. $#uri_chain-1)
-			{
-				$redirects{$uri_chain[$i]} = $uri_chain[$i+1];
-			}
-		}
-
-		push @URLs, $target_uri; 
+		push @URLS, $orig_uri;
 
                 #escape HASH and AT symbols in the urls so that regexp for user and hashtag insertion don't change them
-                $target_uri =~ s/#/ESCAPED_HASH/g;
-                $target_uri =~ s/\@/ESCAPED_AT/g;
                 $orig_uri =~ s/#/ESCAPED_HASH/g;
                 $orig_uri =~ s/\@/ESCAPED_AT/g;
 
-                return '<a href="'.$target_uri.'">'.$orig_uri.'</a>';
+                return '<a href="'.$orig_uri.'">'.$orig_uri.'</a>';
         });
         $finder->find(\$expanded_message);
 
@@ -612,15 +577,8 @@ sub enrich_text
         $expanded_message =~ s/ESCAPED_HASH/#/g;
         $expanded_message =~ s/ESCAPED_AT/\@/g;
 
+	$self->set_value('urls_from_text', \@URLS);
         $self->set_value('text_enriched', "$expanded_message"); #should have all the links expanded out now.
-
-        my $redirects = [];
-        foreach my $url (keys %redirects)
-        {
-		push @{$redirects}, {url => $url, redirects_to => $redirects{$url}};
-        }
-	$self->set_value('url_redirects', $redirects);
-	$self->set_value('target_urls', \@URLs);
 
 	$self->set_value('text_is_enriched', 'TRUE');
 }
@@ -761,7 +719,7 @@ sub data_for_export
 			$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
 		}
 	}
-	foreach my $fieldname (qw/ text_enriched target_urls url_redirects /)
+	foreach my $fieldname (qw/ text_enriched urls_from_text /)
 	{
 		$data->{eprints_value_added}->{$fieldname} = $self->value($fieldname) if ($self->is_set($fieldname));
 	}
@@ -1112,97 +1070,418 @@ sub commit
 	return( $success );
 }
 
+sub highest_tweetid
+{
+	my ($self) = @_;
+
+	my $repo = $self->repository;
+	my $db = $repo->database;
+
+	my $sql = 'SELECT tweetid FROM tweet_tweetstreams WHERE tweetstreams = ' .
+		$self->value('tweetstreamid') . ' ORDER BY tweetid DESC LIMIT 1';
+
+        my $sth = $db->prepare( $sql );
+        $sth->execute;
+
+	return $sth->fetchrow_arrayref->[0];
+}
+
+#how many tweets in this tweetstream.  Optionally, specify a tweetid (not a twitterid) and we'll only count up to there
+#Note that this took a minute to count up to 3 million!
+sub count_with_query
+{
+	my ($self, $highest_tweetid) = @_;
+
+	my $repo = $self->repository;
+	my $db = $repo->database;
+
+	my $sql = 'SELECT COUNT(*) FROM tweet_tweetstreams WHERE tweetstreams = ' . $self->value('tweetstreamid');
+	if ($highest_tweetid)
+	{
+		$sql .= " AND tweetid <= $highest_tweetid";
+	}
+
+        my $sth = $db->prepare( $sql );
+        $sth->execute;
+
+	return $sth->fetchrow_arrayref->[0];
+}
+
+sub _build_top_query_multi_field
+{
+	my ($self, $fieldname, $highest_tweetid, $limit) = @_;
+	my $tweetstreamid = $self->value('tweetstreamid');
+
+	my @r;
+	push @r, 'SELECT ';
+	push @r, "tweet_$fieldname.$fieldname, COUNT(*)";
+	push @r, 'FROM';
+	push @r, "tweet_$fieldname INNER JOIN tweet_tweetstreams ON tweet_$fieldname.tweetid = tweet_tweetstreams.tweetid";
+	push @r, 'WHERE';
+	push @r, "tweet_tweetstreams.tweetstreams = $tweetstreamid AND tweet_tweetstreams.tweetid <= $highest_tweetid";
+	push @r, "GROUP BY tweet_$fieldname.$fieldname";
+	push @r, "ORDER BY COUNT(*) DESC";
+	push @r, "LIMIT $limit";
+
+	return join(' ',@r);
+}
+
+sub _build_top_query_single_field
+{
+	my ($self, $fieldname, $highest_tweetid, $limit) = @_;
+	my $tweetstreamid = $self->value('tweetstreamid');
+
+	my @r;
+	push @r, 'SELECT ';
+	push @r, "tweet.$fieldname, COUNT(*)";
+	push @r, 'FROM';
+	push @r, "tweet INNER JOIN tweet_tweetstreams ON tweet.tweetid = tweet_tweetstreams.tweetid";
+	push @r, 'WHERE';
+	push @r, "tweet_tweetstreams.tweetstreams = $tweetstreamid AND tweet_tweetstreams.tweetid <= $highest_tweetid";
+	push @r, "GROUP BY tweet.$fieldname";
+	push @r, "ORDER BY COUNT(*) DESC";
+	push @r, "LIMIT $limit";
+
+	return join(' ',@r);
+}
+
+sub _get_top_data
+{
+	my ($self, $fieldname, $highest_tweetid, $limit) = @_;
+
+	my $repo = $self->repository;
+	my $db = $repo->database;
+	my $field = $repo->dataset('tweet')->get_field($fieldname);
+
+	return unless $field;
+
+	my $sql;
+	if ($field->get_property( "multiple" ))
+	{
+		$sql = $self->_build_top_query_multi_field($fieldname, $highest_tweetid, $limit) if $field->get_property( "multiple" );
+	}
+	else
+	{
+		$sql = $self->_build_top_query_single_field($fieldname, $highest_tweetid, $limit);
+	}
+
+	my $sth = $db->prepare( $sql );
+        $sth->execute;
+
+	my $results = {};
+	while (my $row = $sth->fetchrow_arrayref)
+	{
+		$results->{$row->[0]} = $row->[1];
+	}
+
+	return $results;
+}
+
+sub put_in_array
+{
+	my ($vals, $new_val, $reverse, $size) = @_;
+
+	push @{$vals}, $new_val;
+
+	my @tmp;
+	if ($reverse)
+	{
+		@tmp = reverse sort @{$vals}
+	}
+	else
+	{
+		@tmp = sort @{$vals}
+	}
+
+	if (scalar @tmp > $size)
+	{
+		pop @tmp;
+	}
+
+	return \@tmp;
+}
 
 #mapping a function on the dataset may not be scalable.  Check how it works with half a million tweets.  We may need to optimise this, as it's done at every update.  Direct MySQL query may be necessary.
 sub generate_tweet_digest
 {
 	my ($self) = @_;
 
-	my $tweets = $self->tweets; 
-	my $tweet_count = $tweets->count;
+	my $repo = $self->repository;
+	my $ds = $self->dataset;
 
-	if ($tweets->count)
+
+	my $db = $repo->get_database;
+
+	my @fields_to_select = qw/ tweet.tweetid tweet.twitterid /;
+
+	my $sql = "SELECT " . join(',',@fields_to_select) . " FROM tweet LEFT JOIN tweet_tweetstreams ON tweet.tweetid = tweet_tweetstreams.tweetid WHERE tweet_tweetstreams.tweetstreams = " . $self->value('tweetstreamid');
+
+	my $sth = $db->prepare( $sql );
+	$sth->execute;
+
+	my $n_old = $self->repository->config('tweetstream_tweet_renderopts','n_oldest');
+	my $n_new = $self->repository->config('tweetstream_tweet_renderopts','n_newest');
+
+	$n_old = 10 unless $n_old;
+	$n_new = 10 unless $n_new;
+
+	my $old_twitterids = [];
+	my $new_twitterids = [];
+
+	while (my $row = $sth->fetchrow_hashref)
 	{
-		$self->set_value('tweet_count', $tweet_count);
+		$old_twitterids = put_in_array($old_twitterids, $row->{twitterid}, 0, $n_old)
+			if (!(scalar @{$old_twitterids} >= $n_old) || ($row->{twitterid} < $old_twitterids->[$n_old-1]));
+		$new_twitterids = put_in_array($new_twitterids, $row->{twitterid}, 1, $n_new)
+			if (!(scalar @{$old_twitterids} >= $n_new) || ($row->{twitterid} > $new_twitterids->[$n_new-1]));
 	}
 
-	if ($tweet_count)
+print STDERR $sth->rows, "\n";
+
+use Data::Dumper;
+print STDERR Dumper $old_twitterids;
+print STDERR Dumper $new_twitterids;
+
+exit;
+
+	my $tweetstreamid = $self->value('tweetstreamid');
+
+print STDERR (scalar localtime time) . ": Want higest id\n";
+
+	my $highest_tweetid = $self->highest_tweetid;
+
+print STDERR (scalar localtime time) . ": Highest ID => $highest_tweetid\n";
+
+	my $tweet_count = $self->count_with_query($highest_tweetid);
+
+print STDERR (scalar localtime time) . ": Count => $tweet_count\n";
+
+	return unless $tweet_count; #if we have no tweets, the rest is pointless
+
+#	return if $tweet_count == $self->value('tweet_count'); #only process if we have more tweets
+
+	#tweet count
+	$self->set_value('tweet_count', $tweet_count);
+
+	#oldest and newest tweets
+	#we're ignoring the leading edge case where we will display more items than there are stored in the feed.
+	my $n_oldest = $self->repository->config('tweetstream_tweet_renderopts','n_oldest');
+	my $n_newest = $self->repository->config('tweetstream_tweet_renderopts','n_newest');
+
+	$n_oldest = 10 unless $n_oldest;
+	$n_newest = 10 unless $n_newest;
+
+	my $tweet_ds = $repo->dataset('tweet');
+print STDERR (scalar localtime time) . ": getting oldest tweets\n";
+	my $search = $tweet_ds->prepare_search(custom_order => 'twitterid', limit => $n_oldest);
+	$search->add_field($tweet_ds->get_field('tweetstreams'), $self->id);
+	$self->set_value('oldest_tweets', $search->perform_search->get_ids);
+
+print STDERR (scalar localtime time) . ": getting newest tweets\n";
+	$search = $tweet_ds->prepare_search(custom_order => '-twitterid', limit => $n_newest);
+	$search->add_field($tweet_ds->get_field('tweetstreams'), $self->id);
+	$self->set_value('newest_tweets', $search->perform_search->get_ids);
+
+print STDERR "Oldest IDS: " . join(',',@{$self->value('oldest_tweets')}) . "\n";
+print STDERR "Newest IDS: " . join(',',@{$self->value('newest_tweets')}) . "\n";
+print STDERR (scalar localtime time);
+
+exit;
+print STDERR (scalar localtime time) . "Getting top from users\n";
+
+	my $n = $repo->config('tweetstream_tops', 'top_from_users', 'n');
+	$n = 30 unless $n;
+	my $top_from_user_ids = $self->_get_top_data(
+		'from_user_id',
+		$highest_tweetid,
+		$n
+	);
+print STDERR (scalar localtime time) . "Getting top user data\n";
+
+	my $top_from_users_val = [];
+	foreach my $twitter_userid (sort {$top_from_user_ids->{$b} <=> $top_from_user_ids->{$a}} keys %{$top_from_user_ids})
 	{
-		my $n_oldest = $self->repository->config('tweetstream_tweet_renderopts','n_oldest');
-		my $n_newest = $self->repository->config('tweetstream_tweet_renderopts','n_newest');
+		my ($from_user, $profile_image_url) = _get_twitter_user_data($repo, $twitter_userid);
 
-		$n_oldest = 10 unless $n_oldest;
-		$n_newest = 10 unless $n_newest;
+		push @{$top_from_users_val}, {
+			'from_user' => $from_user,
+			'count' => $top_from_user_ids->{$twitter_userid},
+			'profile_image_url' => $profile_image_url,
+		};
+	}
 
+	$self->set_value('top_from_users', $top_from_users_val);
 
-		if ( $tweet_count < ( $n_oldest + $n_newest ))
+print STDERR (scalar localtime time) . "From Users finished\n";
+
+	foreach my $subfieldname (qw/ hashtag tweetee /)
+	{
+		my $fieldname = $subfieldname . 's';
+		my $top_fieldname = 'top_' . $fieldname;
+print STDERR (scalar localtime time) . "Generating $top_fieldname\n";
+
+		my $n = $repo->config('tweetstream_tops', $top_fieldname, 'n');
+		$n = 30 unless $n;
+		my $counts = $self->_get_top_data(
+			$fieldname,
+			$highest_tweetid,
+			$n
+		);
+
+		my $vals = [];	
+		foreach my $val (sort {$counts->{$b} <=> $counts->{$a}} keys %{$counts})
 		{
-			$self->set_value('oldest_tweets', $tweets->get_ids  )
-		}
-		else
-		{
-			my $oldest_ids = $tweets->get_ids( 0 , $n_oldest );
-			my $newest_ids = $tweets->get_ids( ($tweets->count - 1) - $n_newest, $n_newest);
-
-			$self->set_value('oldest_tweets',$oldest_ids);
-			$self->set_value('newest_tweets',$newest_ids);
-		}
-	}
-
-	#grab the counts and anything else we need
-	my $digest_data = {
-		'counter' => {},
-		'extra_data' => {},
-		'muliplicity_counts' => {}, #for CSV export, let's find out how multiple the multiple fields are.
-	};
-
-	$tweets->map(\&EPrints::DataObj::TweetStream::_generate_tweet_digest_data, $digest_data);
-
-	#top counts
-	foreach my $top_val_name (qw/ from_user hashtag target_url tweetee /)
-	{
-		my $n = $self->{session}->config('tweetstream_tops', 'top_'.$top_val_name.'s', 'n');
-
-		my $counts = [];
-		foreach my $thing (
-			sort
-			{$digest_data->{counter}->{$top_val_name.'s'}->{$b} <=> $digest_data->{counter}->{$top_val_name.'s'}->{$a}}
-			keys %{$digest_data->{counter}->{$top_val_name.'s'}}
-		)
-		{
-			last unless $n;
-			$n--;
-			my $count = { $top_val_name => $thing, count => $digest_data->{counter}->{$top_val_name.'s'}->{$thing} };
-			if ($top_val_name eq 'from_user')
-			{
-				$count->{'profile_image_url'} = $digest_data->{extra_data}->{'profile_image_url'}->{$thing};
-			}
-			push @{$counts}, $count;
+			push @{$vals}, { $subfieldname => $val, count => $counts->{$val} }; 
 		}
 
-		$self->set_value('top_' . $top_val_name . 's', $counts);
+print STDERR (scalar localtime time) . "Done\n";
+use Data::Dumper;
+print STDERR Dumper $vals;
+		$self->set_value($top_fieldname, $vals);
+	} 
+
+#target URLs -- look up some of the most popular ones (retweeted ones).
+print STDERR (scalar localtime time) . "Generating top target urls\n";
+
+	$n = $repo->config('tweetstream_tops', 'top_target_urls', 'n');	
+	$n = 30 unless $n;
+
+	my $counts = $self->_get_top_data(
+		'urls_from_text',
+		$highest_tweetid,
+		$n*10 #request ten times as much as we need because some may resolve to identical addresses
+	);
+
+	my $url_counts = {};
+print STDERR (scalar localtime time) . "Looking UP URLs\n";
+
+	my $ua = LWP::UserAgent->new(timeout => 10);
+	foreach my $short_url (sort {$counts->{$b} <=> $counts->{$a}} keys %{$counts})
+	{
+		my $response = $ua->head($short_url);
+		$url_counts->{$response->request->uri->as_string} += $counts->{$short_url};
+
+print STDERR "$short_url --> " . $response->request->uri->as_string . "\n";
+
+		last if (scalar keys %{$url_counts}) >= $n; #we've found enough
+	}
+print STDERR "\n";
+	my $vals = [];
+	foreach my $val (sort {$url_counts->{$b} <=> $url_counts->{$a}} keys %{$url_counts})
+	{
+		push @{$vals}, { 'target_url' => $val, count => $url_counts->{$val} }; 
 	}
 
-	#multiplicity (for CSV)
-	foreach my $fieldname (qw/ hashtags tweetees target_urls /)
-	{
-		$self->set_value($fieldname . '_ncols', $digest_data->{multiplicity_counts}->{$fieldname});
-	}
+print STDERR (scalar localtime time) . "Done\n";
+use Data::Dumper;
+print STDERR Dumper $vals;
+	$self->set_value('top_target_urls', $vals);
 
-	#create the time graph values
-	my $times = [];
-	#may need optimisation -- if we work out the time periods first, we can fill them up without needing to store a date for each item
-	#alternatively, just count the number of tweets per day, that should be a lot more manageable.
-	$tweets->map( sub
-	{
-		my ($repository, $ds, $tweet, $times) = @_;
-		push @{$times}, $tweet->get_value('created_at') if $tweet->is_set('created_at');
-	}, $times);
 
-	my ($period, $pairs) = $self->periodise_dates($times);
+	$self->commit;
 
-	$self->set_value('frequency_period',$period);
-	$self->set_value('frequency_values',$pairs);
+
+exit;
+
+#	my $
+
+
+#	my $top_n = {};
+#	foreach my $top_val_name (qw/ from_user hashtag target_url tweetee /)
+#	{
+#		my $n = $self->{session}->config('tweetstream_tops', 'top_'.$top_val_name.'s', 'n');
+#		$n = $n*10 if $top_val_name eq 'target_url'; #get ten times as many as we'll store -- some may point to the same URL
+#	}
+#
+#
+#
+#	my $queries = {
+#		#top_links --untestable at time of coding due to lack of data.  Assumed similar to top_hashtags
+#		top_target_urls => "SELECT tweet_urls_from_text.urls_from_text, count(*) FROM tweet_urls_from_text LEFT JOIN tweet_tweetstreams ON tweet_urls_from_text.tweetid = tweet_tweetstreams.tweetid WHERE tweet_tweetstreams.tweetstreams = $tweetstreamid AND tweet_tweetstreams.tweetid <= $highest_tweetid GROUP BY tweet_urls_from_text.urls_from_text ORDER count(*) DESC limit " . $top_n->{target_url},
+#		#top_tweeters query -- 30 minutes for 3 million tweets worth of data.
+#		top_from_users => "SELECT tweet.from_user, COUNT(tweet.from_user) FROM tweet LEFT JOIN tweet_tweetstreams ON tweet.tweetid = tweet_tweetstreams.tweetid WHERE tweet_tweetstreams.tweetstreams = $tweetstreamid AND tweet_tweetstreams.tweetid <= $highest_tweetid GROUP BY tweet.from_user ORDER BY COUNT(tweet.from_user) DESC LIMIT " . $top_n->{from_user},
+#		#top_hashtags -- <2 mins over 3 million tweets worth of data
+#		top_hashtags => "SELECT tweet_hashtags.hashtags, count(*) FROM tweet_hashtags LEFT JOIN tweet_tweetstreams ON tweet_hashtags.tweetid = tweet_tweetstreams.tweetid WHERE tweet_tweetstreams.tweetstreams = $tweetstreamid AND tweet_tweetstreams.tweetid <= $highest_tweetid GROUP BY tweet_hashtags.hashtags ORDER BY COUNT(*) DESC LIMIT " . $top_n->{top_hashtag},
+#		#top_tweetees -- <3 mins over 3 million tweets worth of data
+#		top_tweetees => "SELECT tweet_tweetees.tweetees, count(*) FROM tweet_tweetees LEFT JOIN tweet_tweetstreams ON tweet_tweetees.tweetid = tweet_tweetstreams.tweetid WHERE tweet_tweetstreams.tweetstreams = $tweetstreamid GROUP BY tweet_tweetees.tweetees ORDER BY COUNT(*) DESC LIMIT " . $top_n->{top_tweetee},
+#
+#	}
+#
+#	#how many tweets in this stream?
+#
+#
+#
+#
+#	#grab the counts and anything else we need
+#	my $digest_data = {
+#		'counter' => {},
+#		'extra_data' => {},
+#		'muliplicity_counts' => {}, #for CSV export, let's find out how multiple the multiple fields are.
+#	};
+#
+#	$tweets->map(\&EPrints::DataObj::TweetStream::_generate_tweet_digest_data, $digest_data);
+#
+#	#top counts
+#	foreach my $top_val_name (qw/ from_user hashtag target_url tweetee /)
+#	{
+#		my $n = $self->{session}->config('tweetstream_tops', 'top_'.$top_val_name.'s', 'n');
+#
+#		my $counts = [];
+#		foreach my $thing (
+#			sort
+#			{$digest_data->{counter}->{$top_val_name.'s'}->{$b} <=> $digest_data->{counter}->{$top_val_name.'s'}->{$a}}
+#			keys %{$digest_data->{counter}->{$top_val_name.'s'}}
+#		)
+#		{
+#			last unless $n;
+#			$n--;
+#			my $count = { $top_val_name => $thing, count => $digest_data->{counter}->{$top_val_name.'s'}->{$thing} };
+#			if ($top_val_name eq 'from_user')
+#			{
+#				$count->{'profile_image_url'} = $digest_data->{extra_data}->{'profile_image_url'}->{$thing};
+#			}
+#			push @{$counts}, $count;
+#		}
+#
+#		$self->set_value('top_' . $top_val_name . 's', $counts);
+#	}
+#
+#	#multiplicity (for CSV)
+#	foreach my $fieldname (qw/ hashtags tweetees urls_from_text /)
+#	{
+#		$self->set_value($fieldname . '_ncols', $digest_data->{multiplicity_counts}->{$fieldname});
+#	}
+#
+#	#create the time graph values
+#	my $times = [];
+#	#may need optimisation -- if we work out the time periods first, we can fill them up without needing to store a date for each item
+#	#alternatively, just count the number of tweets per day, that should be a lot more manageable.
+#	$tweets->map( sub
+#	{
+#		my ($repository, $ds, $tweet, $times) = @_;
+#		push @{$times}, $tweet->get_value('created_at') if $tweet->is_set('created_at');
+#	}, $times);
+#
+#	my ($period, $pairs) = $self->periodise_dates($times);
+#
+#	$self->set_value('frequency_period',$period);
+#	$self->set_value('frequency_values',$pairs);
+
+}
+
+sub _get_twitter_user_data
+{
+	my ($repo, $twitter_userid) = @_;
+
+	my $db = $repo->get_database;
+
+	my $sql = "SELECT from_user, profile_image_url from tweet where from_user_id = '$twitter_userid' limit 1";
+
+        my $sth = $db->prepare( $sql );
+        $sth->execute;
+
+        return $sth->fetchrow_array;
+
 
 }
 
@@ -1215,7 +1494,7 @@ sub _generate_tweet_digest_data
 	my $twitterid = $tweet->get_value('twitterid');
 
 #accumulate data
-	foreach my $top_val_name (qw/ from_users hashtags target_urls tweetees /)
+	foreach my $top_val_name (qw/ from_users hashtags urls_from_text tweetees /)
 	{
 		my $val;
 		if ($top_val_name eq 'from_users')
@@ -1261,16 +1540,18 @@ sub _generate_tweet_digest_data
 	}
 }
 
-
+#returns a page of tweets, or all of them if args not supplied
 sub tweets
 {
-	my ($self) = @_;
+	my ($self, $limit, $lowest_twitterid) = @_;
 
 	my $ds = $self->repository->dataset('tweet');
 
-	my $search = $ds->prepare_search;
+	my $search = $ds->prepare_search(custom_order => 'twitterid');
 	$search->add_field($ds->get_field('tweetstreams'), $self->id);
-	$search->set_property('custom_order', 'twitterid');
+
+	$search->set_property('limit', $limit) if $limit;
+	$search->add_field($ds->get_field('twitterid'), "$lowest_twitterid-") if $lowest_twitterid;
 
 	return $search->perform_search;
 }
@@ -1293,7 +1574,7 @@ sub csv_cols
 		{ fieldname => "text_enriched", ncols => 1 },
 		{ fieldname => "tweetees", ncols => ( $self->get_value('tweetees_ncols') ? $self->get_value('tweetees_ncols') : 1 ) },
 		{ fieldname => "hashtags", ncols => ( $self->get_value('hashtags_ncols') ? $self->get_value('hashtags_ncols') : 1 ) },
-		{ fieldname => "target_urls", ncols => ( $self->get_value('target_urls_ncols') ? $self->get_value('target_urls_ncols') : 1 ) },
+		{ fieldname => "urls_from_text", ncols => ( $self->get_value('target_urls_ncols') ? $self->get_value('target_urls_ncols') : 1 ) },
 	];
 }
 
@@ -1418,12 +1699,19 @@ sub remove
 	
 	my $success = 1;
 
-	my $tweets = $self->tweets;
-	$tweets->map( sub
+	my $page_size = 1000;
+	my $highest_twitterid = 0;
+	while (1)
 	{
-		my ($repo, $ds, $tweet, $tweetstream) = @_;
-		$tweet->remove_from_tweetstream($self);
-	}, $self);
+		my $tweets = $self->tweets($page_size, $highest_twitterid+1);
+		last unless $tweets->count; #exit if there are no results returned
+		$tweets->map( sub
+		{
+			my ($repo, $ds, $tweet, $tweetstream) = @_;
+			my $highest_twitterid = $tweet->value('twitterid');
+			$tweet->remove_from_tweetstream($self);
+		}, $self);
+	}
 
 	# remove tweetstream record
 	my $tweetstream_ds = $self->{session}->get_repository->get_dataset( "tweetstream" );

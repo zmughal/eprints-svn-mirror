@@ -277,6 +277,7 @@ sub create_queue_item
 			search_params => {
 				q => $search_string,
 				rpp => 100,
+				include_entities => 1,
 	#			max_id => set to first ID we get -- used for accurate paging
 	#			page => set to current page + 1 when this item is requeued
 			},

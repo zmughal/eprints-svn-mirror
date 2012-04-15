@@ -6,7 +6,7 @@ use warnings;
 use EPrints;
 
 my $ep = EPrints->new;
-my $repo = $ep->repository('epmtweepository');
+my $repo = $ep->repository('tweets');
 my $plugin = $repo->plugin('Event::EnrichTweets');
 
 $plugin->action_enrich_tweets;

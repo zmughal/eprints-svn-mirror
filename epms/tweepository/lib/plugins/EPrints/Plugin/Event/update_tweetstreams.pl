@@ -6,7 +6,7 @@ use warnings;
 use EPrints;
 
 my $ep = EPrints->new;
-my $repo = $ep->repository('epmtweepository');
+my $repo = $ep->repository('tweets');
 my $plugin = $repo->plugin('Event::UpdateTweetStreams');
 
 $plugin->action_update_tweetstreams;
