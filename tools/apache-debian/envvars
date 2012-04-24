@@ -46,3 +46,7 @@ if [ ! -f $APACHE_SSL_DIR/server.crt ]
 then
 	openssl x509 -req -days 5000 -in $APACHE_SSL_DIR/server.csr -signkey $APACHE_SSL_DIR/server.key -out $APACHE_SSL_DIR/server.crt
 fi
+
+# Suppress a warning from ulimit under non-root
+export APACHE_ULIMIT_MAX_FILES="/bin/true"
+
