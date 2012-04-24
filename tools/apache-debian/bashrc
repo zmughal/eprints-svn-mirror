@@ -1,1 +1,2 @@
-export APACHE_ENVVARS=${HOME}/eprints/apache/envvars
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export APACHE_ENVVARS=${DIR}/envvars

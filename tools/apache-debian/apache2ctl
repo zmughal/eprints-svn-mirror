@@ -1,0 +1,7 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+APACHE2CTL=/usr/sbin/apache2ctl
+
+APACHE_ENVVARS=${DIR}/envvars . $APACHE2CTL

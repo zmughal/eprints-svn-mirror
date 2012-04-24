@@ -1,9 +1,12 @@
 # envvars - default environment variables for apache2ctl
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+echo "Loading Apache from ${DIR}"
+
 # Since there is no sane way to get the parsed apache2 config in scripts, some
 # settings are defined via environment variables and then used in apache2ctl,
 # /etc/init.d/apache2, /etc/logrotate.d/apache2, etc.
-export APACHE_ROOT=${HOME}/eprints/apache
+export APACHE_ROOT=${DIR}
 export APACHE_ARGUMENTS="-d $APACHE_ROOT -f $APACHE_ROOT/httpd.conf"
 export APACHE_RUN_USER=$USER
 export APACHE_RUN_GROUP=$USER
