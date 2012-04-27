@@ -529,19 +529,6 @@ sub split_exp
 	return @sections;
 }
 
-=item $text = $searchexp->describe
-
-Returns a text string describing this search query that will be executed (for debugging).
-
-=cut
-
-sub describe
-{
-	my( $self ) = @_;
-
-	return "[No description available]";
-}
-
 1;
 
 __END__

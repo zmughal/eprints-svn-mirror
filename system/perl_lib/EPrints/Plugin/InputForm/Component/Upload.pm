@@ -228,8 +228,6 @@ sub parse_config
 {
 	my( $self, $config_dom ) = @_;
 
-	$self->SUPER::parse_config( $config_dom );
-
 	my @uploadmethods = $config_dom->getElementsByTagName( "upload-methods" );
 	if( defined $uploadmethods[0] )
 	{

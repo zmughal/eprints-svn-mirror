@@ -47,13 +47,6 @@ sub new
 	return $self;
 }
 
-sub can_search
-{
-	my( $self, $format ) = @_;
-
-	return 1; # "probably"
-}
-
 sub from_form
 {
 	my( $self ) = @_;
@@ -95,16 +88,6 @@ sub render_simple_fields
 }
 
 sub execute { shift->perform_search( @_ ) }
-
-sub describe
-{
-	my( $self ) = @_;
-
-	return $self->get_conditions->describe . "\n" . $self->get_conditions->sql(
-			session => $self->{session},
-			dataset => $self->{dataset},
-		);
-}
 
 1;
 

@@ -503,7 +503,7 @@ This field is required if no creators are listed.
     <epp:phrase id="eprint_fieldname_editors_id">Email</epp:phrase>
 
     <epp:phrase id="eprint_fieldname_date">Date</epp:phrase>
-    <epp:phrase id="eprint_fieldhelp_date">The date this eprint was completed, submitted to a publisher, published or submitted for a Ph.D.</epp:phrase>
+    <epp:phrase id="eprint_fieldhelp_date">The date this EPrint was completed, submitted to a publisher, published or submitted for a Ph.D.</epp:phrase>
     
 	<epp:phrase id="eprint_fieldname_date_type">Date Type</epp:phrase>
 	<epp:phrase id="eprint_fieldhelp_date_type">The event to which the date applies.</epp:phrase>
@@ -1144,7 +1144,7 @@ For more information see <a href="http://eprints.org/d/?keyword=MetaFields">Meta
 <epp:phrase id="metafield_fieldname_top">Top Subject Entry</epp:phrase>
 <epp:phrase id="metafield_fieldname_fields_top">Top Subject</epp:phrase>
 <epp:phrase id="metafield_fieldhelp_top">Top element of the subject hierarchy to show.</epp:phrase>
-<epp:phrase id="metafield_fieldname_datasetid">Dataset ID</epp:phrase>
+<epp:phrase id="metafield_fieldname_datasetid">Dataset Name</epp:phrase>
 <epp:phrase id="metafield_fieldname_fields_datasetid">Dataset</epp:phrase>
 <epp:phrase id="metafield_fieldhelp_datasetid">The repository dataset to link the object identifier to (e.g. "eprint").</epp:phrase>
 <epp:phrase id="metafield_fieldname_set_name">Named Set Filename</epp:phrase>
@@ -1498,9 +1498,9 @@ For more information see <a href="http://eprints.org/d/?keyword=MetaFields">Meta
 
 <!-- File -->
 	<epp:phrase id="file_fieldname_fileid">Unique file id</epp:phrase>
-	<epp:phrase id="file_fieldname_datasetid">Dataset ID</epp:phrase>
+	<epp:phrase id="file_fieldname_datasetid">Object dataset id</epp:phrase>
 	<epp:phrase id="file_fieldname_mime_type">Mime-Type</epp:phrase>
-	<epp:phrase id="file_fieldname_objectid">Object ID</epp:phrase>
+	<epp:phrase id="file_fieldname_objectid">Object id</epp:phrase>
 	<epp:phrase id="file_fieldname_bucket">File bucket</epp:phrase>
 	<epp:phrase id="file_fieldname_filename">File name</epp:phrase>
 	<epp:phrase id="file_fieldname_filesize">File size</epp:phrase>
@@ -1605,7 +1605,6 @@ For more information see <a href="http://eprints.org/d/?keyword=MetaFields">Meta
     <epp:phrase id="lib/searchfield:help_url">Enter some text to search for.</epp:phrase>
     <epp:phrase id="lib/searchfield:help_year">Enter a single year (e.g. 1999), or a range of years, e.g. `1990-2000', `1990-' or -2000'.</epp:phrase>
     <epp:phrase id="lib/searchfield:help_int">Enter a single number (e.g. 93), or a range of numbers, e.g. `17-23', `17-' or -23'.</epp:phrase>
-	<epp:phrase id="lib/searchfield:help_counter" ref="lib/searchfield:help_int"></epp:phrase>
     <epp:phrase id="lib/searchfield:help_float">Enter a single number (e.g. 3.14159), or a range of numbers, e.g. `4.8-15', `16-' or -23.42'.</epp:phrase>
     <epp:phrase id="lib/searchfield:help_itemref">Select a single record ID number (e.g. 93), or a range of numbers, e.g. `17-23', `17-' or -23'.</epp:phrase>
     <epp:phrase id="lib/searchfield:help_storable" />
@@ -1813,7 +1812,7 @@ Enter a URL to capture a file from: <epc:pin name="url"/><br/>
     <epp:phrase id="lib/user:missed_field">You haven't filled out the required <epc:pin name="field"/> field.</epp:phrase>
     <epp:phrase id="lib/user:editor_update_subject">Review Summary</epp:phrase>
     <epp:phrase id="lib/user:editor_update_mail">
-<p><epc:pin name="n"/> item(s) <a href='{$config{base_url}}{$config{userhome}}?screen=Review'>awaiting review</a>.</p>
+<p><epc:pin name="n"/> item(s) <a href='{$config{userhome}}?screen=Review'>awaiting review</a>.</p>
 <div style='border: solid 1px #99f; padding: 1em'>
 <div style='display: none'><hr /></div>
 <epc:pin name="matches"/>
@@ -1855,7 +1854,6 @@ Enter a URL to capture a file from: <epc:pin name="url"/><br/>
     <epp:phrase id="lib/utils:month_10">October</epp:phrase>
     <epp:phrase id="lib/utils:month_11">November</epp:phrase>
     <epp:phrase id="lib/utils:month_12">December</epp:phrase>
-	<epp:phrase id="lib/utils:day_00">?</epp:phrase>
 
 <!--********************************************************************** 
 User Area CGI Scripts
@@ -2425,6 +2423,20 @@ Titles and Help for the System Fields
     <epp:phrase id="eprint_fieldhelp_relation">This field describes relationships this item has to other entities. Ideally, use URIs for the target identifier.</epp:phrase>
     <epp:phrase id="eprint_fieldname_relation_uri">Target identifier</epp:phrase>
     <epp:phrase id="eprint_fieldname_relation_type">Relation type</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues">Issues</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_id">Issue ID</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_type">Issue type</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_description">Description</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_timestamp">Timestamp</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_status">Status</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_reported_by">Reported by</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_resolved_by">Resolved by</epp:phrase>
+    <epp:phrase id="eprint_fieldname_item_issues_comment">Comments</epp:phrase>
+    <epp:phrase id="eprint_fieldopt_item_issues_status_discovered">Auto Discovered</epp:phrase>
+    <epp:phrase id="eprint_fieldopt_item_issues_status_ignored">Ignored</epp:phrase>
+    <epp:phrase id="eprint_fieldopt_item_issues_status_autoresolved">Auto Resolved</epp:phrase>
+    <epp:phrase id="eprint_fieldopt_item_issues_status_reported">Reported</epp:phrase>
+    <epp:phrase id="eprint_fieldopt_item_issues_status_resolved">Resolved</epp:phrase>
 
     <epp:phrase id="eprint_fieldname_edit_lock">Lock</epp:phrase>
     <epp:phrase id="eprint_fieldname_edit_lock_user">Locked by</epp:phrase>
@@ -2543,7 +2555,7 @@ Titles and Help for the System Fields
     <epp:phrase id="subject_fieldhelp_subjectid">This is the internal key for this subject. It is used in the database and to generate the "views" filenames. It should contain only a-z, 0-9 and dash "/"and underscore "_".</epp:phrase>
 
     <epp:phrase id="history_fieldname_objectid">Object ID</epp:phrase>
-    <epp:phrase id="history_fieldname_datasetid">Dataset ID</epp:phrase>
+    <epp:phrase id="history_fieldname_datasetid">Object Type</epp:phrase>
 
     <epp:phrase id="datasetname_archive">Repository</epp:phrase>
     <epp:phrase id="datasetname_deletion">Retired</epp:phrase>
@@ -2717,7 +2729,7 @@ Titles and Help for the System Fields
     <epp:phrase id="Plugin/Import/ExplodeArchive:input:form">Select an archive from your system: <epc:pin name="input_file_upload"/> e.g. my_photos.zip<br />
 Each file inside this archive will be created as an <b>individual</b> document inside the resulting eprint.</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Import/DOI:help">Enter a DOI or DOIs, one per line e.g. doi:10.1006/jmbi.1998.2354</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:help">Enter an ISI query string:<br />
+	<epp:phrase id="Plugin/Screen/Import/ISIWoK:help">Enter an ISI query string:<br />
 AU = (Carr) and TI = (open access)<br />
 PY = 2006 and OG = (Cambridge)<br />
 </epp:phrase>
@@ -2767,18 +2779,10 @@ PY = 2006 and OG = (Cambridge)<br />
 </table>
 	</epp:phrase>
 
-	<epp:phrase id="Plugin/Screen/Import:add">Added new record to <epc:pin name="dataset" />: <epc:pin name="dataobj" /></epp:phrase>
-	<epp:phrase id="Plugin/Screen/Import:all">Added <epc:pin name="n" /> new records.</epp:phrase>
-	<epp:phrase id="Plugin/Screen/Import:results">Results</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Import:data">Paste data</epp:phrase>
 	<epp:phrase id="Plugin/Screen/Import:upload">Upload from file</epp:phrase>
-	<epp:phrase id="Plugin/Screen/Import:form">Search or query</epp:phrase>
     <epp:phrase id="Plugin/Screen/Import:input:title">Import a single item</epp:phrase>
     <epp:phrase id="Plugin/Screen/Import:bulk_input:title">Import more than one item</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Import:action:add:title">Add</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Import:action:all:title">Add all new items</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Import:action:paste:title">Paste</epp:phrase>
-    <epp:phrase id="Plugin/Screen/Import:action:upload:title">Upload</epp:phrase>
     <epp:phrase id="Plugin/Screen/Import:action:import_from:title">Import</epp:phrase>
     <epp:phrase id="Plugin/Screen/Import:action_test_data">Test without Importing</epp:phrase>
     <epp:phrase id="Plugin/Screen/Import:action_test_upload" ref="Plugin/Screen/Import:action_test_data"></epp:phrase>
@@ -3956,29 +3960,6 @@ To create a blank EPM entire a new id in the input and click <epc:phrase ref="Pl
 	<epp:phrase id="document_typename_thumbnail_medium">Thumbnail (Medium)</epp:phrase>
 	<epp:phrase id="document_typename_thumbnail_preview">Thumbnail (Preview)</epp:phrase>
 
-	<epp:phrase id="Plugin/Issues/ExactTitleDups:duplicate">Is a duplicate of <epc:pin name="duplicate"/></epp:phrase>
-	<epp:phrase id="Plugin/Issues/SimilarTitles:duplicate">Is similar to <epc:pin name="duplicate"/></epp:phrase>
-
-    <epp:phrase id="eprint_fieldname_item_issues">Issues</epp:phrase>
-	<epp:phrase id="datasetname_issue">Issues</epp:phrase>
-	<epp:phrase id="issue_fieldname_issueid">Id</epp:phrase>
-	<epp:phrase id="issue_fieldname_datasetid">Dataset ID</epp:phrase>
-	<epp:phrase id="issue_fieldname_objectid">Object ID</epp:phrase>
-	<epp:phrase id="issue_fieldname_type">Issue Type</epp:phrase>
-	<epp:phrase id="issue_fieldname_parent">Item</epp:phrase>
-	<epp:phrase id="issue_fieldname_description">Description</epp:phrase>
-	<epp:phrase id="issue_fieldname_status">Status</epp:phrase>
-	<epp:phrase id="issue_fieldname_timestamp">Timestamp</epp:phrase>
-	<epp:phrase id="issue_fieldname_reported_by">Reported By</epp:phrase>
-	<epp:phrase id="issue_fieldname_resolved_by">Resolved By</epp:phrase>
-	<epp:phrase id="issue_fieldname_comment">Comments</epp:phrase>
-
-    <epp:phrase id="issue_fieldopt_status_discovered">Auto Discovered</epp:phrase>
-    <epp:phrase id="issue_fieldopt_status_ignored">Ignored</epp:phrase>
-    <epp:phrase id="issue_fieldopt_status_autoresolved">Auto Resolved</epp:phrase>
-    <epp:phrase id="issue_fieldopt_status_reported">Reported</epp:phrase>
-    <epp:phrase id="issue_fieldopt_status_resolved">Resolved</epp:phrase>
-
 	<epp:phrase id="Plugin/InputForm/Component/Upload:error:fields">
 	<p>You must update your workflow file located in archives/[archiveid]/cfg/workflows/eprint/default.xml by replacing:</p>
 	<p><pre>&lt;component type="Upload"&gt;</pre></p>
@@ -3987,27 +3968,5 @@ To create a blank EPM entire a new id in the input and click <epc:phrase ref="Pl
 &lt;component type="Documents"&gt;
 </pre></p>
 	</epp:phrase>
-
-	<epp:phrase id="Plugin/Import/ISIWoK:field:AD">Address</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:AU">Author</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:CA">Cited Author</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:CI">City</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:CT">Conference</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:CU">Country</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:CW">Cited Work</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:CY">Cited Year</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:DT">Document Type</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:GP">Group Author</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:LA">Language</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:OG">Organisation</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:PS">Province/State</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:PY">Publication Year</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:SA">Street Address</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:SG">Sub-organisation</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:SO">Source</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:TI">Title</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:TS">Topic</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:UT">ISI UT Identifier</epp:phrase>
-	<epp:phrase id="Plugin/Import/ISIWoK:field:ZP">Zip/Postal Code</epp:phrase>
 
 </epp:phrases>

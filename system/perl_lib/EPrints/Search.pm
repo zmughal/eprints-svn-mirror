@@ -193,7 +193,7 @@ being mentioned in the description of the search.
 	"custom_order", "keep_cache", 	"cache_id", 	
 	"prefix", 	"defaults", 	"filters", 
 	"search_fields","show_zero_results", "show_help",
-	"limit", "offset",
+	"limit",
 );
 
 sub new
@@ -276,8 +276,12 @@ END
 			$show_help = $fielddata->{show_help};
 		}
 
+		my %opts = %$fielddata;
+		$opts{value} = delete $opts{default}
+			if exists $opts{default};
+
 		# Add a reference to the list
-		$self->add_field( %$fielddata,
+		$self->add_field( %opts,
 			fields => \@meta_fields,
 			show_help => $show_help,
 		);
@@ -1106,7 +1110,6 @@ sub perform_search
 		order => $self->{custom_order},
 		dataset => $self->{dataset},
 		limit => $self->{limit},
-		offset => $self->{offset},
 	);
 
 	my $results = EPrints::List->new( 
@@ -1242,25 +1245,8 @@ sub get_ids_by_field_values
 	return $self->process_distinctby( [$field] );
 }
 
-=begin InternalDoc
 
-=item $sql = $searchexp->sql
 
-Debug method to get the SQL that will be executed, see L<EPrints::Search::Condition/sql>.
-
-=end InternalDoc
-
-=cut
-
-sub sql
-{
-	my( $self ) = @_;
-
-	return $self->get_conditions->sql(
-		session => $self->{session},
-		dataset => $self->{dataset},
-	);
-}
 
 
 1;

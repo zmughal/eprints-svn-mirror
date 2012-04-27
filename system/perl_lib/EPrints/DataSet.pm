@@ -228,16 +228,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Import",
 		datestamp => "datestamp",
 	},
-	import_cache => {
-		sqlname => "import_cache",
-		class => "EPrints::DataObj::ImportCache",
-	},
-	issue => {
-		sqlname => "issue",
-		class => "EPrints::DataObj::Issue",
-		datestamp => "timestamp",
-		columns => [qw( parent description status )],
-	},
 	metafield => {
 		sqlname => "mf", # identifiers get too long
 		class => "EPrints::DataObj::MetaField",
@@ -701,7 +691,9 @@ sub field
 	my $value = $self->{field_index}->{$fieldname};
 	if (!defined $value) 
 	{
-		Carp::carp( "dataset ".$self->{id}." has no field: ".$fieldname );
+		$self->{repository}->log( 
+			"dataset ".$self->{id}." has no field: ".
+			$fieldname );
 		return undef;
 	}
 	return $self->{field_index}->{$fieldname};
@@ -820,6 +812,8 @@ sub get_sql_table_name
 
 	EPrints::abort( "Can't get a SQL table name for dataset: ".$self->{id} );
 }
+
+
 
 ######################################################################
 =pod

@@ -7,8 +7,7 @@ EPrints::Plugin::Screen::Staff::UserSearch
 
 package EPrints::Plugin::Screen::Staff::UserSearch;
 
-use EPrints::Plugin::Screen::Search;
-@ISA = ( 'EPrints::Plugin::Screen::Search' );
+@ISA = ( 'EPrints::Plugin::Screen::AbstractSearch' );
 
 use strict;
 
@@ -28,6 +27,24 @@ sub new
 	return $self;
 }
 
+sub search_dataset
+{
+	my( $self ) = @_;
+
+	return $self->{session}->get_repository->get_dataset( "user" );
+}
+
+sub search_filters
+{
+	my( $self ) = @_;
+
+	return;
+}
+
+sub allow_export { return 1; }
+
+sub allow_export_redir { return 1; }
+
 sub can_be_viewed
 {
 	my( $self ) = @_;
@@ -35,31 +52,42 @@ sub can_be_viewed
 	return $self->allow( "staff/user_search" );
 }
 
-sub properties_from
+sub from
 {
 	my( $self ) = @_;
 
-	$self->{processor}->{dataset} = $self->repository->dataset( "user" );
-	$self->{processor}->{searchid} = "staff";
+	my $sconf = $self->{session}->get_repository->get_conf( "search", "user" );
+		
+	$self->{processor}->{sconf} = $sconf;
 
-	$self->SUPER::properties_from;
+	$self->SUPER::from;
 }
 
-sub default_search_config
+sub _vis_level
 {
 	my( $self ) = @_;
 
-	return {
-		%{ $self->repository->config( "search", "user" ) },
-		staff => 1,
-	};
+	return "staff";
 }
 
-# suppress dataset=
-sub hidden_bits
+sub get_controls_before
 {
-	return shift->EPrints::Plugin::Screen::AbstractSearch::hidden_bits();
+	my( $self ) = @_;
+
+	return $self->get_basic_controls_before;	
 }
+
+sub render_result_row
+{
+	my( $self, $session, $result, $searchexp, $n ) = @_;
+
+	return $result->render_citation_link_staff(
+			$self->{processor}->{sconf}->{citation},  #undef unless specified
+			n => [$n,"INTEGER"] );
+}
+
+
+
 
 =head1 COPYRIGHT
 
