@@ -1,0 +1,70 @@
+OAI Harvester for EPrints 3.2+ 
+
+
+Keeps your repository in-sync with another repository via OAI-PMH.
+
+Note that these modules contain only the abstract classes, you will need to write your own module which translate whatever XML format you're harvesting to EPrints data structure. An example is provided under cfg/plugins/EPrints/Plugin/Import/OAIPMH/Stub.pm.stub.
+
+Install
+-------
+
+* As 'root' user:
+
+cpan HTTP::OAI
+
+* As 'eprints' user:
+
+cp -rf bin/ cfg/ /opt/eprints3/archives/ARCHIVEID/
+
+/opt/eprints3/bin/epadmin update_database_structure ARCHIVEID
+
+Restart Web Server.
+
+Usage
+-----
+
+1- Create a module which transforms XML as explained in the intro of this file. For an example, see OAIPMH/OAI_DC shipped with this package. 
+
+2- Edit the configuration file 'cfg/cfg.d/oai_harvester.pl' and create a new configuration for the service you want to harvest (an example is provided in that file) eg:
+
+$c->{oai_harvester}->{service_name} = {
+	url => 'http://oaiserver.com/oai',
+	set => 'that_set'
+	default_values => sub {
+		my( $session, $epdata, $header ) = @_;
+
+		$epdata->{userid} = 1234;	# user '1234' will own all imported publications
+		$epdata->{eprint_status} = 'archive';	# imported publications will go straight to the live archive
+		# etc...
+	},
+};
+
+3- Run (or setup in cron) bin/oai/harvest periodically:
+
+bin/oai/harvest ARCHIVEID --plugin=OAIPMH::OAI_DC --conf=service_name
+
+That's it!
+
+
+CHANGELOG
+
+** 4 May 2012 **
+
+- Improved way of getting the XML's first child courtesy of Tim Brody
+
+** 17 April 2012 **
+
+- Bug fixed in OAI_DC.pm courtesy of Denis Pitzalis
+
+** 8 July 2011 **
+
+- Added example OAI_DC
+- Extra safeguard in bin/oai/harvest if the configuration used doesn't exist
+- Added method in abstract class to download/create document easily
+
+
+** 24 June 2011 **
+
+
+Initial version
+-

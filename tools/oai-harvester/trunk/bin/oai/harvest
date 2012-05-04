@@ -1,0 +1,147 @@
+#!/usr/bin/perl -w -I/opt/eprints3/perl_lib
+
+use POSIX qw(strftime);
+use strict;
+
+use EPrints;
+
+$|=1;
+
+my $session = new EPrints::Session( 1, $ARGV[0] );
+unless( defined $session )
+{
+	&_show_help;
+	exit( 1 );
+}
+
+my $FORCE = 0;
+my $SET = undef;
+my $FROM_DATE = undef;
+my $PLUGIN_ID = undef;
+my $CONF_ID = undef;
+
+my $n=0;
+foreach my $arg (@ARGV)
+{
+	next if( $n++ == 0 );	# for now arg[0] = repo id
+
+	if( $arg eq '--help' )
+	{
+		&_show_help;
+		$session->terminate;
+		exit;
+	}
+
+	if( $arg eq '--force' )
+	{
+		$FORCE = 1;
+		next;
+	}
+	elsif( $arg =~ /^--plugin=(.*)$/ )
+	{
+		next unless( defined $1 && length $1 );
+		$PLUGIN_ID = $1;
+		next;
+	}
+	elsif( $arg =~ /^--conf=(\w+)$/ )
+	{
+		next unless( defined $1 && length $1 );
+		$CONF_ID = $1;
+		next;
+	}
+	elsif( $arg =~ /^--set=(\w+)$/ )
+	{
+		next unless( defined $1 && length $1 );
+		$SET = $1;
+		next;
+	}
+	elsif( $arg =~ /^--from=(.*)$/ )
+	{
+		next unless( defined $1 && length $1 );
+		$FROM_DATE = $1;
+		next;
+	}
+}
+
+unless( $FORCE )
+{
+	my $sure = EPrints::Utils::get_input_confirm( "Are you sure you want to make bulk changes to the eprint table in the $ARGV[0] repository" );
+	unless( $sure )
+	{
+		print "Aborting then.\n\n";
+		$session->terminate();
+		exit;
+	}
+}
+
+unless( defined $PLUGIN_ID && defined $CONF_ID )
+{
+	&_show_help;
+	$session->terminate;
+	exit;
+}
+
+my $plugin = $session->plugin( "Import::$PLUGIN_ID" );
+
+if( !defined $plugin )
+{
+	print STDERR "Plugin $PLUGIN_ID is not available.\n";
+	$session->terminate;
+	exit 1;
+}
+	
+if( $plugin->broken )
+{
+	print STDERR "Plugin $PLUGIN_ID could not run because:\n";
+	print STDERR $plugin->error_message."\n";
+	$session->terminate;
+	exit 1;
+}
+
+# Test that the conf exists
+unless( EPrints::Utils::is_set( $session->config( 'oai_harvester', $CONF_ID ) ) )
+{
+	print STDERR "\nError: configuration '$CONF_ID' does not exist.\n";
+	$session->terminate;
+	exit 1;
+}
+
+my %opts;
+$opts{set} = $SET if( defined $SET );
+$opts{from} = $FROM_DATE if( defined $FROM_DATE );
+
+my $list = $plugin->input_conf( $CONF_ID, %opts );
+
+my $stats = $plugin->{stats};
+
+print <<END;
+
+Items created: $stats->{created}
+Items updated: $stats->{updated}
+Items deleted: $stats->{deleted}
+
+END
+
+$session->terminate();
+exit;
+
+
+sub _show_help
+{
+
+	print <<END;
+	
+Usage: harvest ARCHIVE_ID --plugin=PLUGIN_ID --conf=CONF_ID [--set=SETNAME] [--from=FROM_DATE] [--force]
+
+	ARCHIVE_ID: the 'id' of your repository
+	PLUGIN_ID: which plugin to use to harvest the remote website (format will be OAIPMH::MyFormat)
+	CONF_ID: the id of the conf to use, must be defined in cfg.d/oai_harvester.pl under \$c->{oai}->{harvester}->{CONF_ID} ...
+
+	SETNAME: the OAI set to harvest
+	FROM_DATE: format is YYYY-MM-DD, harvest from that date
+	--force: doesn't ask for confirmation
+
+END
+
+}
+
