@@ -1,0 +1,669 @@
+#!@PERL_PATH@ -w
+
+######################################################################
+#
+# EPrints 2 installer : Handles upgrading, simple command detection,
+# and the creation of the SystemSettings.pm file. This doesn't do the
+# mySQL install, etc. - you'll need the SuperInstaller for that.
+#
+######################################################################
+#
+#  __COPYRIGHT
+#
+# Copyright 2008 University of Southampton. All Rights Reserved.
+#
+#  __LICENSE__
+#
+######################################################################
+
+my %from_configure;
+$from_configure{"dist_path"}="@DIST_PATH@";
+$from_configure{"perl"}="@PERL_PATH@";
+$from_configure{"prefix"}="@PREFIX@";
+$from_configure{"user"}="@INSTALL_USER@";
+$from_configure{"group"}="@INSTALL_GROUP@";
+$from_configure{"virtualhost"}="@VIRTUALHOST@";
+
+######################################################################
+
+######################################################################
+
+if( defined $ARGV[0] ) { print "Destination directory overridden to: $ARGV[0]\n"; }
+elsif( defined $ENV{'PREFIX'} ) { print "Destination directory overridden to: $ENV{PREFIX}\n"; }
+
+use strict;
+use Cwd;
+use Digest::MD5;
+use Data::Dumper;
+use File::Copy;
+
+#
+# Set the umask so nothing goes odd on systems which
+# change it.
+#
+umask( 0022 );
+
+#
+# Grab version id number from VERSION file.
+#
+
+my( $version_id, $version ) = read_version( $from_configure{"dist_path"}."/VERSION" );
+
+### Trim perfix if needed 
+
+if( $from_configure{"prefix"} =~ s#/$## )
+{
+	print "Removing trailing slash from prefix.\n";
+}
+
+### Print out some key information, which is bound to
+### cause problems if incorrect.
+
+# shorter variables for clarity later
+my $from_path = $from_configure{dist_path};
+my $prefix = $from_configure{prefix};
+my $to_path = $from_configure{prefix};
+# Implement DESTDIR support for GNU compatibility.
+# If an argument is specified install there instead.
+if( defined $ARGV[0] ) { $to_path = $ARGV[0]; }
+elsif( defined $ENV{'PREFIX'} ) { $to_path = $ENV{'PREFIX'}; }
+
+print "Installing from: $from_path\n";
+
+my $system_settings_file = "$to_path/perl_lib/EPrints/SystemSettings.pm";
+my $upgrade = 0;
+if( -e $system_settings_file )
+{
+	$upgrade = 1;
+	print "Previous install detected at install location.\n";
+	print "Upgrading to: $to_path\n";
+}
+else
+{
+	print "Installing to: $to_path\n";
+	print "Installing as user: ".$from_configure{"user"}."\n";
+	print "Installing as group: ".$from_configure{"group"}."\n";
+}
+
+my $systemsettings = {};
+
+$systemsettings->{"version_history"} = [ $version_id ];
+
+$systemsettings->{executables}->{perl} = $from_configure{perl};
+
+$systemsettings->{"file_perms"} = "0664" unless defined $systemsettings->{"file_perms"};
+$systemsettings->{"dir_perms"} = "02775" unless defined $systemsettings->{"dir_perms"};
+
+if( $upgrade )
+{
+	unless( require $system_settings_file )
+	{
+		print <<END;
+Failed to read previous values from system settings file:
+$system_settings_file - Aborting.
+END
+		exit 1;
+	}
+
+	print "Previous version of eprints is: ";
+	print $EPrints::SystemSettings::conf->{"version_id"}."\n";
+
+	# create a minimal version history if there was not one already
+	if( !defined $EPrints::SystemSettings::conf->{"version_history"} )
+	{
+		$EPrints::SystemSettings::conf->{"version_history"} =
+			[ $EPrints::SystemSettings::conf->{"version_id"} ];
+	}
+
+	# Current values take precedence.
+	foreach( keys %$EPrints::SystemSettings::conf )
+	{
+		if( defined $systemsettings->{$_} )
+		{
+			$systemsettings->{$_} = merge_fields(
+				$EPrints::SystemSettings::conf->{$_}, 
+				$systemsettings->{$_} );
+		}
+		else
+		{
+			$systemsettings->{$_} = 
+				$EPrints::SystemSettings::conf->{$_};
+		}
+	}
+	$systemsettings->{"user"} = $EPrints::SystemSettings::conf->{"user"};
+	$systemsettings->{"group"} = $EPrints::SystemSettings::conf->{"group"};
+	foreach( keys %{$systemsettings->{invocation}} )
+	{
+		my $value = $systemsettings->{invocation}->{$_};
+		my $newvalue = $value;
+		$newvalue =~ s/'(\$\([A-Z]+\))'/$1/g;
+		if( $value ne $newvalue )
+		{
+			print "removing quotes from SystemSettings::conf->{invocation}->{$_}\n";
+			print "was: $value\n";
+			print "now: $newvalue\n";
+		}
+		$systemsettings->{invocation}->{$_} = $newvalue;
+	}
+
+	print "Upgrading as user: ".$systemsettings->{"user"}."\n";
+	print "Upgrading as group: ".$systemsettings->{"group"}."\n";
+	$upgrade = 1;
+}
+else
+{	
+	$systemsettings->{"user"} = $from_configure{"user"};
+	$systemsettings->{"group"} = $from_configure{"group"};
+	$systemsettings->{"base_path"} = $from_configure{"prefix"};
+}
+
+$systemsettings->{"version_id"} = $version_id;
+$systemsettings->{"version"} = $version;
+
+set( 'smtp_server', \%from_configure, $systemsettings, '' );
+set( 'show_ids_in_log', \%from_configure, $systemsettings, 0 );
+
+my(undef,undef,$uid) = getpwnam($systemsettings->{"user"});
+my(undef,undef,$gid) = getgrnam($systemsettings->{"group"});
+
+# Warn if we can't install as the requested user/group
+
+unless( $uid )
+{
+	warn("Warning! User $systemsettings->{user} doesn't exist. You probably need to do: useradd $systemsettings->{user}\n");
+}
+
+unless( $gid )
+{
+	warn("Warning! Group $systemsettings->{group} doesn't exist. You probably need to do: groupadd $systemsettings->{group}\n");
+}
+
+unless( $< == 0 or (defined $uid and $uid == $<) )
+{
+	warn("Warning! It looks like you're trying to install as user $systemsettings->{user} without root. You probably need to do: sudo $0\n");
+}
+
+$uid = $< || 0 unless defined $uid;
+$gid = $( || 0 unless defined $gid;
+
+my %oldhashes = ();
+
+# If we are upgrading and have a digest file, read the digests into a hash
+# to check them against the files in place to see if they've changed.
+
+if( $upgrade )
+{
+	my $sigfile = "$to_path/SIGNATURES";
+	if (-e $sigfile )
+	{
+		print "Loading SIGNATURES...\n";
+		open(SIGS, $sigfile ) || die "Can't open $sigfile";
+		binmode(SIGS);
+		foreach(<SIGS>)
+		{
+			chomp;
+			my( $file, $digest ) = split( " ", $_);
+			$oldhashes{$file} = $digest;
+		}
+		close(SIGS);
+	}
+	else
+	{
+		print "Upgrading, but could not find an old SIGNATURES file.\n";
+	}
+}
+
+
+
+
+
+
+#
+# Actual install starts here.
+#
+ensure_dir( $to_path, $uid, $gid, 0755 );
+ensure_dir( "$to_path/archives", $uid, $gid, 02775 );
+ensure_dir( "$to_path/testdata", $uid, $gid, 0755 );
+
+my $newsighash = {};
+
+my @dirs = (
+	bin => [0755, $uid, $gid, 0755],
+	cgi => [0644, $uid, $gid, 0755],
+	cfg => [0644, $uid, $gid, 0755],
+	lib => [0664, $uid, $gid, 02775], # epms installed as 'apache'
+	perl_lib => [0644, $uid, $gid, 0755],
+	"testdata/bin" => [0755, $uid, $gid, 0755],
+	"testdata/data" => [0644, $uid, $gid, 0755],
+	tests => [0644, $uid, $gid, 0755],
+	var => [0664, $uid, $gid, 02775], # indexer may run as 'apache'
+);
+
+my @base_files = ( "VERSION", "CHANGELOG", "COPYING", "NEWS", "AUTHORS", "README" ); 
+
+foreach my $i (grep { $_ % 2 == 0 } 0 .. $#dirs)
+{
+	install_dir($from_path, $dirs[$i], @{$dirs[$i+1]}, $to_path, \%oldhashes, $newsighash, $prefix);
+}
+foreach my $file (@base_files)
+{
+	install_file($from_path, $file, undef, 0644, $uid, $gid, $to_path, \%oldhashes, $newsighash, $prefix );
+}
+
+foreach my $oldfile ( keys %oldhashes )
+{
+	next if defined $newsighash->{$oldfile};
+
+	my $filepath = "$to_path/$oldfile";
+
+	next if( !-e $filepath );
+
+	my $repl_digest = get_digest( $filepath );
+
+	if( $repl_digest ne $oldhashes{$oldfile} )
+	{
+		move_out_of_harms_way( $filepath );
+	}
+	else
+	{
+		print "Removing $filepath\n";
+		unlink( $filepath );
+	}
+}
+
+
+write_sigs( $to_path, $newsighash, $uid, $gid );
+
+
+save_settings( 
+	$system_settings_file, 
+	$systemsettings, 
+	$uid, 
+	$gid );
+
+# Warnings!
+if( $upgrade )
+{
+	print "Upgraded eprints at: $to_path\n";
+}
+else
+{
+	print "Installed EPrints to: $to_path\n";
+}
+my $soapdir = "$to_path/cgi/soap";
+if( -d $soapdir )
+{
+	print <<END;
+
+WARNING: 3.0-beta-1 soap directory detected!
+The files in this directory represent a security hole and therefore it
+is recommended that you remove this directory. The installer will not 
+do this automatically.
+Suggested action:
+ rm -rf $soapdir
+END
+}
+
+if( $systemsettings->{smtp_server} eq "" && !$upgrade )
+{
+	print <<END;
+
+WARNING: You have not set a value for smtp_server. Edit the
+SystemSettings file and set the smtp_server option to be your local 
+SMTP server. If you don't then outgoing email won't work.
+END
+}
+
+
+
+print "\n";
+
+exit;
+
+
+
+
+
+
+
+
+
+
+
+######################################################################
+# 
+# set( $param, $hash_from_configure, $systemsettings, $default )
+# 
+# Set the $param param in systemsettings to the $param passed
+# in from configure.
+# If nothing was passed in by configure and a value is not already
+# set, then set it to the $default.
+#
+######################################################################
+
+sub set
+{
+	my( $param, $from_configure, $systemsettings, $default ) = @_;
+
+	if( defined $from_configure->{$param} && $from_configure->{$param} ne '' )
+	{
+		# a setting has actually been configured by configure
+		$systemsettings->{$param} = $from_configure->{$param};
+		return;
+	}
+
+	if( !defined $systemsettings->{$param} )
+	{
+		# no setting is defined at all, not even ""
+		# so use the default
+		$systemsettings->{$param} = $default;
+		return;
+	}
+
+	return;
+}
+
+
+
+
+sub save_settings
+{
+	my( $sysfile, $syshash, $uid, $gid ) = @_;
+
+	my $dumper = Data::Dumper->new( 
+		[ $syshash ] , 
+		[ 'EPrints::SystemSettings::conf' ] );
+
+	print "Writing $sysfile\n";
+	unless( open(FILEOUT, ">".$sysfile) )
+	{
+		print "Failed to write $sysfile\n";
+		exit 1;
+	}
+	binmode(FILEOUT);
+	print FILEOUT <<SPIEL;
+######################################################################
+#
+# These are your system settings (as autogenerated by the installer).
+# We suggest that you do not alter these, as future installers will
+# probably override them.
+# 
+######################################################################
+#
+# This file is part of EPrints 3.
+#
+# EPrints 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# EPrints 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with EPrints 2; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+######################################################################
+
+# This file should only be use'd by EPrints::Config
+package EPrints::SystemSettings;
+
+SPIEL
+
+	print FILEOUT $dumper->Dump();
+	print FILEOUT "\n1;";
+	close(FILEOUT);
+
+	chmod( 0644, $sysfile );
+	chown($uid, $gid, $sysfile );
+}
+
+sub merge_fields
+{
+	my($ref1, $ref2) = @_;
+	my %outref;
+	my $type = ref $ref1;
+	if($type eq "HASH")
+	{
+		# $ref1 takes precedence
+		foreach(keys %$ref1)
+		{
+			$outref{$_} = $ref1->{$_};
+		}
+		foreach(keys %$ref2)
+		{
+			$outref{$_} = $ref2->{$_} unless defined $outref{$_};
+		}
+		return \%outref;
+	}
+	elsif($type eq "ARRAY")
+	{
+		my $out = [];
+		my $done = {};
+		if (defined $ref1)
+		{
+			foreach(@$ref1)
+			{
+				$done->{$_} = 1;
+				push @{$out}, $_;
+			}
+		}
+		if (defined $ref2)
+		{
+			foreach(@$ref2)
+			{
+				next if( $done->{$_} );
+				push @{$out}, $_;
+			}
+		}
+		return $out;
+	}
+	else
+	{
+		return $ref1;
+	}
+	
+}
+
+
+
+# Post installation bits
+
+sub write_sigs
+{
+	my( $dir, $sigs, $uid, $gid ) = @_;
+
+	my $sigfile = $dir.'/SIGNATURES';
+	# Dump out signature file
+	unless( open (SIGOUT, ">".$sigfile ) )
+	{
+		print "Unable to write $sigfile: $!\n";
+		exit 1;
+	}
+	binmode(SIGOUT);
+		
+	foreach( sort keys %{$sigs} )
+	{
+		print SIGOUT $_." ".$sigs->{$_}."\n";
+	}
+	close(SIGOUT);
+	chown($uid, $gid, $sigfile );
+	chmod( 0664, $sigfile );
+}
+
+# Calculate the MD5 digest of a file.
+
+sub get_digest
+{
+	my($file) = @_;
+	unless( open(FILE, $file) )
+	{
+		print "Can't open '$file': $!\n";
+		exit 1;
+	}
+	my $outdigest = new Digest::MD5;
+	$outdigest->addfile( \*FILE );
+	close(FILE);
+	return $outdigest->hexdigest;
+}
+
+# Install $file from directory $dir into $dest. The permissions
+# from $perms are set, and the group and user are set from $group
+# and $user. The %hash is used for MD5 comparisions - currently
+# not doing anything active, but checking is enabled.
+
+sub install_file
+{
+	my($distdir, $file, $dir, $perms, $uid, $gid, $dest, $sighash, $newsighash, $prefix ) = @_;
+
+	my $relpath = $file;
+	if( defined $dir ) { $relpath = "$dir/$file"; }
+	if( !defined $dir ) { $dir = ""; }
+
+	return unless (-e $distdir."/$relpath");
+
+	$newsighash->{$relpath} = get_digest("$distdir/$relpath");
+	
+	if ($sighash->{"$relpath"} && -e "$dest/$relpath")
+	{
+		my $repl_digest = get_digest("$dest/$relpath");
+		if ($repl_digest ne $sighash->{"$relpath"})
+		{
+			move_out_of_harms_way( "$dest/$relpath" );
+		}
+	}
+
+
+	copy("$distdir/$relpath", "$dest/$relpath");
+
+	chmod($perms, "$dest/$relpath");
+	chown($uid, $gid, "$dest/$relpath");
+}
+
+sub install_dir
+{
+	my( $distdir, $dir, $fmode, $uid, $gid, $dmode, $dest, $sighash, $newsighash, $prefix ) = @_;
+
+	unless( opendir(INDIR, $dir) )
+	{
+		print "Unable to open package directory: $dir. $!\n";
+		exit 1;
+	}
+	my @dirs = ();
+	my @files = ();
+	ensure_dir("$dest/$dir", $uid, $gid, $dmode);
+
+	while(my $item = readdir(INDIR))
+	{
+		next if $item =~ /^\./;
+		if( -d $distdir."/$dir/$item" ) 
+		{ 
+			push(@dirs, $item); 
+		}
+		else 
+		{ 
+			push(@files, $item); 
+		}
+	}
+	closedir(INDIR);
+	foreach(@files)
+	{
+		install_file($distdir, $_, $dir, $fmode, $uid, $gid, $dest, $sighash, $newsighash, $prefix );
+	}
+	foreach(@dirs)
+	{
+		install_dir($distdir, "$dir/".$_, $fmode, $uid, $gid, $dmode, $dest, $sighash, $newsighash, $prefix );
+	}
+}
+
+##############################################################
+
+sub move_out_of_harms_way
+{
+	my( $file ) = @_;
+
+	my @date = localtime;
+	my $safename = sprintf( 
+		"%s.backup.%04d-%02d-%02d", 
+		$file, 
+		$date[5]+1900, 
+		$date[4]+1, 
+		$date[3] );
+
+	my $n = 0;
+	while( -e $safename )
+	{
+		++$n;
+		$safename = sprintf( 
+			"%s.backup.%04d-%02d-%02d.%d", 
+			$file, 
+			$date[5]+1900, 
+			$date[4]+1, 
+			$date[3],
+			$n );
+	}
+
+	rename $file, $safename;
+
+	print "\n$file has been modified.\nSaving old version as $safename\n";
+}
+
+
+sub read_version
+{
+	my( $vfile ) = @_;
+
+	unless( open(VERSIONIN, $from_configure{"dist_path"}."/VERSION") )
+	{
+		print "No VERSION file in distribution - invalid distribution?\n";
+		exit 1;
+	}
+	binmode(VERSIONIN);
+	my $version_id = <VERSIONIN>;
+	unless( defined($version_id) ) 
+	{
+		print "Undefined version number.\n";
+		exit 1;
+	}
+	chomp($version_id);
+	my $version = <VERSIONIN>;
+	unless( defined($version) ) 
+	{
+		print "Undefined version description.\n"; 
+		exit 1;
+	}
+	chomp($version);
+	close(VERSIONIN);
+
+	return( $version_id, $version );
+}
+
+sub ensure_dir
+{
+	my( $dir, $uid, $gid, $mode ) = @_;
+
+	if( !-d $dir ) 
+	{
+		if( !mkdir($dir) )
+		{
+			print "Unable to make dir: $dir.\n";
+			print "Aborting!\n";
+			exit 1;
+		}
+	}		
+	
+	chown($uid, $gid, $dir);
+
+	unless( chmod($mode, $dir) )
+	{
+		print "Unable to chmod ".$dir." : $!\n"; 
+		print "Aborting!\n";
+		exit 1;
+	}
+
+	return;
+}
+
