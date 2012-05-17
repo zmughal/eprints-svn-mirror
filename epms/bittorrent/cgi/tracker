@@ -1,0 +1,250 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use EPrints;
+use Bencode qw( bencode bdecode );
+use EPrints::Const qw( :http );
+
+my $eprints = EPrints->new;
+my $repo = $eprints->current_repository;
+exit if !defined $repo;
+
+use constant BT_EVENTS => {
+		started => \&peer_started,
+		stopped => \&peer_stopped,
+		completed => \&peer_started,
+		'' => \&peer_started,
+	};
+
+use constant PEER_TIMEOUT => 600; # 10 minutes
+
+my $r = $repo->get_request;
+
+my $uri = URI->new;
+$uri->query( $r->args );
+my %query = $uri->query_form;
+
+my $info_hash = $query{info_hash} || "";
+($info_hash) = unpack("H*", $info_hash );
+
+my $path_info = $r->path_info;
+
+warn $r->path_info."?".$r->args;
+
+if( $path_info eq "/announce" )
+{
+	&announce( $repo, $info_hash, \%query );
+}
+elsif( $path_info eq "/scrape" )
+{
+	&scrape( $repo, $info_hash, \%query );
+}
+elsif( $path_info =~ m{^/seed/(.+)} )
+{
+	&seed( $repo, $1 );
+}
+elsif( $path_info eq "" )
+{
+	$repo->redirect( $repo->get_url(
+			host => 1,
+			path => "cgi",
+			query => 1,
+			"tracker/announce"
+		) );
+}
+else
+{
+	$repo->not_found;
+	exit;
+}
+
+sub announce
+{
+	my( $repo, $info_hash, $q ) = @_;
+
+	my $dataset = $repo->dataset( "bittorrent" );
+
+	my $event = $q->{event} || '';
+
+	# announce requires a valid event
+	my $f = BT_EVENTS->{$event};
+	return bad_request( $repo, HTTP_BAD_REQUEST, "Invalid 'event' requested" )	
+		if !defined $f;
+
+	# announce requires an existing bittorrent entry (we're not a public
+	# tracker)
+	my $info = $dataset->dataobj( $info_hash );
+	return bad_request( $repo, HTTP_NOT_FOUND, "Invalid 'info_hash' requested" )
+		if !defined $info;
+
+	# execute the required action
+	my $rc = &$f( $repo, $info, $q );
+	return $rc if $rc != HTTP_OK;
+
+	# tell the client about other peers (if any)
+	my %response = (
+			interval => int(PEER_TIMEOUT / 2),
+			'min interval' => int(PEER_TIMEOUT / 4),
+			complete => 0,
+			incomplete => 0,
+			peers => [],
+		);
+
+	my $peers = $info->value( "peers" );
+	for(@$peers)
+	{
+		if( defined($_->{left}) && $_->{left} == 0 )
+		{
+			$response{complete}++;
+		}
+		else
+		{
+			$response{incomplete}++;
+		}
+	}
+
+	$q->{numwant} = 50 if !defined $q->{numwant};
+	$q->{numwant} += 0;
+	$q->{numwant} = 50 if $q->{numwant} < 0 || $q->{numwant} > 50;
+
+	if( $q->{compact} )
+	{
+		$response{peers} = $info->compact_peers( $q->{numwant} );
+	}
+	else
+	{
+		$response{peers} = $info->peers( $q->{numwant} );
+	}
+
+	$repo->get_request->content_type( "text/plain; charset=ISO-8859-1" );
+	print Bencode::bencode( \%response );
+}
+
+# most trackers allow listing of all torrents by omitting the 'info_hash'
+# argument, whereas we don't want to expose data unless the user can already
+# access the relevant .torrent file (not particular secure)
+sub scrape
+{
+	my( $repo, $info_hash ) = @_;
+
+	my $dataset = $repo->dataset( "bittorrent" );
+
+	my %response = (
+			files => {},
+		);
+
+	# FIXME: support multiple info_hash arguments
+	$dataset->search(filters => [
+		{
+			meta_fields => [qw( bittorrentid )],
+			value => $info_hash,
+			match => "EX",
+		},
+	])->map(sub {
+		(undef, undef, my $info) = @_;
+
+		my $file = $response{files}{$info->id} = {
+				complete => 0,
+				downloaded => 0,
+				incomplete => 0,
+			};
+
+		for(@{$info->value( "peers" )})
+		{
+			$_->{left} == 0 ? $file->{complete}++ : $file->{incomplete}++;
+		}
+	});
+
+	$repo->get_request->content_type( "text/plain; charset=ISO-8859-1" );
+	print Bencode::bencode( \%response );
+}
+
+# support Web-seeds by redirecting to the document file itself
+sub seed
+{
+	my( $repo, $path ) = @_;
+
+	( my $name, $path ) = split '/', $path, 2;
+	return $repo->not_found if $name !~ /-0*(\d+)-0*(\d+)$/;
+
+	$repo->redirect( $repo->get_url(
+			host => 1,
+			path => "static",
+			"$1/$2/$path"
+		) );
+}
+
+sub bad_request
+{
+	my( $repo, $status, $message ) = @_;
+
+	my $r = $repo->get_request;
+
+	$r->status( $status );
+	$r->content_type( "text/plain; charset=ISO-8859-1" );
+	print $message;
+
+	return $status;
+}
+
+# add the peer to the list of tracked peers for this torrent
+sub peer_started
+{
+	my( $repo, $info, $q ) = @_;
+
+	my $peer_ip = $repo->get_request->connection->remote_ip;
+	my $port = $q->{port};
+
+	return bad_request( $repo, HTTP_BAD_REQUEST, "Requires 'port' argument" )
+		if !$port || $port =~ /[^0-9]/;
+
+	my @peers;
+	for(@{$info->value( "peers" )})
+	{
+		next if !defined $_->{ip} || !defined $_->{port};
+		next if $_->{ip} eq $peer_ip && $_->{port} eq $port;
+		next if (time() - $_->{mtime}) > PEER_TIMEOUT;
+		push @peers, $_;
+	}
+
+	push @peers, {
+		mtime => time(),
+		ip => $peer_ip,
+		port => $port,
+		(map {
+			$_ => $q->{$_}
+		} qw( left uploaded downloaded peer_id ))
+	};
+
+	$info->set_value( "peers", \@peers );
+	$info->commit;
+
+	return HTTP_OK;
+}
+
+# remove the peer from the list of tracked peers for this torrent
+sub peer_stopped
+{
+	my( $repo, $info, $q ) = @_;
+
+	my $peer_ip = $repo->get_request->connection->remote_ip;
+	my $port = $q->{port};
+
+	return bad_request( $repo, HTTP_BAD_REQUEST, "Requires 'port' argument" )
+		if !$port || $port =~ /[^0-9]/;
+
+	my @peers;
+	for(@{$info->value( "peers" )})
+	{
+		next if !defined $_->{ip} || !defined $_->{port};
+		next if $_->{ip} eq $peer_ip && $_->{port} eq $port;
+		push @peers, $_;
+	}
+
+	$info->set_value( "peers", \@peers );
+	$info->commit;
+
+	return HTTP_OK;
+}
