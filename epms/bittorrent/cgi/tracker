@@ -31,7 +31,7 @@ my $info_hash = $query{info_hash} || "";
 
 my $path_info = $r->path_info;
 
-warn $r->path_info."?".$r->args;
+#warn $r->path_info."?".$r->args;
 
 if( $path_info eq "/announce" )
 {

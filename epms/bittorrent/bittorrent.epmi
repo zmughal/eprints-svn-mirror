@@ -15,29 +15,50 @@
         <file>
           <filename>epm/bittorrent/cgi/tracker</filename>
           <mime_type>text/plain</mime_type>
-          <hash>77217edd96d89afbb087b4375e5bda94</hash>
+          <hash>000c57acf96981476411cce11400ba14</hash>
           <hash_type>MD5</hash_type>
-          <filesize>5188</filesize>
+          <filesize>5189</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/DataObj/BitTorrent.pm</filename>
-          <mime_type>text/plain</mime_type>
+          <mime_type>inode/symlink</mime_type>
           <hash>dfd56520d977940c872420c1b3cd3b9c</hash>
           <hash_type>MD5</hash_type>
           <filesize>3391</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Convert/BitTorrent.pm</filename>
-          <mime_type>text/plain</mime_type>
+          <mime_type>inode/symlink</mime_type>
           <hash>e780a171a5345f93702d3e81cf71458c</hash>
           <hash_type>MD5</hash_type>
           <filesize>3722</filesize>
         </file>
+        <file>
+          <filename>static/images/epm/bittorrent.png</filename>
+          <mime_type>inode/symlink</mime_type>
+          <hash>e630ba1ec36b795e1dbb1982716c611c</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>177418</filesize>
+        </file>
       </files>
-      <mime_type>text/plain</mime_type>
-      <format>text</format>
-      <main>plugins/EPrints/Plugin/Convert/BitTorrent.pm</main>
+      <mime_type>inode/symlink</mime_type>
+      <format>other</format>
+      <main>static/images/epm/bittorrent.png</main>
       <content>install</content>
+    </document>
+    <document uuid='urn:uuid:ff597999-17d9-589a-940b-5b0b7c46c7e8'>
+      <files>
+        <file>
+          <filename>static/images/epm/bittorrent.png</filename>
+          <mime_type>inode/symlink</mime_type>
+          <hash>e630ba1ec36b795e1dbb1982716c611c</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>177418</filesize>
+        </file>
+      </files>
+      <format>image</format>
+      <main>static/images/epm/bittorrent.png</main>
+      <content>coverimage</content>
     </document>
   </documents>
   <version>1.0.0</version>
@@ -52,4 +73,5 @@
   </creators>
   <title>BitTorrent Tracker</title>
   <description>This extension adds support for downloading files using the BitTorrent protocol. It isn&apos;t a BitTorrent client itself but instead makes use of the BitTorrent &quot;Web seed&quot; feature to supply data to peers.</description>
+  <icon>images/epm/bittorrent.png</icon>
 </epm>
