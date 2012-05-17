@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='utf-8'?>
+<epm xmlns='http://eprints.org/ep2/data/2.0' id='http://eprints-devel.localdomain:8080/id/epm/bittorrent' uuid='urn:uuid:acdc49e8-17a0-5183-9600-fd163151d9a6'>
+  <epmid>bittorrent</epmid>
+  <uri>http://eprints-devel.localdomain:8080/id/epm/bittorrent</uri>
+  <documents>
+    <document uuid='urn:uuid:ff597999-17d9-589a-940b-5b0b7c46c7e8'>
+      <files>
+        <file>
+          <filename>epm/bittorrent/cfg/cfg.d/bittorrent.pl</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>7a662e2bc580d0c31b098f554a337af8</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>1371</filesize>
+        </file>
+        <file>
+          <filename>epm/bittorrent/cgi/tracker</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>77217edd96d89afbb087b4375e5bda94</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>5188</filesize>
+        </file>
+        <file>
+          <filename>plugins/EPrints/DataObj/BitTorrent.pm</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>dfd56520d977940c872420c1b3cd3b9c</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>3391</filesize>
+        </file>
+        <file>
+          <filename>plugins/EPrints/Plugin/Convert/BitTorrent.pm</filename>
+          <mime_type>text/plain</mime_type>
+          <hash>e780a171a5345f93702d3e81cf71458c</hash>
+          <hash_type>MD5</hash_type>
+          <filesize>3722</filesize>
+        </file>
+      </files>
+      <mime_type>text/plain</mime_type>
+      <format>text</format>
+      <main>plugins/EPrints/Plugin/Convert/BitTorrent.pm</main>
+      <content>install</content>
+    </document>
+  </documents>
+  <version>1.0.0</version>
+  <creators>
+    <item>
+      <name>
+        <family>Brody</family>
+        <given>Tim</given>
+      </name>
+      <id>tdb2@ecs.soton.ac.uk</id>
+    </item>
+  </creators>
+  <title>BitTorrent Tracker</title>
+  <description>This extension adds support for downloading files using the BitTorrent protocol. It isn&apos;t a BitTorrent client itself but instead makes use of the BitTorrent &quot;Web seed&quot; feature to supply data to peers.</description>
+</epm>
