@@ -1,0 +1,19 @@
+# List of relationships contributors can have to an item.
+# updated to include all MARC relators 2011-03
+
+http://www.loc.gov/loc.terms/relators/ANL # Analyst
+http://www.loc.gov/loc.terms/relators/CSL # Consultant
+http://www.loc.gov/loc.terms/relators/DTC # Data contributor
+http://www.loc.gov/loc.terms/relators/DTM # Data manager
+http://www.loc.gov/loc.terms/relators/FLD # Field director
+http://www.loc.gov/loc.terms/relators/GIS # Geographic information specialist
+http://www.loc.gov/loc.terms/relators/LBR # Laboratory
+http://www.loc.gov/loc.terms/relators/LDR # Laboratory director
+http://www.loc.gov/loc.terms/relators/ORG # Originator or Principal Investigator
+http://www.loc.gov/loc.terms/relators/PDR # Project director
+http://www.loc.gov/loc.terms/relators/PHT # Photographer
+http://www.loc.gov/loc.terms/relators/PRC # Process contact
+http://www.loc.gov/loc.terms/relators/PRG # Programmer
+http://www.loc.gov/loc.terms/relators/RES # Researcher
+http://www.loc.gov/loc.terms/relators/RTH # Research team head
+http://www.loc.gov/loc.terms/relators/RTM # Research team member

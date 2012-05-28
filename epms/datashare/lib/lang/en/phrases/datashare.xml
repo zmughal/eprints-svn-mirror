@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE phrases SYSTEM "entities.dtd">
+<epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
+
+  <!-- This file is used to add phrases from the phrase editor screen -->
+
+    <epp:phrase id="project_fieldhelp_acronym"/>
+
+    <epp:phrase id="project_fieldhelp_contributors">Select a role and enter the name of the person involved in the project.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_description">A human-readable description/introduction for the project.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_end">The date the project ended.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_keywords">Keywords that describe the project separated by commas.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_start">The date the project commenced.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_title">The short title of the project.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_uri">The project home page.</epp:phrase>
+
+    <epp:phrase id="project_fieldhelp_value">The grant value of the project.</epp:phrase>
+
+    <epp:phrase id="project_fieldname_contributors">Contributors</epp:phrase>
+
+    <epp:phrase id="project_fieldname_contributors_id">Email</epp:phrase>
+
+    <epp:phrase id="project_fieldname_contributors_type">Role</epp:phrase>
+
+    <epp:phrase id="project_contributor_type_typename_coinvestigator">Co-Investigator</epp:phrase>
+
+    <epp:phrase id="project_contributor_type_typename_investigator">Investigator</epp:phrase>
+
+    <epp:phrase id="project_contributor_type_typename_principal_investigator">Principal Investigator</epp:phrase>
+
+    <epp:phrase id="project_contributor_type_typename_project_manager">Project Manager</epp:phrase>
+
+    <epp:phrase id="project_contributor_type_typename_project_worker">Project Worker</epp:phrase>
+
+    <epp:phrase id="project:workflow:stage:default:title">Main Data</epp:phrase>
+
+    <epp:phrase id="org_unit:workflow:stage:default:title">Main Data</epp:phrase>
+
+    <epp:phrase id="ordername_org_unit_byid">by relevance</epp:phrase>
+
+    <epp:phrase id="ordername_org_unit_byrelevance">by ID</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/ANL">Data Analyst</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/CSL">External Consultant</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/DTC">Data Contributor</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/DTM">Data Manager</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/FLD">Field Director</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/GIS">Geographic Information Specialist</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/LBR">Laboratory</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/LDR">Laboratory Director</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/ORG">Principal Investigator/Originator</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/PDR">Project Director</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/PHT">Photographer (Image Technician)</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/PRC">Experimental Process Contact</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/PRG">Programmer</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/RES">Researcher</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/RTH">Research Team Head</epp:phrase>
+
+    <epp:phrase id="contributor_type_dataset_typename_http://www.loc.gov/loc.terms/relators/RTM">Research Team Member</epp:phrase>
+
+    <epp:phrase id="eprint_fieldhelp_data_type">Give a high level description of the kind of data that you are providing so that an external researcher would understand how to use it. Details about the file format and interpretation should be provided elsewhere. 
+<br/>Example: <span class="ep_form_example">Helium Ion microscope images</span>
+</epp:phrase>
+
+    <epp:phrase id="eprint_fieldhelp_abstract">A summary of the item's content. If the item has a formal abstract then that is what should be entered here, otherwise a short high-level description of the item should be provided. No complicated text formatting is possible.</epp:phrase>
+
+    <epp:phrase id="content_typename_data">Data</epp:phrase>
+
+    <epp:phrase id="document_typename_text/csv">Generic Spreadsheet (Comma Separated Values)</epp:phrase>
+
+    <epp:phrase id="document_typename_text/tab-">Generic Spreadsheet (Tab Separated Values)</epp:phrase>
+
+    <epp:phrase id="content_typename_readme">README file</epp:phrase>
+
+    <epp:phrase id="document_fieldhelp_content">The kind of material in this document, as opposed to the specific format in which it is expressed.</epp:phrase>
+
+    <epp:phrase id="document_fieldhelp_formatdesc">You may offer an additional brief description of the format. Full explanations of the interpretation of data should be made in a separate README document.</epp:phrase>
+
+    <epp:phrase id="eprint_optdetails_type_proposal">A project proposal (bid) document that describes a programme of research activity.</epp:phrase>
+
+    <epp:phrase id="eprint_typename_proposal">Project Proposal</epp:phrase>
+
+    <epp:phrase id="eprint_fieldname_is_research_output">Research Output</epp:phrase>
+
+    <epp:phrase id="viewname_eprint_allbytype">By Type for All Non-Research-Outputs</epp:phrase>
+    <epp:phrase id="content_typename_discussion">Discussion/Review</epp:phrase>
+
+    <epp:phrase id="content_typename_redacted">Redacted Version</epp:phrase>
+
+    <epp:phrase id="eprint_fieldname_related_eprint">Related Eprint</epp:phrase>
+
+    <epp:phrase id="eprint_fieldname_related_eprint_id">ID</epp:phrase>
+
+    <epp:phrase id="eprint_fieldname_related_eprint_title">Title</epp:phrase>
+
+    <epp:phrase id="contributor_type_typename_http://www.loc.gov/loc.terms/relators/DTC">Data Contributor</epp:phrase>
+
+    <epp:phrase id="document_fieldhelp_readme">How the user should interpret the layout, contents or data in the file. What do the different rows and columns in the spreadsheet mean? How was this data collected?</epp:phrase>
+
+    <epp:phrase id="document_fieldname_readme">README</epp:phrase>
+
+    <epp:phrase id="document_fieldname_formatdesc">Format Description</epp:phrase>
+
+    <epp:phrase id="contributor_type_typename_http://www.loc.gov/loc.terms/relators/LDR">Lab Director</epp:phrase>
+
+    <epp:phrase id="content_typename_software">Software</epp:phrase>
+
+    <epp:phrase id="project_fieldname_org_units_id">ID</epp:phrase>
+
+    <epp:phrase id="project_fieldname_org_units_title">Organisation</epp:phrase>
+
+    <epp:phrase id="contributor_type_typename_http://www.loc.gov/loc.terms/relators/ANL">Data Analyst</epp:phrase>
+
+    <epp:phrase id="content_typename_rawdata">Raw experimental data</epp:phrase>
+
+    <epp:phrase id="content_typename_deriveddata">Derived experimental data</epp:phrase>
+
+    <epp:phrase id="content_typename_resultsdata">Result data</epp:phrase>
+
+
+  <epp:phrase id="document_fieldname_experiment_stage">Stage</epp:phrase>
+  <epp:phrase id="document_fieldname_title">Title</epp:phrase>    <epp:phrase id="document_typename_application/xml">XML</epp:phrase>
+
+    <epp:phrase id="experiment_stage_typename_misc">Miscellaneous</epp:phrase>
+
+    <epp:phrase id="experiment_stage_typename_processed">Processed/Analysed</epp:phrase>
+
+    <epp:phrase id="experiment_stage_typename_raw">Raw/Original</epp:phrase>
+
+    <epp:phrase id="experiment_stage_typename_results">Final/Results</epp:phrase>
+
+    <epp:phrase id="eprint_fieldopt_related_url_type_data">Associated Data</epp:phrase>
+
+    <epp:phrase id="eprint_fieldopt_related_url_type_publication">Associated Publication</epp:phrase>
+
+    <epp:phrase id="eprint_fieldopt_related_url_type_news">News/Press Release</epp:phrase>
+
+    <epp:phrase id="document_typename_application/vnd.taverna.t2flow+xml">Taverna 2 Workflow</epp:phrase>
+
+    <epp:phrase id="viewtitle_eprint_ allbytype_list">Items where Type is <epc:pin name="value1"/></epp:phrase>
+
+    <epp:phrase id="viewname_eprint_nonoutputsbyyear">By Year for All Non-Research-Outputs</epp:phrase>
+
+    <epp:phrase id="viewname_eprint_othersbytype">Non-publications by Type</epp:phrase>
+
+    <epp:phrase id="viewname_eprint_pubsbytype">Publications by Type</epp:phrase>
+
+
+	<epp:phrase id="document_fieldname_Context">Cotext</epp:phrase>
+	<epp:phrase id="document_fieldhelp_Context">Contextual metadata as defined by JISC's IDMB project. Metadata that helps to identify this data object in the topic domain. e.g. which questionnaire? which trench in the archaeological site?</epp:phrase>
+	<epp:phrase id="document_fieldname_context">Context</epp:phrase>
+	<epp:phrase id="document_fieldhelp_context">The contextual information about this data, as defined by the JISC IDMB project. This information helps to locate the data in terms of the topical information - the questionnaire whose data is being provided or the trench from which this archaeological core sample was taken. <i>This data will be interpreted as hierarchical if components are separated by semi-colons.</i></epp:phrase>
+	<epp:phrase id="document_fieldhelp_specific">Specific object metadata as defined by JISC's IDMB project. Metadata that describes this particular item e.g. pot in an archaeological dig or crystal in a chemistry experiment.</epp:phrase>
+	<epp:phrase id="document_fieldname_specific">Specific</epp:phrase>    <epp:phrase id="viewname_eprint_document_context">Contextual Metadata</epp:phrase>
+
+</epp:phrases>

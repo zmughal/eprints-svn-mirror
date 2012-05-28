@@ -1,0 +1,4 @@
+raw # original, unprocessed for of material. captured experimental or survey data
+processed # processed material. analysed forms of data, intermediate state
+results # final form data with all analyses performed
+misc # information not explicitly assiciated with any formal stage
