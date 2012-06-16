@@ -15,7 +15,7 @@ $c->{tweetstream_tops} =
     cols => 4,
     case_insensitive => 1,
   },
-  top_target_urls => {
+  top_urls_from_text => {
     n => 30,
     cols => 1,
     max_len => 150,
@@ -61,3 +61,18 @@ $c->{roles}->{"tweetstream-viewer"} = [
 push @{$c->{user_roles}->{admin}}, 'tweetstream-admin';
 push @{$c->{user_roles}->{editor}}, 'tweetstream-editor';
 push @{$c->{user_roles}->{user}}, 'tweetstream-viewer';
+
+push @{$c->{browse_views}},
+{
+                id => "tweetstream",
+                dataset => 'tweetstream',
+                menus => [
+                        {
+                                fields => [ "search_string"],
+                                new_column_at => [10,10],
+                        }
+                ],
+                variations => ["DEFAULT"],
+
+};
+

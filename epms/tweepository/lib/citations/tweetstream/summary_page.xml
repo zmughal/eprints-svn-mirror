@@ -30,7 +30,7 @@
 
     <h2>Top Links</h2>
     <div style="margin-left: 3em">
-      <epc:print expr="top_target_urls"/>
+      <epc:print expr="top_urls_from_text"/>
     </div>
 
     <h2>Tweet Frequency</h2>

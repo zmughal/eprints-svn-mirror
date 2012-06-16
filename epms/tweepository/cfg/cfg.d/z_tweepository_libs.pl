@@ -128,10 +128,10 @@ $c->add_dataset_field('tweetstream',  { name => "top_tweetees", type=>"compound"
 	],
 	render_value => 'EPrints::DataObj::TweetStream::render_top_field',
 },);
-$c->add_dataset_field('tweetstream',  { name => "top_target_urls", type=>"compound", multiple=>1,
+$c->add_dataset_field('tweetstream',  { name => "top_urls_from_text", type=>"compound", multiple=>1,
 	'fields' => [
 	{
-		'sub_name' => 'target_url',
+		'sub_name' => 'url_from_text',
 		'type' => 'url',
 	},
 	{
@@ -161,7 +161,7 @@ $c->add_dataset_field( 'tweetstream', { name => "frequency_values", type => 'com
 #for generating CSV, these store the highest count of each of the multiple fields
 $c->add_dataset_field( 'tweetstream', { name => "hashtags_ncols", type=>'int', volatile => '1' }, );
 $c->add_dataset_field( 'tweetstream', { name => "tweetees_ncols", type=>'int', volatile => '1' }, );
-$c->add_dataset_field( 'tweetstream', { name => "target_urls_ncols", type=>'int', volatile => '1' }, );
+$c->add_dataset_field( 'tweetstream', { name => "urls_from_text_ncols", type=>'int', volatile => '1' }, );
 
 
 
@@ -828,9 +828,9 @@ sub render_top_lhs
 		return $a;       
 	};
 
-	if ($fieldname eq 'top_target_urls')
+	if ($fieldname eq 'top_urls_from_text')
 	{
-		my $value = $stuff->{target_url}; 
+		my $value = $stuff->{'url_from_text'}; 
 		
 		my $max_render_len = $session->config('tweetstream_tops',$fieldname,'max_len'); 
 		
@@ -1343,7 +1343,7 @@ print STDERR Dumper $vals;
 #target URLs -- look up some of the most popular ones (retweeted ones).
 print STDERR (scalar localtime time) . "Generating top target urls\n";
 
-	$n = $repo->config('tweetstream_tops', 'top_target_urls', 'n');	
+	$n = $repo->config('tweetstream_tops', 'top_urls_from_text', 'n');	
 	$n = 30 unless $n;
 
 	my $counts = $self->_get_top_data(
@@ -1375,7 +1375,7 @@ print STDERR "\n";
 print STDERR (scalar localtime time) . "Done\n";
 use Data::Dumper;
 print STDERR Dumper $vals;
-	$self->set_value('top_target_urls', $vals);
+	$self->set_value('top_urls_from_text', $vals);
 
 
 	$self->commit;
@@ -1574,7 +1574,7 @@ sub csv_cols
 		{ fieldname => "text_enriched", ncols => 1 },
 		{ fieldname => "tweetees", ncols => ( $self->get_value('tweetees_ncols') ? $self->get_value('tweetees_ncols') : 1 ) },
 		{ fieldname => "hashtags", ncols => ( $self->get_value('hashtags_ncols') ? $self->get_value('hashtags_ncols') : 1 ) },
-		{ fieldname => "urls_from_text", ncols => ( $self->get_value('target_urls_ncols') ? $self->get_value('target_urls_ncols') : 1 ) },
+		{ fieldname => "urls_from_text", ncols => ( $self->get_value('urls_from_text_ncols') ? $self->get_value('urls_from_text_ncols') : 1 ) },
 	];
 }
 
@@ -1748,6 +1748,7 @@ sub render_tweet_field
 	foreach my $tweetid (@{$value})
 	{
 		my $tweet = $tweet_ds->dataobj($tweetid);
+		next unless $tweet;
 		$ol->appendChild($tweet->render_li);
 	}
 	return $frag;
@@ -1825,7 +1826,7 @@ sub data_for_export
 
 	my $data;
 
-	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_tweetees top_target_urls /)
+	foreach my $fieldname (qw/ search_string top_hashtags top_from_users top_tweetees top_urls_from_text /)
 	{
 		$data->{$fieldname} = $self->value($fieldname) if $self->is_set($fieldname);
 	}
