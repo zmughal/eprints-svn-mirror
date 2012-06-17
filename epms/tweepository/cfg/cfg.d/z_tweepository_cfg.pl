@@ -64,14 +64,17 @@ push @{$c->{user_roles}->{user}}, 'tweetstream-viewer';
 
 push @{$c->{browse_views}},
 {
-                id => "tweetstream",
+                id => "project",
                 dataset => 'tweetstream',
                 menus => [
                         {
-                                fields => [ "search_string"],
+                                fields => [ "project_title"],
                                 new_column_at => [10,10],
                         }
                 ],
+		order => "title",
+		allow_null => 1,
+		include => 1,
                 variations => ["DEFAULT"],
 
 };

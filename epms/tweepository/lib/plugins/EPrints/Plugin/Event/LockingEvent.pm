@@ -70,7 +70,33 @@ sub is_locked
 {
 	my ($self) = @_;
 
-	return 1 if -e $self->lockfile;
+	my $path = $self->lockfile;
+
+	if (-e $path)
+	{
+		my $pid = $$;
+
+		open FILE, "<", $path || $self->repository->log("Could not open $path for " . ref $self . "\n");
+		my @contents = (<FILE>);
+		my ($datestamp, $lockfilepid) = split(/[\n\t]/,$contents[0]);
+
+		#kill(0) checks to see if we *can* kill the process.
+		#if it returns true, then the process that created the lock is still running.
+		my $alive = kill(0,$lockfilepid);
+		if ($alive)
+		{
+			return 1;
+		}
+		else
+		{
+			$self->repository->log("Found old lock file at $path, with nonexitant processid.  --$datestamp -> $lockfilepid.  I am $pid, so I deleted the lock and continued (assume crashed process)");
+			$self->remove_lock;
+			return 0;
+		}
+
+	}
+
+
 	return 0;
 }
 
@@ -82,7 +108,9 @@ sub create_lock
 
 	open FILE, ">", $path || $self->repository->log("Could not open $path for " . ref $self . "\n");
 
-	print FILE scalar localtime time;
+	#print a datestamp and the processid to the lock file
+	my $pid = $$;
+	print FILE join("\t",(scalar localtime time),$pid) ;
 
 	close FILE;
 }

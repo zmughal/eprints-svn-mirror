@@ -2,7 +2,7 @@ $c->{plugins}{"Export::TweetStream::JSON"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::CSV"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::HTML"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreams"}{params}{disable} = 0;
-$c->{plugins}{"Event::EnrichTweets"}{params}{disable} = 0;
+$c->{plugins}{"Event::UpdateTweetStreamAbstracts"}{params}{disable} = 0;
 $c->{plugins}{"Screen::EPMC::tweepository"}{params}{disable} = 0;
 
 #set up the datasets
@@ -164,6 +164,9 @@ $c->add_dataset_field( 'tweetstream', { name => "tweetees_ncols", type=>'int', v
 $c->add_dataset_field( 'tweetstream', { name => "urls_from_text_ncols", type=>'int', volatile => '1' }, );
 
 
+$c->add_dataset_field( 'tweetstream', { name => "title", type=>'text' }, );
+$c->add_dataset_field( 'tweetstream', { name => "abstract", type=>'longtext' }, );
+$c->add_dataset_field( 'tweetstream', { name => "project_title", type=>'text' }, );
 
 
 
@@ -779,6 +782,12 @@ sub render_top_frequency_values
 	return $table;
 }
 
+sub get_url
+{
+	my ($self) = @_;
+
+	return $self->uri;
+}
 
 sub render_top_field
 {
@@ -1058,6 +1067,13 @@ sub commit
 	my( $self, $force ) = @_;
 
 	$self->update_triggers();
+
+	if (!$self->is_set('title') && $self->is_set('search_string'))
+	{
+		#sensible default
+		$self->set_value('title', 'Twitter Feed for ' . $self->value('search_string'));
+	}
+
 
 	if( !defined $self->{changed} || scalar( keys %{$self->{changed}} ) == 0 )
 	{
@@ -1773,7 +1789,11 @@ sub render_tweet_list
 		my $n_newest = $repository->config('tweetstream_tweet_renderopts','n_newest');
 
 		my $span = $xml->create_element('span', style => "margin-top: 1em; margin-bottom: 1em;");
+		$span->appendChild($xml->create_element('img', src=>"/images/tweepository/paper_tear-top.png", style=>"width: 480px"));
+		$span->appendChild($xml->create_element('br'));
 		$span->appendChild($repository->html_phrase('DataObj::Tweet/unshown_items', n=>$xml->create_text_node(($object->value('tweet_count') - ($n_oldest+$n_newest)))));
+		$span->appendChild($xml->create_element('br'));
+		$span->appendChild($xml->create_element('img', src=>"/images/tweepository/paper_tear-bottom.png", style=>"width: 480px"));
 		$frag->appendChild($span);
 		$frag->appendChild($object->render_value('newest_tweets'));
 	}

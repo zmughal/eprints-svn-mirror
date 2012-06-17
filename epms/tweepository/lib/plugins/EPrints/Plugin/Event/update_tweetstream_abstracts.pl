@@ -7,6 +7,7 @@ use EPrints;
 
 my $ep = EPrints->new;
 my $repo = $ep->repository('tweets');
-my $plugin = $repo->plugin('Event::EnrichTweets');
+my $plugin = $repo->plugin('Event::UpdateTweetStreamAbstracts');
 
-$plugin->action_enrich_tweets;
+$plugin->action_update_tweetstream_abstracts;
+

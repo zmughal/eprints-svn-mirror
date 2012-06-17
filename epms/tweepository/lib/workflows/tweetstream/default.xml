@@ -8,8 +8,18 @@
    
   <stage name="default">
 
-    <component><field ref="search_string"/></component>
-    <component><field ref="expiry_date"/></component>
+    <component type="Field::Multi">
+	<title>Parameters</title>
+	<field ref="search_string" required="yes" />
+	<field ref="expiry_date" required="yes" />
+    </component>
+
+    <component type="Field::Multi">
+	<title></title>
+	<field ref="title" />
+	<field ref="project_title" />
+	<field ref="abstract" />
+    </component>
 
   </stage>
 </workflow>

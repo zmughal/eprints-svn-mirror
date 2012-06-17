@@ -18,7 +18,7 @@ sub action_update_tweetstreams
 
 	if ($self->is_locked)
 	{
-		$self->repository->log( (ref $self) . " is locked.  Unable to run (remove ".$self->lockfile." if you think it previously crashed)" );
+		$self->repository->log( (ref $self) . " is locked.  Unable to run.");
 		return;
 	}
 

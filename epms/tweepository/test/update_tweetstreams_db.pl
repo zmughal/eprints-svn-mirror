@@ -142,7 +142,7 @@ sub initialise_wanted_streams
 	#if there's no old count, or if the old count and the cound differ, we'll need to update
 	foreach my $tweetstreamid (keys %{$GLOBAL_tweetstream_data->{context}->{counts}})
 	{
-		if ( 
+		if (
 			!$GLOBAL_tweetstream_data->{context}->{oldcounts}->{$tweetstreamid}
 		||
 			(
@@ -538,7 +538,16 @@ sub get_old_or_new
 
 	my $sth = run_query($args, 1);
 	
-	return query_to_arrayref($sth);
+	my $arr = query_to_arrayref($sth);
+
+	#they will be in reverse order at this point, so re-reverse
+	if ($choice eq 'new')
+	{
+		my @tmp = reverse @{$arr};
+		$arr = \@tmp;
+	}
+
+	return $arr;
 }
 
 #the first column of the results will be returned as an arrayref
