@@ -4,6 +4,7 @@ $c->{plugins}{"Export::TweetStream::HTML"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreams"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreamAbstracts"}{params}{disable} = 0;
 $c->{plugins}{"Screen::EPMC::tweepository"}{params}{disable} = 0;
+$c->{plugins}{"Screen::TweetStreamSearch"}{params}{disable} = 0;
 
 #set up the datasets
 $c->{datasets}->{tweet} = {
@@ -1318,4 +1319,3 @@ sub data_for_export
 
 1;
 }
-

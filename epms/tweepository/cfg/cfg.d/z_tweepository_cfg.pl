@@ -79,3 +79,25 @@ push @{$c->{browse_views}},
 
 };
 
+
+$c->{search}->{tweetstream} = 
+{
+	search_fields => [
+		{ meta_fields => [ "title" ] },
+		{ meta_fields => [ "project_title" ] },
+		{ meta_fields => [ "abstract" ] },
+		{ meta_fields => [ "tweet_count" ] },
+	],
+	preamble_phrase => "tweetsearch:preamble",
+	title_phrase => "tweetsearch:title",
+	citation => "default",
+	page_size => 20,
+	order_methods => {
+		"bytitle" 	 => "title",
+		"bysize" 	 => "tweet_count",
+		"bysizedesc" 	 => "-tweet_count",
+	},
+	default_order => "bytitle",
+	show_zero_results => 1,
+};
+
