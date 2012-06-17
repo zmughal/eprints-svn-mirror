@@ -47,7 +47,7 @@ sub generate_log_string
 	push @r, '===========================================================================';
 	push @r, '';
         push @r, "Aggregation started at:        " . $l->{start_time};
-	push @r, "Tweetstream abstracts updated  " . join(',',sort @{$l->{tweetstreams_updated}});
+	push @r, "Tweetstream abstracts updated  " . join(',',sort {$a <=> $b} @{$l->{tweetstreams_updated}});
 	push @r, '';
 	push @r, "Iterated over                  " . $l->{iterate_tweet_count} . " tweet rows";
 	push @r, "Iteration Low ID               " . $l->{lowest_tweetid};

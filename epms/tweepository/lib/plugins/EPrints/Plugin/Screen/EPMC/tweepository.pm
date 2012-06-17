@@ -34,16 +34,16 @@ sub action_enable
 	$self->SUPER::action_enable( $skip_reload );
 
 	my $repo = $self->{repository};
-
-	EPrints::DataObj::EventQueue->create_unique( $repo, {
-		pluginid => "Event",
-		action => "cron",
-		params => [
-			"32 * * * *",
-			"Event::UpdateTweetStreams",
-			"action_update_tweetstreams",
-		],
-	});
+# put scripts in the crontab for now.
+#	EPrints::DataObj::EventQueue->create_unique( $repo, {
+#		pluginid => "Event",
+#		action => "cron",
+#		params => [
+#			"32 * * * *",
+#			"Event::UpdateTweetStreams",
+#			"action_update_tweetstreams",
+#		],
+#	});
 
 	$self->reload_config if !$skip_reload;
 }

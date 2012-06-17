@@ -76,8 +76,7 @@
     <epp:phrase id="tweetstream_fieldopt_frequency_period_monthly">Montly</epp:phrase>
     <epp:phrase id="tweetstream_fieldopt_frequency_period_weekly">Weekly</epp:phrase>
     <epp:phrase id="tweetstream_fieldopt_frequency_period_yearly">Yearly</epp:phrase>
-    <epp:phrase id="viewname_tweetstream_project">Twitter Feed by Project</epp:phrase>
-    <epp:phrase id="viewname_tweetstream_tweetstream">Tweetstream</epp:phrase>
-    <epp:phrase id="viewnull_tweetstream_project">UNDEFINED</epp:phrase>
-    <epp:phrase id="viewtitle_tweetstream_project_list">Twitter Feeds where Project is "<epc:pin name="value1" />"</epp:phrase>
+    <epp:phrase id="viewname_tweetstream_tweetstream_project">Twitter Feed by Project</epp:phrase>
+    <epp:phrase id="viewnull_tweetstream_tweetstream_project">UNDEFINED</epp:phrase>
+    <epp:phrase id="viewtitle_tweetstream_tweetstream_project_list">Twitter Feeds where Project is "<epc:pin name="value1" />"</epp:phrase>
 </epp:phrases>

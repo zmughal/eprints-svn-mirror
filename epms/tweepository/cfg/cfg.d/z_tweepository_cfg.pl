@@ -64,7 +64,7 @@ push @{$c->{user_roles}->{user}}, 'tweetstream-viewer';
 
 push @{$c->{browse_views}},
 {
-                id => "project",
+                id => "tweetstream_project",
                 dataset => 'tweetstream',
                 menus => [
                         {
