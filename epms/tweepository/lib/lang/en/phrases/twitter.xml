@@ -2,6 +2,12 @@
 <!DOCTYPE phrases SYSTEM "entities.dtd">
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
+    <epp:phrase id="tweetstream_fieldname_geocode">GeoCode (Experimental)</epp:phrase>
+
+    <epp:phrase id="tweetstream_fieldhelp_geocode">From <a href="https://dev.twitter.com/docs/api/1/get/search">https://dev.twitter.com/docs/api/1/get/search</a>:<br/>Returns tweets by users located within a given radius of the given latitude/longitude. The location is preferentially taking from the Geotagging API, but will fall back to their Twitter profile. The parameter value is specified by "latitude,longitude,radius", where radius units must be specified as either "mi" (miles) or "km" (kilometers). Note that you cannot use the near operator via the API to geocode arbitrary locations; however you can use this geocode parameter to search near geocodes directly.
+<br/>
+<strong>Example Value:</strong> 37.781157,-122.398720,1mi
+</epp:phrase>
     <epp:phrase id="Plugin/Screen/TweetStreamSearch:title">Search Twitter Feeds</epp:phrase>
 
     <epp:phrase id="Plugin/Screen/TweetStreamSearch:description">Search the Twitter feeds stored in the repository.</epp:phrase>

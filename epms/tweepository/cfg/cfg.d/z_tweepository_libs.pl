@@ -80,6 +80,7 @@ $c->add_dataset_field( 'tweet', { name=>"newborn", type=>"boolean"}, );
 $c->add_dataset_field( 'tweetstream', { name=>"tweetstreamid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tweetstreamid" }, );
 $c->add_dataset_field( 'tweetstream', { name=>"userid", type=>"itemref", datasetid=>"user", required=>1 }, );
 $c->add_dataset_field( 'tweetstream', { name=>"search_string", type=>"text", required=>"yes" }, );
+$c->add_dataset_field( 'tweetstream', { name=>"geocode", type=>"text" }, );
 $c->add_dataset_field( 'tweetstream', { name=>"expiry_date", type=>"date", required=>"yes" }, );
 $c->add_dataset_field( 'tweetstream', { name=>"tweet_count", type=>'bigint', volatile=>1}, );
 $c->add_dataset_field( 'tweetstream', { name=>"oldest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );

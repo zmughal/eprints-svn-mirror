@@ -264,15 +264,19 @@ sub create_queue_item
 	my ($repo, $ds, $tweetstream, $queue_items) = @_;
 
 	my $search_string = $tweetstream->get_value('search_string');
+	my $geocode;
+	$geocode = $tweetstream->get_value('geocode') if $tweetstream->is_set('geocode');
 
-	if ($queue_items->{$search_string})
+	my $key = $search_string . 'XXXXXXX' . $geocode;
+
+	if ($queue_items->{$key})
 	{
-		push @{$queue_items->{$search_string}->{tweetstreamids}}, $tweetstream->id;
-		$queue_items->{$search_string}->{id} = join(',',sort(@{$queue_items->{$search_string}->{tweetstreamids}}));
+		push @{$queue_items->{$key}->{tweetstreamids}}, $tweetstream->id;
+		$queue_items->{$key}->{id} = join(',',sort(@{$queue_items->{$key}->{tweetstreamids}}));
 	}
 	else
 	{
-		$queue_items->{$search_string} = {
+		$queue_items->{$key} = {
 			id => $tweetstream->id, #id for logging
 			search_params => {
 				q => $search_string,
@@ -285,6 +289,8 @@ sub create_queue_item
 			retries => 5, #if there's a failure, we'll try again.
 			orderval => 0,
 		};
+		#optional param
+		$queue_items->{$key}->{search_params}->{geocode} = $geocode if $geocode;
 	}
 }
 

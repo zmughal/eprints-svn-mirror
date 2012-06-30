@@ -12,6 +12,7 @@
 	<title>Parameters</title>
 	<field ref="search_string" required="yes" />
 	<field ref="expiry_date" required="yes" />
+	<field ref="geocode" />
     </component>
 
     <component type="Field::Multi">
