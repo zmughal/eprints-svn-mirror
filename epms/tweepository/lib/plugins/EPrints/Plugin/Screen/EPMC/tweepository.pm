@@ -30,10 +30,44 @@ If SKIP_RELOAD is true will not reload the repository configuration.
 sub action_enable
 {
 	my( $self, $skip_reload ) = @_;
-
-	$self->SUPER::action_enable( $skip_reload );
-
 	my $repo = $self->{repository};
+
+#before enabling, make sure we have all dependant libs installed
+	my @prereqs = qw/ Data::Dumper Date::Calc Date::Parse Encode HTML::Entities JSON LWP::UserAgent Number::Bytes::Human
+                          Storable URI URI::Find /;
+
+	my $evalstring;
+	foreach my $l (@prereqs)
+	{
+		$evalstring .= "use $l;\n";
+	}
+
+	eval $evalstring;
+	if (!$@)
+	{
+		$self->SUPER::action_enable( $skip_reload );
+	}
+	else
+	{
+		my $xml = $repo->xml;
+		my $msg = $xml->create_document_fragment;
+
+		$msg->appendChild($xml->create_text_node('Tweepository cannot be enabled because one or more of the following perl libraries are missing:'));
+		my $ul = $xml->create_element('ul');
+		$msg->appendChild($ul);
+
+		foreach my $l (@prereqs)
+		{
+			my $li = $xml->create_element('li');
+			$ul->appendChild($li);
+			$li->appendChild($xml->create_text_node($l));
+		}
+		
+		$msg->appendChild($xml->create_text_node('Speak to your systems administrator, who may be able to install them for you.'));
+
+		$self->{processor}->add_message('warning',$msg);
+	}
+
 # put scripts in the crontab for now.
 #	EPrints::DataObj::EventQueue->create_unique( $repo, {
 #		pluginid => "Event",
