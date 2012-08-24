@@ -10,6 +10,8 @@ use LWP::UserAgent;
 use JSON;
 use Encode qw(encode);
 
+my $RETRIES = 5;
+
 sub action_update_tweetstreams
 {
 	my ($self) = @_;
@@ -55,6 +57,9 @@ sub action_update_tweetstreams
 		#remove item from the front of the queue
 		my $current_item = shift @queue;
 
+		#prepare queue item
+		$current_item->{retries} = $RETRIES;
+
 		#query Twitter API
 		my $url = URI->new( $api_url );
 		$url->query_form( %{$current_item->{search_params}} );
@@ -99,15 +104,18 @@ sub action_update_tweetstreams
 		my $tweets = eval { $json->utf8()->decode($json_tweets); };
 		if ($@)
 		{
-			print STDERR "Couldn't decode json: $@\n";
 			if ($current_item->{retries})
 			{
 				#requeue X times (where X is the number of retries)
 				$current_item->{retries}--;
 				push @queue, $current_item
 			}
-			#else let this one fall off the end of the queue (i.e. don't repush onto queue)
-			$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{end_state} = 'PARSE ERROR';
+			else
+			{
+				#else let this one fall off the end of the queue (i.e. don't repush onto queue)
+				$self->{log_data}->{tweetstreams}->{$current_item->{id}}->{end_state} = 'PARSE ERROR';
+				print STDERR "Couldn't decode json: $@\n";
+			}
 			next ITEM;
 		}
 
@@ -286,7 +294,7 @@ sub create_queue_item
 	#			page => set to current page + 1 when this item is requeued
 			},
 			tweetstreamids => [ $tweetstream->id ], #for when two streams have identical search strings
-			retries => 5, #if there's a failure, we'll try again.
+			retries => $RETRIES, #if there's a failure, we'll try again.
 			orderval => 0,
 		};
 		#optional param

@@ -71,9 +71,9 @@
         <file>
           <filename>plugins/EPrints/Plugin/Event/UpdateTweetStreams.pm</filename>
           <mime_type>application/x-symlink</mime_type>
-          <hash>64d4a5665f39b703402b5ecf8be091ae</hash>
+          <hash>b1fee2601eb70a2a48bf2b8ed334f116</hash>
           <hash_type>MD5</hash_type>
-          <filesize>9744</filesize>
+          <filesize>9852</filesize>
         </file>
         <file>
           <filename>plugins/EPrints/Plugin/Event/update_tweetstream_abstracts.pl</filename>
@@ -178,7 +178,7 @@
       <content>coverimage</content>
     </document>
   </documents>
-  <version>0.3.2</version>
+  <version>0.3.3</version>
   <controller>EPMC::tweepository</controller>
   <creators>
     <item>
