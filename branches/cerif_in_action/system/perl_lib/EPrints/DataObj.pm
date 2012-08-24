@@ -2439,6 +2439,28 @@ sub remove_dataobj_relations
 	}
 }
 
+=item $list = $dataobj->duplicates()
+
+Return a conservative list of other objects that look like this one.
+
+=cut
+
+sub duplicates
+{
+	my( $self ) = @_;
+
+	my $dataset = $self->{dataset};
+
+	my @ids;
+
+	$dataset->run_trigger( EPrints::Const::EP_TRIGGER_DUPLICATE_SEARCH(),
+			dataobj => $self,
+			ids => \@ids,
+		);
+
+	return $dataset->list( \@ids );
+}
+
 ######################################################################
 =pod
 

@@ -73,6 +73,8 @@ sub new
 	$params{Handler} = exists $params{Handler} ? $params{Handler} : EPrints::CLIProcessor->new( session => $params{session} );
 	$params{screen} = exists $params{screen} ? $params{screen} : "Import";
 	$params{accept} = exists $params{accept} ? $params{accept} : [$class->mime_type];
+	$params{input_textarea} = exists $params{input_textarea} ? $params{input_textarea} : 1;
+	$params{input_file} = exists $params{input_file} ? $params{input_file} : 1;
 
 	return $class->SUPER::new(%params);
 }
@@ -211,6 +213,35 @@ sub can_produce
 	return 0;
 }
 
+=item $ok = $plugin->can_input( TYPE )
+
+Supports user input via:
+
+=over 4
+
+=item textarea
+
+Paste into a text area.
+
+=item file
+
+Upload a file.
+
+=item form
+
+Calls $plugin->render_input_form() to render an input form.
+
+=back
+
+=cut
+
+sub can_input
+{
+	my( $self, $type ) = @_;
+
+	return $self->param( "input_$type" );
+}
+
 =item $plugin->input_fh( fh => FILEHANDLE [, %opts] )
 
 Import one or more objects from B<FILEHANDLE>. B<FILEHANDLE> should be set to binary semantics using L<perlfunc/binmode>.
@@ -299,7 +330,7 @@ sub epdata_to_dataobj
 	my( $dataset ) = splice(@_,1,1)
 		if UNIVERSAL::isa( $_[1], "EPrints::DataSet" );
 	my( $self, $epdata, %opts ) = @_;
-	$opts{dataset} ||= $dataset;
+	$dataset = $opts{dataset} ||= $dataset;
 
 	if( $dataset->id eq "eprint" && !defined $epdata->{eprint_status} )
 	{

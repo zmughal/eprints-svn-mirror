@@ -228,6 +228,15 @@ my $INFO = {
 		class => "EPrints::DataObj::Import",
 		datestamp => "datestamp",
 	},
+	cache_dataobj_map => {
+		sqlname => "cache_dataobj_map",
+		class => "EPrints::DataObj::CacheDataobjMap",
+	},
+	cache_dataobj => {
+		sqlname => "cache_dataobj",
+		class => "EPrints::DataObj::CacheDataobj",
+		order => 0,
+	},
 	metafield => {
 		sqlname => "mf", # identifiers get too long
 		class => "EPrints::DataObj::MetaField",
