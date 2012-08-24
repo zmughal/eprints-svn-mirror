@@ -84,7 +84,7 @@ sub action_upload
 	}
 
 	# install system-level and repository files
-	if( !$self->_install( $epm, 1 ) )
+	if( !$self->_install( $epm ) )
 	{
 		if( defined $iepm )
 		{
@@ -126,7 +126,7 @@ sub action_install
 
 sub _install
 {
-	my( $self, $epm, $skip_reload ) = @_;
+	my( $self, $epm ) = @_;
 
 	my $repo = $self->{repository};
 
@@ -158,11 +158,8 @@ sub _install
 		$epm->uninstall( $self->{processor} );
 		return;
 	}
-	
-	if (!$skip_reload) 
-	{
-		$repo->load_config;
-	}
+
+	$repo->load_config;
 
 	my $controller = $epm->control_screen( processor => $self->{processor} );
 	# enable if not already enabled
@@ -209,7 +206,7 @@ sub action_upgrade
 	return if !$iepm->uninstall( $self->{processor} );
 
 	# install system-level and repository files
-	if( !$self->_install( $epm, 1 ) )
+	if( !$self->_install( $epm ) )
 	{
 		$iepm->install( $self->{processor} );
 		$iepm->enable( $self->{processor} );

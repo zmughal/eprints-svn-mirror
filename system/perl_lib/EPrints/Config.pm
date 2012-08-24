@@ -95,18 +95,17 @@ sub init
 
 	load_system_config();
 
-	if( opendir( my $dh, $SYSTEMCONF->{arc_path} ) )
+	opendir( my $dh, $SYSTEMCONF->{arc_path} );
+	my $id;
+	while( $id = readdir( $dh ) )
 	{
-		while( my $id = readdir( $dh ) )
-		{
-			next if( $id =~ m/^\./ );
-			next if( !-d $SYSTEMCONF->{arc_path}."/".$id );
-			next if $SYSTEMCONF->{repository}->{$id} && $SYSTEMCONF->{repository}->{$id}->{disabled};
-			
-			$ARCHIVES{$id} = {};
-		}
-		closedir( $dh );
+		next if( $id =~ m/^\./ );
+		next if( !-d $SYSTEMCONF->{arc_path}."/".$id );
+		next if $SYSTEMCONF->{repository}->{$id} && $SYSTEMCONF->{repository}->{$id}->{disabled};
+		
+		$ARCHIVES{$id} = {};
 	}
+	closedir( $dh );
 }
 
 =item EPrints::Config::load_system_config()
@@ -124,8 +123,7 @@ sub load_system_config
 
 	foreach my $dir ( $syslibcfgd, $syscfgd )
 	{
-		opendir(my $dh, $dir)
-			or (warn("Error opening directory $dir: $!"), next);
+		opendir(my $dh, $dir) or EPrints::abort( "Error opening config directory $dir: $!" );
 		foreach my $file (readdir($dh)) 
 		{
 			next if $file =~ m/^\./;

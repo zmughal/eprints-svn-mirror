@@ -68,9 +68,6 @@ $c->add_trigger( EP_TRIGGER_MEDIA_INFO, sub {
 		my( $charset ) = $opts =~ s/charset=(\S+)//;
 		# unsupported in document metadata
 		# $epdata->{charset} = $charset if defined $charset;
-
-		# fixes for file magic
-		$epdata->{mime_type} = "video/ogg" if $epdata->{mime_type} eq "application/ogg";
 	}
 	else
 	{

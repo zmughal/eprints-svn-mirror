@@ -207,16 +207,6 @@ sub get_system_field_info
 			text_index => 0,
 			volatile => 1,
 		},
-
-		{
-			name=>"messages",
-			type=>"subobject",
-			multiple=>1,
-			text_index=>0,
-			datasetid=>"message", 
-			dataset_fieldname=>"",
-			dataobj_fieldname=>"userid",
-		},
 	)
 };
 
@@ -317,7 +307,7 @@ sub create_from_data
 		$new_user->tidy;
 
 		# Write the data to the database
-		$session->get_database->update_data(
+		$session->get_database->update(
 			$new_user->{dataset},
 			$new_user->{data},
 			$new_user->{changed} );
@@ -1518,6 +1508,8 @@ sub has_role
 	
 	return 0;
 }
+
+
 
 
 

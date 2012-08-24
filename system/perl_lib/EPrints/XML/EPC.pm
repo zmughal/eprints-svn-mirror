@@ -201,8 +201,6 @@ sub _process_phrase
 	my %pins = ();
 	foreach my $param ( $node->getChildNodes )
 	{
-	        next if( EPrints::XML::is_dom( $param, "Text" ) || EPrints::XML::is_dom( $param, "CDataSection" ) );
-
 		my $tagname = $param->tagName;
 		$tagname =~ s/^epc://;
 		next unless( $tagname eq "param" );

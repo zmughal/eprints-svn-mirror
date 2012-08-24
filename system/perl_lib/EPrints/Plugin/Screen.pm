@@ -132,12 +132,9 @@ sub export_mimetype
 	
 sub render_form
 {
-	my( $self, $method, $action ) = @_;
+	my( $self ) = @_;
 
-	$method = "post" if !defined $method;
-	$action = $self->{processor}->{url} . "#t" if !defined $action;
-
-	my $form = $self->{session}->xhtml->form( $method, $action );
+	my $form = $self->{session}->render_form( "post", $self->{processor}->{url}."#t" );
 
 	$form->appendChild( $self->render_hidden_bits );
 
@@ -251,11 +248,11 @@ sub from
 
 sub allow
 {
-	my( $self, $priv, $dataobj ) = @_;
+	my( $self, $priv ) = @_;
 
-	return 1 if( $self->{session}->allow_anybody( $priv, $dataobj ) );
+	return 1 if( $self->{session}->allow_anybody( $priv ) );
 	return 0 if( !defined $self->{session}->current_user );
-	return $self->{session}->current_user->allow( $priv, $dataobj );
+	return $self->{session}->current_user->allow( $priv );
 }
 
 

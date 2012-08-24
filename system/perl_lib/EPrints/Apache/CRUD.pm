@@ -26,7 +26,7 @@ You should use the <link> entries in the repository's home page to locate the CR
 
 Create a new eprint based on a single file:
 
-	curl -X POST \
+	curl -x POST \
 		-i \
 		-u user:password \
 		-d 'Hello, World!' \
@@ -737,6 +737,7 @@ sub create_dataobj
 	if( $dataset->base_id eq "eprint" )
 	{
 		$epdata->{userid} = $owner->id;
+		$epdata->{eprint_status} = "inbox";
 	}
 
 	return $dataset->create_dataobj( $epdata );
@@ -1000,7 +1001,7 @@ sub handler
 
 	my $user = $repo->current_user;
 
-	my( $rc, $owner ) = $self->on_behalf_of( $user );
+	my( $rc, $owner ) = on_behalf_of( $repo, $r, $user );
 	return $rc if $rc != OK;
 
 	# Subject URI's redirect to the top of that particular subject tree
@@ -1728,10 +1729,10 @@ sub servicedocument
 
 	my $user = $repo->current_user;
 	EPrints->abort( "unprotected" ) if !defined $user; # Rewrite foobar
-	my $on_behalf_of = $self->on_behalf_of( $user );
+	my $on_behalf_of = on_behalf_of( $repo, $r, $user );
 	if( $on_behalf_of->{status} != OK )
 	{
-		return $self->sword_error( %$on_behalf_of );
+		return sword_error( $repo, $r, %$on_behalf_of );
 	}
 	$on_behalf_of = $on_behalf_of->{on_behalf_of};
 
@@ -1827,10 +1828,7 @@ sub servicedocument
 
 sub on_behalf_of
 {
-	my( $self, $user ) = @_;
-
-	my $repo = $self->repository;
-	my $r = $self->request;
+	my( $repo, $r, $user ) = @_;
 
 	my $err = {
 		status => HTTP_FORBIDDEN,
@@ -1846,9 +1844,9 @@ sub on_behalf_of
 
 	my $owner = $repo->user_by_username( $on_behalf_of );
 
-	return $self->sword_error( %$err )
+	return sword_error($repo, $r, %$err )
 		if !defined $owner;
-	return $self->sword_error( %$err ) 
+	return sword_error($repo, $r, %$err ) 
 		if !$user->allow( "user/mediate", $owner );
 
 	return( OK, $owner );
@@ -2002,7 +2000,6 @@ sub plugin_error
 
 	my $ul = $repo->xml->create_element( "ul" );
 	for(@{$messages}) {
-		$_ = Encode::decode_utf8($_) if !utf8::is_utf8($_);
 		$ul->appendChild( $repo->xml->create_data_element( "li", $_ ) );
 	}
 	my $err = $repo->xhtml->to_xhtml( $ul );
@@ -2039,7 +2036,7 @@ sub generate_error_document
 		href => $opts{href},
 	);
 
-	return "<?xml version='1.0' encoding='utf-8'?>\n" .
+	return "<?xml version='1.0' encoding='UTF-8'?>\n" .
 		$xml->to_string( $error, indent => 1 );
 }
 

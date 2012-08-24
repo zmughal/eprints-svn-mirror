@@ -1,22 +1,25 @@
+######################################################################
+#
+# EPrints::Repository
+#
+######################################################################
+#
+#
+######################################################################
+
+
+=pod
+
 =for Pod2Wiki
 
 =head1 NAME
 
-EPrints::Repository - connection to a single repository instance
-
-=head1 SYNOPSIS
-
-	use EPrints;
-	
-	$repo = EPrints->new->current_repository;
-	
-	$repo = EPrints->new->repository( "myrepo" );
-	
-	$xml = $repo->xml;
-	$cuser = $repo->current_user;
-	$repo->log( "Got user " . $cuser->id );
+B<EPrints::Repository> - Single connection to a specific EPrints Repository
 
 =head1 DESCRIPTION
+
+This module is really a Repository, REALLY. The name is up to date 
+and everything :-) 
 
 EPrints::Repository represents a connection to the EPrints system. It
 connects to a single EPrints repository, and the database used by
@@ -31,15 +34,13 @@ if there is one, including the CGI parameters.
 
 If the connection requires a username and password then it can also 
 give access to the L<EPrints::DataObj::User> object representing the user who is
-causing this request. See L</current_user>.
+causing this request. See current_user().
 
-The Repository object provides access to the L<EPrints::XML> and
-L<EPrints::XHTML> class which contain methods for creating XHTML results which
-can be returned via the web interface. 
+The Repository object also provides access to the L<EPrints::XHTML> class which contains
+many methods for creating XHTML results which can be returned via the web 
+interface. 
 
 =head1 METHODS
-
-=over 4
 
 =cut
 
@@ -129,7 +130,7 @@ sub new
 	EPrints::Utils::process_parameters( \%opts, {
 		  consume_post => 1,
 		           cgi => 0,
-		         noise => 1,
+		         noise => 0,
 		    db_connect => 1,
 		      check_db => 1,
 	});
@@ -137,7 +138,7 @@ sub new
 	my $self = bless {}, $class;
 
 	$self->{noise} = $opts{noise};
-	$self->{noise} = 1 if ( !defined $self->{noise} );
+	$self->{noise} = 0 if ( !defined $self->{noise} );
 
 	$self->{used_phrases} = {};
 
@@ -324,6 +325,8 @@ sub get_request
 ######################################################################
 =pod
 
+=over 4
+
 =item $query = $repository->query
 
 Return the L<CGI> object describing the current HTTP query, or 
@@ -347,9 +350,15 @@ sub query
 	return $self->{query};
 }
 
+######################################################################
+=pod
+
 =item $value or @values = $repository->param( $name )
 
 Passes through to CGI.pm param method.
+
+$value = $repository->param( $name ): returns the value of CGI parameter
+$name.
 
 $value = $repository->param( $name ): returns the value of CGI parameter
 $name.
@@ -358,6 +367,7 @@ $name.
 CGI parameters in the current request.
 
 =cut
+######################################################################
 
 sub param
 {
@@ -532,19 +542,6 @@ sub eprint($$)
 	my( $repository, $eprint_id ) = @_;
 
 	return $repository->dataset( "eprint" )->get_object( $repository, $eprint_id );
-}
-
-=item $lang = $repository->current_language
-
-Returns the current language.
-
-=cut
-
-sub current_language
-{
-	my( $self ) = @_;
-
-	return $self->{lang};
 }
 
 ######################################################################
@@ -954,6 +951,7 @@ sub _load_templates
 {
 	my( $self ) = @_;
 
+	$self->{html_templates} = {};
 	$self->{text_templates} = {};
 	$self->{template_mtime} = {};
 	$self->{template_path} = {};
@@ -978,7 +976,7 @@ sub _load_templates
 			closedir( $dh );
 		}
 
-		if( !defined $self->{text_templates}->{default}->{$langid} )
+		if( !defined $self->{html_templates}->{default}->{$langid} )
 		{
 			EPrints::abort( "Failed to load default template for language $langid" );
 		}
@@ -991,7 +989,7 @@ sub freshen_template
 {
 	my( $self, $langid, $id ) = @_;
 
-	local $self->{lang};
+	my $curr_lang = $self->{lang};
 	$self->change_lang( $langid );
 
 	my $path = $self->{template_path}->{$id}->{$langid};
@@ -1002,15 +1000,18 @@ sub freshen_template
 	my $old_mtime = $self->{template_mtime}->{$id}->{$langid};
 	if( defined $old_mtime && $old_mtime == $mtime )
 	{
+		$self->{lang} = $curr_lang;
 		return;
 	}
 
 	my $template = $self->_load_template( $path );
 	if( !defined $template ) 
 	{ 
+		$self->{lang} = $curr_lang;
 		return 0; 
 	}
 
+	$self->{html_templates}->{$id}->{$langid} = $template;
 	$self->{text_templates}->{$id}->{$langid} = $self->_template_to_text( $template, $langid );
 	$self->{template_mtime}->{$id}->{$langid} = $mtime;
 }
@@ -1023,7 +1024,8 @@ sub _template_to_text
 
 	my $divide = "61fbfe1a470b4799264feccbbeb7a5ef";
 
-	foreach my $pin ( $template->getElementsByTagName("pin") )
+        my @pins = $template->getElementsByTagName("pin");
+	foreach my $pin ( @pins )
 	{
 		#$template
 		my $parent = $pin->getParentNode;
@@ -1037,7 +1039,8 @@ sub _template_to_text
 		$parent->replaceChild( $textnode, $pin );
 	}
 
-	foreach my $print ( $template->getElementsByTagName("print") )
+        my @prints = $template->getElementsByTagName("print");
+	foreach my $print ( @prints )
 	{
 		my $parent = $print->getParentNode;
 		my $ref = "print:".$print->getAttribute( "expr" );
@@ -1045,7 +1048,9 @@ sub _template_to_text
 		$parent->replaceChild( $textnode, $print );
 	}
 
-	foreach my $phrase ( $template->getElementsByTagName("phrase") )
+        my @phrases = $template->getElementsByTagName("phrase");
+	
+	foreach my $phrase ( @phrases )
 	{
 		my $done_phrase = EPrints::XML::EPC::process( $phrase, session=>$self );
 
@@ -1148,6 +1153,39 @@ sub get_template_parts
 	if( !defined $tempid ) { $tempid = 'default'; }
 	$self->freshen_template( $langid, $tempid );
 	my $t = $self->{text_templates}->{$tempid}->{$langid};
+	if( !defined $t ) 
+	{
+		EPrints::abort( <<END );
+Error. Template not loaded.
+Language: $langid
+Template ID: $tempid
+END
+	}
+
+	return $t;
+}
+######################################################################
+=pod
+
+=begin InternalDoc
+
+=item $template = $repository->get_template( $langid, [$template_id] )
+
+Returns the DOM document which is the webpage template for the given
+language. Do not modify the template without cloning it first.
+
+=end InternalDoc
+
+=cut
+######################################################################
+
+sub get_template
+{
+	my( $self, $langid, $tempid ) = @_;
+  
+	if( !defined $tempid ) { $tempid = 'default'; }
+	$self->freshen_template( $langid, $tempid );
+	my $t = $self->{html_templates}->{$tempid}->{$langid};
 	if( !defined $t ) 
 	{
 		EPrints::abort( <<END );
@@ -1516,29 +1554,37 @@ sub run_trigger
 	}
 }
 
-=item $repository->log( $msg [, $level ] )
+######################################################################
+=pod
 
-Log a plain text message $msg. If $level is given only logs if $level is greater than or equal to L</noise>.
+=item $repository->log( $msg )
 
-To override where log messages are sent define the C<log> callback:
-
-	$c->{log} = sub {
-		my( $repo, $msg, $level ) = @_;
-		
-		...
-	};
+Calls the log method from ArchiveConfig.pm for this repository with the 
+given parameters. Basically logs the comments wherever the site admin
+wants them to go. Printed to STDERR by default.
 
 =cut
+######################################################################
 
 sub log
 {
-	my( $self, $msg, $level) = @_;
+	my( $self , $msg) = @_;
+
+	if( $self->config( 'show_ids_in_log' ) )
+	{
+		my @m2 = ();
+		foreach my $line ( split( '\n', $msg ) )
+		{
+			push @m2,"[".$self->{id}."] ".$line;
+		}
+		$msg = join("\n",@m2);
+	}
 
 	if( $self->can_call( 'log' ) )
 	{
-		$self->call( 'log', $self, $msg, $level );
+		$self->call( 'log', $self, $msg );
 	}
-	elsif( !defined $level || $level >= $self->{noise} )
+	else
 	{
 		print STDERR "$msg\n";
 	}
@@ -2250,6 +2296,11 @@ sub change_lang
 }
 
 
+######################################################################
+=pod
+
+=begin InternalDoc
+
 =item $xhtml_phrase = $repository->html_phrase( $phraseid, %inserts )
 
 Return an XHTML DOM object describing a phrase from the phrase files.
@@ -2263,17 +2314,34 @@ an entry in %inserts where the key is the "ref" of the pin and the
 value is an XHTML DOM object describing what the pin should be 
 replaced with.
 
+=end InternalDoc
+
 =cut
+######################################################################
 
 sub html_phrase
 {
-	my( $self, $phraseid, %inserts ) = @_;
+	my( $self, $phraseid , %inserts ) = @_;
+	# $phraseid [ASCII] 
+	# %inserts [HASH: ASCII->DOM]
+	#
+	# returns [DOM]	
         
 	$self->{used_phrases}->{$phraseid} = 1;
 
-	return $self->{lang}->phrase( $phraseid, \%inserts, $self );
+	my $r = $self->{lang}->phrase( $phraseid , \%inserts , $self );
+	#my $s = $self->make_element( "span", title=>$phraseid );
+	#$s->appendChild( $r );
+	#return $s;
+
+	return $r;
 }
 
+
+######################################################################
+=pod
+
+=begin InternalDoc
 
 =item $utf8_text = $repository->phrase( $phraseid, %inserts )
 
@@ -2283,21 +2351,23 @@ All HTML elements will be removed, <br> and <p> will be converted
 into breaks in the text. <img> tags will be replaced with their 
 "alt" values.
 
+=end InternalDoc
+
 =cut
+######################################################################
 
 sub phrase
 {
 	my( $self, $phraseid, %inserts ) = @_;
 
-	for(values %inserts)
+	$self->{used_phrases}->{$phraseid} = 1;
+	foreach( keys %inserts )
 	{
-		$_ = $self->make_text( $_ );
+		$inserts{$_} = $self->make_text( $inserts{$_} );
 	}
-
-	my $r = $self->html_phrase( $phraseid, %inserts );
-	my $string = EPrints::Utils::tree_to_utf8( $r, 40 );
-	$self->xml->dispose( $r );
-
+        my $r = $self->{lang}->phrase( $phraseid, \%inserts , $self);
+	my $string =  EPrints::Utils::tree_to_utf8( $r, 40 );
+	EPrints::XML::dispose( $r );
 	return $string;
 }
 
@@ -2593,15 +2663,22 @@ sub get_full_url
 }
 
 
-=item $noise_level = $repository->noise
+######################################################################
+=pod
+
+=begin InternalDoc
+
+=item $noise_level = $repository->get_noise
 
 Return the noise level for the current session. See the explaination
 under EPrints::Repository->new()
 
-=cut
+=end InternalDoc
 
-*get_noise = \&noise;
-sub noise
+=cut
+######################################################################
+
+sub get_noise
 {
 	my( $self ) = @_;
 	
@@ -4080,17 +4157,28 @@ sub render_message
 {
 	my( $self, $type, $content, $show_icon ) = @_;
 	
-	my $msg = $self->dataset( "message" )->make_dataobj( {
-			messageid => $self->get_next_id,
-			type => $type,
-			message => $content,
-		});
-
 	$show_icon = 1 unless defined $show_icon;
 
-	return !$show_icon ?
-		$msg->render_citation( "brief" ) :
-		$msg->render_citation();
+	my $id = "m".$self->get_next_id;
+	my $div = $self->make_element( "div", class=>"ep_msg_".$type, id=>$id );
+	my $content_div = $self->make_element( "div", class=>"ep_msg_".$type."_content" );
+	my $table = $self->make_element( "table" );
+	my $tr = $self->make_element( "tr" );
+	$table->appendChild( $tr );
+	if( $show_icon )
+	{
+		my $td1 = $self->make_element( "td" );
+		my $imagesurl = $self->get_repository->get_conf( "rel_path" );
+		$td1->appendChild( $self->make_element( "img", class=>"ep_msg_".$type."_icon", src=>"$imagesurl/style/images/".$type.".png", alt=>$self->phrase( "Plugin/Screen:message_".$type ) ) );
+		$tr->appendChild( $td1 );
+	}
+	my $td2 = $self->make_element( "td" );
+	$tr->appendChild( $td2 );
+	$td2->appendChild( $content );
+	$content_div->appendChild( $table );
+#	$div->appendChild( $title_div );
+	$div->appendChild( $content_div );
+	return $div;
 }
 
 
@@ -5337,7 +5425,7 @@ sub init_from_request
 	return 1;
 }
 
-my @CACHE_KEYS = qw/ id citations class config datasets field_defaults template_path langs plugins storage template_mtime text_templates types workflows loadtime noise /;
+my @CACHE_KEYS = qw/ id citations class config datasets field_defaults html_templates template_path langs plugins storage template_mtime text_templates types workflows loadtime noise /;
 my %CACHED = map { $_ => 1 } @CACHE_KEYS;
 
 sub cleanup

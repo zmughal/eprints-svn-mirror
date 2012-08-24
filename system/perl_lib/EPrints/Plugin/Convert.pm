@@ -2,8 +2,6 @@ package EPrints::Plugin::Convert;
 
 =pod
 
-=for Pod2Wiki
-
 =head1 NAME
 
 EPrints::Plugin::Convert - Convert EPrints::DataObj::Document into different formats
@@ -20,16 +18,13 @@ To allow for simpler local configuration Convert plugins should use SystemSettin
 
 =head1 SYNOPSIS
 
-	my $root = $repo->plugin( 'Convert' );
-	
-	# Get the the available conversions for all plugins
+	my $root = $session->plugin( 'Convert' );
+
 	my %available = $root->can_convert( $document );
-	
-	# Get a conversion scheme for text/plain
+
+	# Convert a document to plain-text
 	my $txt_tool = $available{'text/plain'};
-	
-	# Use the plugin to convert the document to text/plain
-	my $plugin = $txt_tool->{'plugin'};
+	my $plugin = $txt_tool->{ plugin };
 	$plugin->convert( $eprint, $document, 'text/plain' );
 
 =head1 METHODS

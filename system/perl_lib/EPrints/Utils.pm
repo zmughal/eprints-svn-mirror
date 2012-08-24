@@ -40,7 +40,7 @@ B<EPrints::Utils> - Utility functions for EPrints.
 	$string = EPrints::Utils::unescape_filename( $esc_string );
 	
 	$filesize_text = EPrints::Utils::human_filesize( 3300 ); 
-	# returns "3kB"
+	# returns "3kb"
 
 =head1 DESCRIPTION
 
@@ -148,10 +148,6 @@ sub make_name_string
 		$secondbit .= " ".$name->{lineage};
 	}
 
-	if( !length( $firstbit ) )
-	{
-		return $secondbit;
-	}
 	
 	if( defined $familylast && $familylast )
 	{
@@ -1241,10 +1237,10 @@ sub unescape_filename
 
 =item $filesize_text = EPrints::Utils::human_filesize( $size_in_bytes )
 
-Return a human readable version of a filesize. If 0-4095B then show 
-as bytes, if 4-4095KB show as KB otherwise show as MB.
+Return a human readable version of a filesize. If 0-4095b then show 
+as bytes, if 4-4095Kb show as Kb otherwise show as Mb.
 
-eg. Input of 5234 gives "5KB", input of 3234 gives "3234B".
+eg. Input of 5234 gives "5Kb", input of 3234 gives "3234b".
 
 This is not internationalised, I don't think it needs to be. Let me
 know if this is a problem. support@eprints.org
@@ -1257,17 +1253,35 @@ sub human_filesize
 {
 	my( $size_in_bytes ) = @_;
 
-	my $tsize = $size_in_bytes;
-	my $prefixes = [ 'B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB' ];
-	my $i = 0;
-	while(1) {
-		last if( $tsize < 4096 || $i >= scalar( @$prefixes ) - 1 );
-		$tsize = int( $tsize / 1024 );
-		$i++;
+	if( $size_in_bytes < 4096 )
+	{
+		return $size_in_bytes.'b';
 	}
 
-	$tsize .= $prefixes->[$i];
-	return $tsize;
+	my $size_in_k = int( $size_in_bytes / 1024 );
+
+	if( $size_in_k < 4096 )
+	{
+		return $size_in_k.'Kb';
+	}
+
+	my $size_in_meg = int( $size_in_k / 1024 );
+
+	if ($size_in_meg < 4096)
+	{
+		return $size_in_meg.'Mb';
+	}
+
+	my $size_in_gig = int( $size_in_meg / 1024 );
+
+	if ($size_in_gig < 4096)
+	{
+		return $size_in_gig.'Gb';
+	}
+
+	my $size_in_tb = int( $size_in_gig / 1024 );
+
+	return $size_in_tb.'Tb';
 }
 
 my %REQUIRED_CACHE;
@@ -1421,19 +1435,6 @@ sub make_sitemap_url
 	}
 
 	return $url;
-}
-
-=item $ok = cmp_deeply(LEFT, RIGHT)
-
-Compare structures LEFT and RIGHT using C<eq>, but descend into any array or hash references.
-
-Note: this calls the L<EPrints::DataObj/_equal> internal method.
-
-=cut
-
-sub cmp_deeply
-{
-	&EPrints::DataObj::_equal;
 }
 
 1;

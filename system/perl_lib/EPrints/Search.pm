@@ -193,7 +193,7 @@ being mentioned in the description of the search.
 	"custom_order", "keep_cache", 	"cache_id", 	
 	"prefix", 	"defaults", 	"filters", 
 	"search_fields","show_zero_results", "show_help",
-	"limit", "offset",
+	"limit",
 );
 
 sub new
@@ -1110,7 +1110,6 @@ sub perform_search
 		order => $self->{custom_order},
 		dataset => $self->{dataset},
 		limit => $self->{limit},
-		offset => $self->{offset},
 	);
 
 	my $results = EPrints::List->new( 

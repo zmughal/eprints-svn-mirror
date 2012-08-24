@@ -80,7 +80,7 @@ sub run
 
         if( !defined $EPrints::Script::Compiled::{$fn} )
         {
-		$self->runtime_error( "call to unknown function: ".$self->{id} );
+		$self->runtime_error( "call to unknown fuction: ".$self->{id} );
                 next;
         }
 
@@ -290,50 +290,21 @@ sub run_is_set
 	return [ EPrints::Utils::is_set( $param->[0] ), "BOOLEAN" ];
 } 
 
-=item citation_link( OBJECT, [ ,CITATION_NAME [, OPTIONS ] ] )
-
-Renders a citation for OBJECT that will be linked to the object's URL.
-
-If CITATION_NAME is not given defaults to "default".
-
-OPTIONS is a key-value list of options to pass to the citation method e.g.
-
-	citation_link($doc, "default", "eprint", $eprint);
-
-=cut
-
 sub run_citation_link
 {
-	my( $self, $state, $object, $citationid, @opts ) = @_;
+	my( $self, $state, $object, $citationid ) = @_;
 
-	$_ = $_->[0] for @opts;
-
-	my $citation = $object->[0]->render_citation_link( $citationid->[0], @opts  );
+	my $citation = $object->[0]->render_citation_link( $citationid->[0]  );
 
 	return [ $citation, "XHTML" ];
 }
 
-=item citation( OBJECT, [ ,CITATION_NAME [, OPTIONS ] ] )
-
-Renders a citation for OBJECT.
-
-If CITATION_NAME is not given defaults to "default".
-
-OPTIONS is a key-value list of options to pass to the citation method e.g.
-
-	citation_link($doc, "default", "eprint", $eprint);
-
-=cut
-
 sub run_citation
 {
-	my( $self, $state, $object, $citationid, @opts ) = @_;
-
-	$_ = $_->[0] for @opts;
+	my( $self, $state, $object, $citationid ) = @_;
 
 	my $citation = $object->[0]->render_citation( $citationid->[0],
-		finalize => 0,
-		@opts,
+		finalize => 0
 	);
 
 	return [ $citation, "XHTML" ];
@@ -371,19 +342,6 @@ sub run_one_of
 	}
 	return [ 0, "BOOLEAN" ];
 } 
-
-=item namedset( NAMEDSET_NAME )
-
-Returns an ARRAY of types from NAMEDSET_NAME.
-
-=cut
-
-sub run_namedset
-{
-	my( $self, $state, $namedset ) = @_;
-
-	return [ [ $state->{session}->get_types( $namedset ? $namedset->[0] : undef ) ], "ARRAY" ];
-}
 
 sub run_as_item 
 {
@@ -519,15 +477,6 @@ sub run_related_objects
 	return [ scalar($object->[0]->get_related_objects( @r )), 'ARRAY' ];
 }
 
-sub run_search_related
-{
-	my( $self, $state, $object, @required ) = @_;
-
-	my $list = $object->[0]->search_related( map { $_->[0] } @required );
-
-	return [ [ $list->slice ], 'ARRAY' ];
-}
-
 sub run_url
 {
 	my( $self, $state, $object ) = @_;
@@ -546,7 +495,7 @@ sub run_doc_size
 
 	if( !defined $doc->[0] || ref($doc->[0]) ne "EPrints::DataObj::Document" )
 	{
-		$self->runtime_error( "Can only call doc_size() on document objects not ".
+		$self->runtime_error( "Can only call document_size() on document objects not ".
 			ref($doc->[0]) );
 	}
 
@@ -557,7 +506,7 @@ sub run_doc_size
 
 	my %files = $doc->[0]->files;
 
-	return [ $files{$doc->[0]->get_main} || 0, "INTEGER" ];
+	return $files{$doc->[0]->get_main} || 0;
 }
 
 sub run_is_public
@@ -566,7 +515,7 @@ sub run_is_public
 
 	if( !defined $doc->[0] || ref($doc->[0]) ne "EPrints::DataObj::Document" )
 	{
-		$self->runtime_error( "Can only call is_public() on document objects not ".
+		$self->runtime_error( "Can only call document_size() on document objects not ".
 			ref($doc->[0]) );
 	}
 
@@ -630,7 +579,7 @@ sub run_human_filesize
 {
 	my( $self, $state, $size_in_bytes ) = @_;
 
-	return [ EPrints::Utils::human_filesize( $size_in_bytes->[0] || 0 ), "INTEGER" ];
+	return [ EPrints::Utils::human_filesize( $size_in_bytes || 0 ), "INTEGER" ];
 }
 
 sub run_control_url
@@ -863,28 +812,6 @@ sub run_array_concat
 
 	return [ \@v, "DATA_ARRAY" ];
 }
-
-=item grep_dataobj_list( list, fieldname, value )
-
-Greps a list of objects where fieldname equals value.
-
-=cut
-
-sub run_grep_dataobj_list
-{
-	my( $self, $state, $list, $fieldname, $value ) = @_;
-
-	$self->runtime_error( "Usage: grep_dataobj_list( list, fieldname, value )" )
-		if !defined $value || $list->[1] ne "ARRAY";
-
-	$_ = $_->[0] for $list, $fieldname, $value;
-
-	my $f = EPrints::Utils::is_set( $value ) ?
-		sub { $_->value( $fieldname ) eq $value } :
-		sub { !$_->is_set( $fieldname ) };
-
-	return [ [ grep { &$f } @$list ], "ARRAY" ];
-};
 
 sub run_join
 {
