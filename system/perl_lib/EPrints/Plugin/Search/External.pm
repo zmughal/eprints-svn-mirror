@@ -1,22 +1,31 @@
+=for Pod2Wiki
+
 =head1 NAME
 
-EPrints::Plugin::Screen::Import::Upload - file upload only
+EPrints::Plugin::Search::Search::External
+
+=head1 DESCRIPTION
+
+External data source search utility super class.
 
 =cut
 
-package EPrints::Plugin::Screen::Import::Upload;
+package EPrints::Plugin::Search::External;
 
-@ISA = ( 'EPrints::Plugin::Screen::Import' );
+use base "EPrints::Plugin::Search";
 
 use strict;
 
-sub render
+$EPrints::Plugin::Search::External::DISABLE = 1;
+
+sub new
 {
-	my ( $self ) = @_;
+	my( $class, %params ) = @_;
 
-	return $self->render_upload_form;
+	$params{external} = exists $params{external} ? $params{external} : 1;
+
+	return $class->SUPER::new( %params );
 }
-
 
 1;
 

@@ -212,6 +212,8 @@ use EPrints::DataObj;
 use EPrints::DataObj::SubObject;
 use EPrints::DataObj::Access;
 use EPrints::DataObj::Cachemap;
+use EPrints::DataObj::CacheDataobj;
+use EPrints::DataObj::CacheDataobjMap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
 use EPrints::DataObj::EPM;

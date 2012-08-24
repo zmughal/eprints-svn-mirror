@@ -1,16 +1,13 @@
 =head1 NAME
 
-EPrints::Plugin::Screen::Import::View
+EPrints::Plugin::Screen::Import::OnBehalfOf
 
 =cut
 
-package EPrints::Plugin::Screen::Import::View;
 
-@ISA = ( 'EPrints::Plugin::Screen::Workflow' );
+package EPrints::Plugin::Screen::Import::OnBehalfOf;
 
-use strict;
-
-sub get_dataset_id { "import" }
+use base qw( EPrints::Plugin::Screen::Import::Upload );
 
 sub new
 {
@@ -18,13 +15,11 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{icon} = "action_view.png";
-
 	$self->{appears} = [
-		{
-			place => "import_item_actions",
-			position => 200,
-		},
+#		{
+#			place => "user_view_action_links",
+#			position => 500,
+#		},
 	];
 
 	$self->{actions} = [qw/ /];
@@ -32,29 +27,29 @@ sub new
 	return $self;
 }
 
-sub render
+sub properties_from
 {
 	my( $self ) = @_;
 
-	my $session = $self->{session};
-	my $dataobj = $self->{processor}->{dataobj};
+	$self->SUPER::properties_from;
 
-	my $page = $session->make_doc_fragment;
-
-	my $ul = $session->make_element( "ul" );
-	$page->appendChild( $ul );
-
-	$dataobj->map(sub {
-		my( undef, undef, $item ) = @_;
-
-		my $li = $session->make_element( "li" );
-		$ul->appendChild( $li );
-
-		$li->appendChild( $item->render_citation_link() );
-	});
-
-	return $page;
+	$self->{processor}->{screenid} = "Import::Upload";
 }
+
+sub hidden_bits
+{
+	my( $self ) = @_;
+
+	local $self->{processor}->{dataset};
+	local $self->{processor}->{results};
+
+	return(
+		$self->SUPER::hidden_bits,
+		on_behalf_of => $self->{processor}->{dataobj}->id,
+	);
+}
+
+sub render_title { shift->EPrints::Plugin::Screen::render_title }
 
 1;
 
@@ -62,7 +57,7 @@ sub render
 
 =for COPYRIGHT BEGIN
 
-Copyright 2000-2011 University of Southampton.
+Copyright 2012-2012 University of Southampton.
 
 =for COPYRIGHT END
 

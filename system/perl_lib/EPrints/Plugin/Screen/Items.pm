@@ -212,7 +212,9 @@ sub render
 
 	$chunk->appendChild( $self->render_action_list_bar( "item_tools" ) );
 
-	my $import_screen = $repo->plugin( "Screen::Import" );
+	my $import_screen = $repo->plugin( "Screen::Import",
+			processor => $self->{processor},
+		);
 	$chunk->appendChild( $import_screen->render_import_bar() ) if( defined $import_screen );
 
 	if( $has_eprints )
