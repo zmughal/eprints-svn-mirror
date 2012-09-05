@@ -35,6 +35,7 @@
     <epp:phrase id="datasethelp_tweetstream">Archive a stream of tweets based on a search term.</epp:phrase> 
     <epp:phrase id="datasetname_tweet">Tweet</epp:phrase>
     <epp:phrase id="datasetname_tweetstream">Twitter Feed</epp:phrase>
+    <epp:phrase id="tweet_fieldname_urls_from_text">URLs</epp:phrase>
     <epp:phrase id="tweet_fieldname_created_at">Created At</epp:phrase>
     <epp:phrase id="tweet_fieldname_from_user">From User</epp:phrase>
     <epp:phrase id="tweet_fieldname_from_user_id">From User ID</epp:phrase>

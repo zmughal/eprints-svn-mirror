@@ -28,26 +28,54 @@ sub new
 	return $self;
 }
 
+sub tweet_to_json
+{
+	my ($tweet, $depth, $in_hash, %opts) = @_;
+
+	my $json = JSON->new->allow_nonref;
+
+	my $data = $tweet->data_for_export;
+
+	my $json_data = $json->pretty->encode($data);
+
+	return _pad_json($json_data, $depth, $in_hash);
+}
+
+sub _pad_json
+{
+	my ($json_string, $depth, $in_hash) = @_;
+
+	my $pad = "   " x $depth;
+	my $pre_pad = $in_hash ? "" : $pad;
+
+	chomp $json_string;
+	$json_string =~ s/^/$pre_pad/g;
+	$json_string =~ s/\n/\r$pre_pad/g;
+
+	return $json_string;
+}
+
 sub _epdata_to_json
 {
 	my( $self, $epdata, $depth, $in_hash, %opts ) = @_;
+
+	if( ref ($epdata) eq 'EPrints::DataObj::Tweet' )
+	{
+		return tweet_to_json($epdata, $depth, $in_hash, %opts);
+#		my $data = $epdata->data_for_export;
+#
+#		my $json_data = $json->pretty->encode($data);
+#		chomp $json_data;
+#		$json_data =~ s/^/$pre_pad/g;
+#		$json_data =~ s/\n/\r$pre_pad/g;
+#
+#		return $json_data;
+	}
 
 	my $pad = "   " x $depth;
 	my $pre_pad = $in_hash ? "" : $pad;
 
 	my $json = JSON->new->allow_nonref;
-
-	if( ref ($epdata) eq 'EPrints::DataObj::Tweet' )
-	{
-		my $data = $epdata->data_for_export;
-
-		my $json_data = $json->pretty->encode($data);
-		chomp $json_data;
-		$json_data =~ s/^/$pre_pad/g;
-		$json_data =~ s/\n/\r$pre_pad/g;
-
-		return $json_data;
-	}
 
 	my $r = "{\n";
 

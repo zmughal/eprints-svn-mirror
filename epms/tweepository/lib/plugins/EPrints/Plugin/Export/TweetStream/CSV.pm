@@ -28,9 +28,33 @@ sub output_dataobj
 
 	my $repository = $dataobj->repository;
 
+	my $r = [];
+	push @{$r}, csv_headings($dataobj); 
+
 	my $cols = $dataobj->csv_cols;
 
-	my $r = [];
+	#and now the data
+	$dataobj->tweets->map(sub
+	{
+		my ($repository, $dataset, $tweet, $cols) = @_;
+		push @{$r}, tweet_to_csvrow($tweet, $cols); 
+	}, $cols);
+
+	if( defined $opts{fh} )
+	{
+		print {$opts{fh}} join( "", @{$r} );
+		return;
+	}
+
+	return join( "", @{$r} );
+}
+
+sub csv_headings
+{
+	my ($tweetstream) = @_;
+	my $repository = $tweetstream->repository;
+
+	my $cols = $tweetstream->csv_cols;
 
 	my @headings;
 	foreach my $col (@{$cols})
@@ -48,36 +72,28 @@ sub output_dataobj
 			}
 		}
 	}
-	push @{$r}, csv(@headings); 
-
-	#and now the data
-	$dataobj->tweets->map(sub
-	{
-		my ($repository, $dataset, $tweet) = @_;
-
-		my @data;
-		foreach my $col (@{$cols})
-		{
-			my $val = $tweet->value($col->{fieldname});
-			$val = [ $val ] if (not ref $val);
-
-			my $n = $col->{ncols};
-			foreach my $i (1..$n)
-			{
-				push @data, (defined $val->[$i-1] ? $val->[$i-1] : undef);
-			}
-		}
-		push @{$r}, csv(@data); 
-	});
-
-	if( defined $opts{fh} )
-	{
-		print {$opts{fh}} join( "", @{$r} );
-		return;
-	}
-
-	return join( "", @{$r} );
+	return csv(@headings); 
 }
+
+sub tweet_to_csvrow
+{
+	my ($tweet, $cols) = @_;
+
+	my @data;
+	foreach my $col (@{$cols})
+	{
+		my $val = $tweet->value($col->{fieldname});
+		$val = [ $val ] if (not ref $val);
+
+		my $n = $col->{ncols};
+		foreach my $i (1..$n)
+		{
+			push @data, (defined $val->[$i-1] ? $val->[$i-1] : undef);
+		}
+	}
+	return csv(@data); 
+}
+
 
 sub csv
 {

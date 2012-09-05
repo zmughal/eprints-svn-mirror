@@ -1,6 +1,7 @@
 $c->{plugins}{"Export::TweetStream::JSON"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::CSV"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::HTML"}{params}{disable} = 0;
+$c->{plugins}{"Event::ExportTweetStreamPackage"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreams"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreamAbstracts"}{params}{disable} = 0;
 $c->{plugins}{"Screen::EPMC::tweepository"}{params}{disable} = 0;
@@ -22,6 +23,21 @@ $c->{datasets}->{tweetstream} = {
 	import => 1,
 	index => 1,
 };
+
+
+#lightweight dataobj for storing requests for export
+$c->{datasets}->{tsexport} = {
+	class => "EPrints::DataObj::TweetStreamExport",
+	sqlname => "tsexport",
+	sql_counter => "tsexportid",
+	import => 1,
+	index => 0,
+};
+$c->add_dataset_field( 'tsexport', { name=>"tsexportid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tweetid" }, );
+$c->add_dataset_field( 'tsexport', { name=>"tweetstream", type=>"itemref", datasetid=> 'tweetstream', required => 1 }, );
+$c->add_dataset_field( 'tsexport', { name=>"userid", type=>"itemref", datasetid=>"user", required=>1 }, );
+
+
 
 #base metadata
 $c->add_dataset_field( 'tweet', { name=>"tweetid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tweetid" }, );
@@ -1320,3 +1336,21 @@ sub data_for_export
 
 1;
 }
+
+
+
+{
+package EPrints::DataObj::TweetStreamExport;
+
+our @ISA = ( 'EPrints::DataObj' );
+
+use strict;
+
+sub get_dataset_id
+{
+	return "tsexport";
+}
+
+1;
+}
+
