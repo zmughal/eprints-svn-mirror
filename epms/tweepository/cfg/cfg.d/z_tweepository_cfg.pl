@@ -1,3 +1,7 @@
+#turn off links and plugins that are not associated with the twitter harvesting functionality
+$c->{tweepository_simplify_menus} = 1;
+
+
 #tidier screens achieved by having n divisible by cols
 # n -> how many to store
 # cols -> how many columns to render them

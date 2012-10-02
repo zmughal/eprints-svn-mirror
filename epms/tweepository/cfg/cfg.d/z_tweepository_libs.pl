@@ -6,6 +6,25 @@ $c->{plugins}{"Event::UpdateTweetStreams"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreamAbstracts"}{params}{disable} = 0;
 $c->{plugins}{"Screen::EPMC::tweepository"}{params}{disable} = 0;
 $c->{plugins}{"Screen::TweetStreamSearch"}{params}{disable} = 0;
+$c->{plugins}{"Screen::ManageTweetstreamsLink"}{params}{disable} = 0;
+
+#turn off menus that aren't related to twitter harvesting
+if ($c->{tweepository_simplify_menus})
+{
+	$c->{plugins}{"Screen::DataSets"}{appears}{key_tools} = undef;
+	$c->{plugins}{"Screen::Items"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::User::SavedSearches"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Review"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Staff::EPrintSearch"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Staff::IssueSearch"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Staff::HistorySearch"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Admin::RegenAbstracts"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Admin::RegenViews"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::Subject::Edit"}{params}{disable} = 1;
+	$c->{plugins}{"Screen::MetaField::Listing"}{params}{disable} = 1;
+}
+
+
 
 #set up the datasets
 $c->{datasets}->{tweet} = {
