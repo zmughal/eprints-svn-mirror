@@ -34,7 +34,7 @@ sub action_enable
 
 #before enabling, make sure we have all dependant libs installed
 	my @prereqs = qw/ Data::Dumper Date::Calc Date::Parse Encode HTML::Entities JSON LWP::UserAgent Number::Bytes::Human
-                          Storable URI URI::Find /;
+                          Storable URI URI::Find Archive::Zip /;
 
 	my $evalstring;
 	foreach my $l (@prereqs)
