@@ -131,7 +131,7 @@ sub localise
 		{
 			foreach my $fieldid (keys %$epdata)
 			{
-				delete $epdata->{$fieldid} if !$dataset->has_field( $fieldid );
+				delete $epdata->{$fieldid} if $fieldid =~ /^_/ || !$dataset->has_field( $fieldid );
 			}
 		}
 	}
