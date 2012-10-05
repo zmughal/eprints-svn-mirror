@@ -25,6 +25,17 @@ if ($c->{tweepository_simplify_menus})
 }
 
 
+#tweetstream latest_tool
+$c->{tweetstream_latest_tool_modes} = {
+        default => {
+		citation => "default",
+               filters => [
+                       { meta_fields => [ "tweet_count" ], value => "1-" }
+               ],
+
+	}
+};
+
 
 #set up the datasets
 $c->{datasets}->{tweet} = {

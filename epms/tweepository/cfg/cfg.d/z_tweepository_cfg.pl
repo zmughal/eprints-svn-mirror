@@ -80,6 +80,10 @@ push @{$c->{browse_views}},
 		allow_null => 1,
 		include => 1,
                 variations => ["DEFAULT"],
+		filters => [{
+			meta_fields => [qw( tweet_count )],
+			value => "1-",
+		}],
 
 };
 
