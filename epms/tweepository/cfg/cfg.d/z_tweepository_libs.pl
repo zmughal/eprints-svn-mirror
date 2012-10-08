@@ -22,6 +22,8 @@ if ($c->{tweepository_simplify_menus})
 	$c->{plugins}{"Screen::Admin::RegenViews"}{params}{disable} = 1;
 	$c->{plugins}{"Screen::Subject::Edit"}{params}{disable} = 1;
 	$c->{plugins}{"Screen::MetaField::Listing"}{params}{disable} = 1;
+
+	$c->{plugins}->{"Screen::FirstTool"}->{params}->{default} = "ManageTweetstreamsLink";
 }
 
 
