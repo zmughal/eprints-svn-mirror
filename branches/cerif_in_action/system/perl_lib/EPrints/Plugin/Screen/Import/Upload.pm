@@ -101,7 +101,8 @@ sub properties_from
 		if( $key =~ /^cache_(.+)$/ )
 		{
 			my $cache_id = $self->{session}->param( $key );
-			$self->{processor}->{results}->{$1} = $cache_dataset->dataobj( $cache_id );
+			$self->{processor}->{results} =
+				$self->{processor}->{cache}->{$1} = $cache_dataset->dataobj( $cache_id );
 		}
 	}
 }
@@ -121,10 +122,10 @@ sub hidden_bits
 
 	my @hidden_bits = $self->SUPER::hidden_bits;
 
-	foreach my $datasetid (keys %{$self->{processor}->{results} || {}})
+	foreach my $datasetid (keys %{$self->{processor}->{cache} || {}})
 	{
 		push @hidden_bits, 
-			"cache_$datasetid" => $self->{processor}->{results}->{$datasetid}->id;
+			"cache_$datasetid" => $self->{processor}->{cache}->{$datasetid}->id;
 	}
 
 	if( defined $self->{processor}->{dataset} )
@@ -141,7 +142,7 @@ sub action_add
 
 	my $datasetid = $self->{processor}->{dataset}->base_id;
 
-	local $self->{processor}->{results} = $self->{processor}->{results}->{$datasetid};
+	local $self->{processor}->{results} = $self->{processor}->{cache}->{$datasetid};
 
 	return $self->SUPER::action_add;
 }
@@ -152,9 +153,9 @@ sub action_all
 
 	my $datasetid = $self->{processor}->{dataset}->base_id;
 
-	local $self->{processor}->{results} = $self->{processor}->{results}->{$datasetid};
+	local $self->{processor}->{results} = $self->{processor}->{cache}->{$datasetid};
 
-	return $self->SUPER::action_add;
+	return $self->SUPER::action_all;
 }
 
 sub action_confirm_all
@@ -163,9 +164,9 @@ sub action_confirm_all
 
 	my $datasetid = $self->{processor}->{dataset}->base_id;
 
-	local $self->{processor}->{results} = $self->{processor}->{results}->{$datasetid};
+	local $self->{processor}->{results} = $self->{processor}->{cache}->{$datasetid};
 
-	return $self->SUPER::action_add;
+	return $self->SUPER::action_confirm_all;
 }
 
 sub allow_paste { shift->can_be_viewed }
@@ -231,14 +232,14 @@ sub epdata_to_dataobj
 		$epdata->{eprint_status} = "inbox";
 	}
 
-	my $cache = $self->{processor}->{results}->{$dataset->base_id};
+	my $cache = $self->{processor}->{cache}->{$dataset->base_id};
 	if( !defined $cache )
 	{
 		$cache = $repo->dataset( "cache_dataobj_map" )->create_dataobj({
 				userid => $repo->current_user->id,
 				count => 0,
 			});
-		$self->{processor}->{results}->{$dataset->base_id} = $cache;
+		$self->{processor}->{cache}->{$dataset->base_id} = $cache;
 	}
 
 	$self->{count}++;
@@ -445,8 +446,10 @@ sub render_results
 	my $i = 0;
 	my $current = 0;
 
-	foreach my $datasetid (sort keys %$results)
+	foreach my $datasetid (sort keys %{$self->{processor}->{cache}})
 	{
+		my $cache = $self->{processor}->{cache}->{$datasetid};
+
 		$current = $i if $datasetid eq $self->{processor}->{dataset}->base_id;
 		$i++;
 
@@ -455,9 +458,9 @@ sub render_results
 
 		my $title = $xml->create_document_fragment;
 		$title->appendChild( $repo->dataset( $datasetid )->render_name );
-		$title->appendChild( $xml->create_text_node( " (" . $results->{$datasetid}->count . ")" ) );
+		$title->appendChild( $xml->create_text_node( " (" . $cache->count . ")" ) );
 		push @tabs, $title;
-		push @panels, $self->SUPER::render_results( $results->{$datasetid} );
+		push @panels, $self->SUPER::render_results( $cache );
 	}
 
 	$f->appendChild( $xhtml->tabs( \@tabs, \@panels,
