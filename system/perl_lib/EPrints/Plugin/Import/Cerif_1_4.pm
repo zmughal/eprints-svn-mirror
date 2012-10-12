@@ -276,7 +276,7 @@ sub deconstruct
 
 		no warnings; # suppress undef warnings
 
-		if( "class_scheme_cerif_publication_publication_roles" eq $relation->{classschemeid} )
+		if( $relation->{classschemeid} =~ /^class_scheme_(?:cerif_)?publication_publication_roles$/  )
 		{
 			if( "part" eq $relation->{classid} )
 			{
