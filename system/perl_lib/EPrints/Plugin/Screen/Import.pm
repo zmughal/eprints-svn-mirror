@@ -133,6 +133,38 @@ sub action_cancel
 	$self->{processor}->{on_behalf_of} = undef;
 }
 
+sub epdata_to_dataobj
+{
+	my( $self, $epdata, %opts ) = @_;
+
+	my $repo = $self->{session};
+	my $processor = $self->{processor};
+	my $dataset = $opts{dataset};
+
+	my $owner = $processor->{on_behalf_of};
+	$owner = $repo->current_user if !defined $owner;
+
+	# always set the userid
+	if(
+		$dataset->has_field( "userid" ) &&
+		$dataset->field( "userid" )->isa( "EPrints::MetaField::Itemref" )
+	  )
+	{
+		$epdata->{userid} = $owner->id;
+	}
+
+	# actually create the object
+	my $dataobj = $dataset->create_dataobj( $epdata );
+
+	# add editor-imported items to the buffer
+	if( $dataset->base_id eq "eprint" && $owner->id ne $repo->current_user->id )
+	{
+		$dataobj->move_to_buffer;
+	}
+
+	return $dataobj;
+}
+
 sub action_add
 {
 	my( $self ) = @_;
@@ -231,12 +263,18 @@ sub action_confirm_all
 	my $c = 0;
 
 	$cache->map(sub {
+		# note: $dataobj is an in-memory only object
 		(undef, undef, my $dataobj) = @_;
 
-		next if !$self->can_create( $dataobj->get_dataset );
+		my $dataset = $dataobj->get_dataset;
+
+		next if !$self->can_create( $dataset );
 		next if $dataobj->duplicates->count;
 
-		$dataobj = $dataobj->get_dataset->create_dataobj( $dataobj->get_data );
+		$dataobj = $self->epdata_to_dataobj(
+				$dataobj->get_data,
+				dataset => $dataobj->get_dataset,
+			);
 		++$c if defined $dataobj;
 
 		goto BULK_LIMIT if $c >= $self->param( "bulk_import_limit" );

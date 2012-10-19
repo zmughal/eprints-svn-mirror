@@ -216,7 +216,7 @@ sub action_upload
 		);
 }
 
-sub epdata_to_dataobj
+sub cache_epdata
 {
 	my( $self, $epdata, %opts ) = @_;
 
@@ -226,25 +226,10 @@ sub epdata_to_dataobj
 
 	return undef if !$self->can_create( $dataset );
 
-	my $owner = $self->{processor}->{on_behalf_of};
-	$owner = $repo->current_user if !defined $owner;
-
-	# we're working on-behalf-of
-	if( $dataset->has_field( "userid" ) && $dataset->field( "userid" )->isa( "EPrints::MetaField::Itemref" ) )
-	{
-		$epdata->{userid} = $owner->id;
-	}
-
 	if( $dataset->base_id eq "eprint" )
 	{
-		if( $owner->id ne $repo->current_user->id )
-		{
-			$epdata->{eprint_status} = "buffer";
-		}
-		else
-		{
-			$epdata->{eprint_status} = "inbox";
-		}
+		$epdata->{userid} = $self->{repository}->current_user->id;
+		$epdata->{eprint_status} = "inbox";
 	}
 
 	my $cache = $self->{processor}->{cache}->{$dataset->base_id};
@@ -290,7 +275,7 @@ sub run_import
 	$plugin->set_handler( EPrints::CLIProcessor->new(
 		message => sub { !$opts{quiet} && $self->{processor}->add_message( @_ ) },
 		epdata_to_dataobj => sub {
-			return $self->epdata_to_dataobj( @_ );
+			return $self->cache_epdata( @_ );
 		},
 	) );
 
