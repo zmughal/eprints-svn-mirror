@@ -1322,7 +1322,7 @@ sub render_exporters
 	my $xml = $repository->xml;
 
 	my $export_ul = $xml->create_element('ul');
-	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::TweetStream::CSV Export::TweetStream::HTML /)
+	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::TweetStream::CSV Export::TweetStream::HTML Export::WordleLink/)
 	{
 		my $plugin = $repository->plugin($pluginid);
 		next unless $plugin;

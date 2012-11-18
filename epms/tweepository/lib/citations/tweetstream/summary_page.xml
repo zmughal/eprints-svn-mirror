@@ -2,7 +2,7 @@
 
 <cite:citation xmlns="http://www.w3.org/1999/xhtml" xmlns:cite="http://eprints.org/ep3/citation" xmlns:epc="http://eprints.org/ep3/control">
 
-
+<div class='tweetstream_summary'>
 <table> 
 <tr valign = 'top'>
 <td>
@@ -41,5 +41,5 @@
 </td>
 </tr>
 </table>
-
+</div>
 </cite:citation>

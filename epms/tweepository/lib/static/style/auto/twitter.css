@@ -27,9 +27,11 @@ ol.tweets
 {
 	padding-left: 0;
 }
-div.ep_tm_page_content 
+/*div.ep_tm_page_content*/ 
+div.tweetstream_summary
 {
 	width: 1100px;
+	margin-left: -150px;
 }
 
 
