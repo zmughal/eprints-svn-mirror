@@ -1,6 +1,19 @@
 
 
+/* style for RequestTweetStream table */
+.tweetstream_file_summary_table
+{
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 2em;
+	margin-bottom: 2em;
+	border: black thin solid;
+}
 
+.ep_block td.download_td
+{
+	text-align: center;
+}
 
 
 /*style for time graph*/

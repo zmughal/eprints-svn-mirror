@@ -7,6 +7,7 @@ $c->{plugins}{"Event::UpdateTweetStreamAbstracts"}{params}{disable} = 0;
 $c->{plugins}{"Screen::EPMC::tweepository"}{params}{disable} = 0;
 $c->{plugins}{"Screen::TweetStreamSearch"}{params}{disable} = 0;
 $c->{plugins}{"Screen::ManageTweetstreamsLink"}{params}{disable} = 0;
+$c->{plugins}{"Screen::RequestTweetStreamExport"}{params}{disable} = 0;
 
 #turn off menus that aren't related to twitter harvesting
 if ($c->{tweepository_simplify_menus})
@@ -65,9 +66,20 @@ $c->{datasets}->{tsexport} = {
 	import => 1,
 	index => 0,
 };
-$c->add_dataset_field( 'tsexport', { name=>"tsexportid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tweetid" }, );
+$c->add_dataset_field( 'tsexport', { name=>"tsexportid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tsexportid" }, );
 $c->add_dataset_field( 'tsexport', { name=>"tweetstream", type=>"itemref", datasetid=> 'tweetstream', required => 1 }, );
 $c->add_dataset_field( 'tsexport', { name=>"userid", type=>"itemref", datasetid=>"user", required=>1 }, );
+$c->add_dataset_field( 'tsexport', { name=>"status", type=>"set", options => [qw( pending running finished )] }, );
+$c->add_dataset_field( 'tsexport', 
+{
+	name=>"datestamp", type=>"time", required=>0, import=>0,
+	render_res=>"minute", render_style=>"short", can_clone=>0
+} );
+$c->add_dataset_field( 'tsexport',
+{
+	name=>"date_completed", type=>"time", required=>0, import=>0,
+	render_res=>"minute", render_style=>"short", can_clone=>0
+} );
 
 
 
@@ -795,8 +807,63 @@ our @ISA = ( 'EPrints::DataObj' );
 use EPrints;
 use EPrints::Search;
 use Date::Calc qw/ Week_of_Year Delta_Days Add_Delta_Days /;
+use File::Path qw/ make_path /;
 
 use strict;
+
+
+sub pending_package_request
+{
+	my ($self) = @_;
+	return $self->_package_request('pending');
+}
+sub running_package_request
+{
+	my ($self) = @_;
+	return $self->_package_request('running');
+}
+
+sub _package_request
+{
+	my ($self, $status) = @_;
+	my $repo = $self->repository;
+	my $ds = $repo->dataset('tsexport');
+
+	my %options;
+	$options{filters} = [{
+		meta_fields => [qw( tweetstream )],
+		value => $self->id,
+	},
+	{
+		meta_fields => [qw( status )],
+		value => $status,
+	},
+	];
+	$options{custom_order} = '-tsexportid';
+
+	my $list = $ds->search(%options);
+
+	if ($list->count >= 1)
+	{
+		return $list->item(0);
+	}
+	return undef;
+}
+
+sub export_package_filepath
+{
+	my ($self) = @_;
+	my $repo = $self->repository;
+
+	my $repository = @_;
+	my $target_dir = $repo->config('archiveroot') . '/var/tweepository/export/';
+
+	make_path($target_dir) unless -d $target_dir;
+
+	my $filename = 'tweetstream' . $self->id . '_package.zip';
+
+	return $target_dir . $filename;
+}
 
 sub render_top_frequency_values
 {
@@ -1381,6 +1448,23 @@ use strict;
 sub get_dataset_id
 {
 	return "tsexport";
+}
+
+
+sub get_defaults
+{
+        my( $class, $session, $data, $dataset ) = @_;
+
+        $class->SUPER::get_defaults( $session, $data, $dataset );
+
+	$data->{datestamp} = EPrints::Time::get_iso_timestamp();
+	$data->{status} = 'pending';
+
+	my $user = $session->current_user;
+	my $userid;
+	$data->{userid} = $user->id if defined $user;
+
+        return $data;
 }
 
 1;

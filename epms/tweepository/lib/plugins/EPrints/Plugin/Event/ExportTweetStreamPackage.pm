@@ -2,8 +2,9 @@ package EPrints::Plugin::Event::ExportTweetStreamPackage;
 
 @ISA = qw( EPrints::Plugin::Event::LockingEvent );
 
-use File::Path qw/ make_path remove_tree /;
+use File::Path qw/ make_path /;
 use Archive::Zip;
+use File::Copy;
 
 use strict;
 
@@ -36,7 +37,6 @@ sub action_export_tweetstream_packages
 
 	foreach my $id (@ids)
 	{
-print STDERR "-$id-\n";
 		my $ts = $repo->dataset('tweetstream')->dataobj($id);
 		next unless $ts;
 		$self->export_single_tweetstream($ts);
@@ -53,8 +53,26 @@ sub action_export_queued_tweetstream_packages
 	my ($self) = @_;
 
 	my $repo = $self->repository;
+
 	my $ds = $repo->dataset('tsexport');
-	return unless $ds->count($repo); #just leave if there are no requests
+
+	#tidy up after possible previos crash (set all 'running' to 'pending')
+	my @exports = $ds->search( filters => [ {
+                meta_fields => [qw( status )],
+                value => 'running',
+        },] )->get_records;
+	foreach my $export(@exports)
+	{
+		$export->set_value('status','pending');
+		$export->commit;
+	}
+
+	my $pending_count = $ds->search( filters => [ {
+                meta_fields => [qw( status )],
+                value => 'pending',
+        },] )->count;
+
+	return unless $pending_count >= 1; #just leave if there are no requests
 
         $self->{log_data}->{start_time} = scalar localtime time;
 
@@ -75,25 +93,41 @@ sub action_export_queued_tweetstream_packages
 
 }
 
+
+
 sub export_requested_tweetstreams
 {
 	my ($self) = @_;
 
 	my $repo = $self->repository;
 
-	my $export_ds = $repo->dataset('dsexport');
+	my $export_ds = $repo->dataset('tsexport');
 
 	#process a maximum of 100 records in this run.  Leave more for the next run
-	my @exports = $export_ds->search->get_records(0,100);
+	my @exports = $export_ds->search( filters => [ {
+                meta_fields => [qw( status )],
+                value => 'pending',
+        },] )->get_records(0,100);
 
+	my $done_timestamps = {};
 	foreach my $export (@exports)
 	{
 		my $tsid = $export->value('tweetstream');
-		my $ts = $repo->dataset('tweetstream')->dataobj($tsid) if $tsid;
-		if ($ts)
+		if (!$done_timestamps->{$tsid})
 		{
-			$self->export_single_tweetstream($ts);
+			$export->set_value('status','running');
+			$export->commit();
+			my $ts = $repo->dataset('tweetstream')->dataobj($tsid) if $tsid;
+			if ($ts)
+			{
+				$self->export_single_tweetstream($ts);
+			}
 		}
+		$done_timestamps->{$tsid} = EPrints::Time::get_iso_timestamp();
+		#it either failed, succeeded or was a dupliate
+		$export->set_value('status','finished');
+		$export->set_value('date_completed',  $done_timestamps->{$tsid});
+		$export->commit;
 	}
 }
 
@@ -104,24 +138,28 @@ sub export_single_tweetstream
 	my $repo = $self->repository;
 	my $tsid = $ts->id;
 
-	my $target_dir = $self->create_target_dir($ts);
-	my $tmp_dir = $target_dir . 'tmp/';
-	make_path($tmp_dir);
+	my $target_dir = File::Temp->newdir( "ep-ts-export-zipdirXXXXX", TMPDIR => 1 );
+
+	my $tmp_dir = File::Temp->newdir( "ep-ts-export-explodeXXXXX", TMPDIR => 1 );
 
 	$self->extract_export_data($ts, $tmp_dir);
 
-	my $final_dir = $target_dir;
-	$final_dir .= 'tweetstream' . $tsid . '/';
-	make_path($final_dir);
+	my $final_dir = File::Temp->newdir( "ep-ts-export-implodeXXXXX", TMPDIR => 1 );
+
 	$self->process_extracted_data($ts, $final_dir, $tmp_dir);
 
-	create_zip($final_dir, "tweetstream$tsid", $target_dir . "tweetstream$tsid.zip");
+	my $filename = 'tmp.zip';
+	my $filepath = $target_dir . $filename;
+	create_zip($final_dir, "tweetstream$tsid", $filepath );
 
-	remove_tree($tmp_dir);
-	remove_tree($final_dir);
+	my $final_filepath = $ts->export_package_filepath;
 
+	move($filepath, $final_filepath);
 }
 
+
+#the tweet data is spread across a temporary tree on the filesystem.
+#Collate this data.
 sub process_extracted_data
 {
 	my ($self, $ts, $dest_dir, $src_dir) = @_;
@@ -154,7 +192,7 @@ sub create_zip
 
 sub process_file
 {
-	my ($self, $file, $filename, $data) = @_;
+	my ($self, $file, $filename, $data, $ts) = @_;
 
 	if ($filename eq 'csv')
 	{
@@ -165,7 +203,7 @@ sub process_file
 			$data->{csv_count} = 1; #reinitialise to one because this line comes after the increment.
 			close $data->{csv_fh};
 			$data->{csv_fh} = $self->create_fh('csv', $data->{base_dir}, $data->{csv_page_no});
-			initialise_csv($data->{csv_fh});
+			initialise_csv($data->{csv_fh}, $ts);
 		}
 		open FILE, $file or return; ##Again, I sould do exception handling
 		print {$data->{csv_fh}} <FILE>;
@@ -254,24 +292,6 @@ sub generate_log_string
 	return join("\n", @r);
 }
 
-sub create_target_dir
-{
-	my ($self, $ts) = @_;
-
-	my $repo = $self->repository;
-
-	my $target_dir = $repo->config('archiveroot') . '/var/tweepository/export/';
-	$target_dir .= sprintf("%04d",$ts->id) . '/';
-	my ($sec,$min,$hour,$mday,$mon,$year) = localtime(time);
-	$year+=1900; $mon+=1;
-	$target_dir .= sprintf("%04d%02d%02d%02d%02d%02d",$year,$mon,$mday,$hour,$min,$sec);
-	$target_dir .= '/';
-
-	make_path($target_dir);
-
-	return $target_dir;
-}
-
 sub process_tweet
 {
 	my ($self, $tweet, $ts, $tmp_dir) = @_;
@@ -318,12 +338,12 @@ sub extract_export_data
 		last unless $results->count > 0;
 
 		$results->map(sub {
-				my ($repo, $ds, $tweet, $data) = @_;
+			my ($repo, $ds, $tweet, $data) = @_;
 
-				my $tweetid = $tweet->id;
-				$high_id = $tweetid if $tweetid > $high_id;
-				$self->process_tweet($tweet, $ts, $tmp_dir);
-				});
+			my $tweetid = $tweet->id;
+			$high_id = $tweetid if $tweetid > $high_id;
+			$self->process_tweet($tweet, $ts, $tmp_dir);
+		});
 
 		$results->DESTROY;
 	}
@@ -355,7 +375,7 @@ sub traverse_source_tree
 	initialise_csv($data->{csv_fh}, $ts);
 	initialise_json($data->{json_fh});
 
-	$self->process_dir($src_dir, $data);
+	$self->process_dir($src_dir, $data, $ts);
 
 	#print the json file footer before closing the file
 	print {$data->{json_fh}} "\n  ]\n}";
@@ -366,7 +386,7 @@ sub traverse_source_tree
 
 sub process_dir
 {
-	my ($self, $dir, $data) = @_;
+	my ($self, $dir, $data, $ts) = @_;
 	$dir .= '/' unless $dir =~ m/\/$/;
 
 	opendir (my $dir_h, $dir) or return; ##This shouldn't happen!  May need exception handling.
@@ -378,11 +398,11 @@ sub process_dir
 		my $file = $dir . $filename;
 		if (-d $file)
 		{
-			$self->process_dir($file, $data)
+			$self->process_dir($file, $data, $ts)
 		}
 		else
 		{
-			$self->process_file($file, $filename, $data);
+			$self->process_file($file, $filename, $data, $ts);
 		}
 	}
 	closedir $dir_h;
