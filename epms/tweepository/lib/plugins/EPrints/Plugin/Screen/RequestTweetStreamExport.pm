@@ -64,6 +64,8 @@ sub render
 
 	my $div = $session->make_element( "div", class=>"ep_block" );
 
+	$div->appendChild($self->html_phrase('preamble'));
+
 	if ($ts->pending_package_request || $ts->running_package_request)
 	{
 		$div->appendChild($self->html_phrase('package_pending'));
