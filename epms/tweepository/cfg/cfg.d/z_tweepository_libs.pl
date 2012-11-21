@@ -9,6 +9,12 @@ $c->{plugins}{"Screen::TweetStreamSearch"}{params}{disable} = 0;
 $c->{plugins}{"Screen::ManageTweetstreamsLink"}{params}{disable} = 0;
 $c->{plugins}{"Screen::RequestTweetStreamExport"}{params}{disable} = 0;
 
+
+
+$c->{plugins}->{"Workflow::View"}->{appears}->{key_tools} = 100;
+$c->{plugins}->{"Workflow::Edit"}->{appears}->{key_tools} = 200;
+$c->{plugins}->{"RequestTweetStreamExport"}->{appears}->{key_tools} = 300;
+
 #turn off menus that aren't related to twitter harvesting
 if ($c->{tweepository_simplify_menus})
 {
@@ -65,6 +71,7 @@ $c->{datasets}->{tsexport} = {
 	import => 1,
 	index => 0,
 };
+
 $c->add_dataset_field( 'tsexport', { name=>"tsexportid", type=>"counter", required=>1, import=>0, can_clone=>1, sql_counter=>"tsexportid" }, );
 $c->add_dataset_field( 'tsexport', { name=>"tweetstream", type=>"itemref", datasetid=> 'tweetstream', required => 1 }, );
 $c->add_dataset_field( 'tsexport', { name=>"userid", type=>"itemref", datasetid=>"user", required=>1 }, );
@@ -144,7 +151,6 @@ $c->add_dataset_field( 'tweetstream', { name=>"expiry_date", type=>"date", requi
 $c->add_dataset_field( 'tweetstream', { name=>"tweet_count", type=>'bigint', volatile=>1}, );
 $c->add_dataset_field( 'tweetstream', { name=>"oldest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );
 $c->add_dataset_field( 'tweetstream', { name=>"newest_tweets", type=>"itemref", datasetid=>'tweet', multiple => 1, render_value => 'EPrints::DataObj::TweetStream::render_tweet_field' }, );
-$c->add_dataset_field( 'tweetstream', { name=>"rendered_tweetlist", virtual=> 1, type=>"int", render_value => 'EPrints::DataObj::TweetStream::render_tweet_list' }, );
 #digest information store anything that appears more than once.
 $c->add_dataset_field( 'tweetstream', { 
 	name => "top_hashtags", type=>"compound", multiple=>1,
@@ -229,6 +235,11 @@ $c->add_dataset_field( 'tweetstream', { name => "title", type=>'text' }, );
 $c->add_dataset_field( 'tweetstream', { name => "abstract", type=>'longtext' }, );
 $c->add_dataset_field( 'tweetstream', { name => "project_title", type=>'text' }, );
 
+
+#fields used to render things on the abstract page
+$c->add_dataset_field( 'tweetstream', { name=>"rendered_tweetlist", virtual=> 1, type=>"int", render_value => 'EPrints::DataObj::TweetStream::render_tweet_list' }, );
+$c->add_dataset_field( 'tweetstream', { name => "tools", type=>'boolean', virtual => '1', render_value => 'EPrints::DataObj::TweetStream::render_tools' }, );
+$c->add_dataset_field( 'tweetstream', { name => "exports", type=>'boolean', virtual => '1', render_value => 'EPrints::DataObj::TweetStream::render_exports' }, );
 
 
 
@@ -864,6 +875,15 @@ sub export_package_filepath
 	return $target_dir . $filename;
 }
 
+sub render_exports
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+	return $object->render_exporters;
+}
+
+
+
 sub render_top_frequency_values
 {
         my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
@@ -1357,8 +1377,6 @@ sub render_tweet_list
 	my $tweet_ds = $repository->dataset('tweet');
 	my $frag = $xml->create_document_fragment;
 
-	$frag->appendChild($object->render_exporters);
-
 	$frag->appendChild($object->render_value('oldest_tweets'));
 
 	if ($object->is_set('newest_tweets')) #will only be set if weh have more than n_oldest + n_newest tweets
@@ -1379,6 +1397,69 @@ sub render_tweet_list
 	return $frag;
 }
 
+sub render_tools
+{
+        my( $session , $field , $value , $alllangs , $nolink , $object ) = @_;
+
+	my $processor = EPrints::ScreenProcessor->new(
+		session => $session,
+		dataobj => $object,
+		dataset => $object->dataset,
+	);
+	my $some_plugin = $session->plugin( "Screen", processor=>$processor );
+
+	my $table = $session->make_element('table', class => 'tweepository_summary_page_actions' );
+	my $icons_tr = $session->make_element('tr');
+	my $buttons_tr = $session->make_element('tr');
+	$table->appendChild($icons_tr);
+	$table->appendChild($buttons_tr);
+
+	my $tools = $session->config('tweepository_tools_on_summary_page');
+
+	foreach my $screenid (@{$tools})
+	{
+		my $screen = $session->plugin(
+			$screenid,
+			processor => $processor,
+		);
+#		my $screen = $item->{screen};
+#print STDERR '::::';
+#print STDERR join(', ',keys %{$item}), "\n";
+
+
+		next unless $screen;
+		next unless $screen->can_be_viewed;
+
+		my $params = {
+			screen_id => $screen->get_id,
+			screen => $screen,
+			hidden => {
+				dataobj => $object->id,
+				dataset => 'tweetstream'
+			}
+		};
+
+		my $td = $session->make_element('td');
+		$icons_tr->appendChild($td);
+		$td->appendChild($screen->render_action_icon($params));
+
+		$td = $session->make_element('td');
+		$buttons_tr->appendChild($td);
+		$td->appendChild($screen->render_action_button($params));
+	}
+	return $table;
+}
+
+sub _screenid_to_url
+{
+	my ($self, $screenid) = @_;
+
+	return $self->{session}->get_repository->get_conf( "http_cgiurl" ).
+		'/users/home?screen=' . $screenid .
+		'&dataset=tweetstream' .
+		'&dataobj=' . $self->id;
+}
+
 
 sub render_exporters
 {
@@ -1387,8 +1468,20 @@ sub render_exporters
 	my $repository = $self->repository;
 	my $xml = $repository->xml;
 
+	my $tweet_count = $self->value('tweet_count');
+	$tweet_count = 0 unless $tweet_count;
+	my $threshold = $repository->config('tweepository_export_threshold');
+	$threshold = 100000 unless $threshold;
+
+	if ($self->value('tweet_count') > $threshold)
+	{
+		return $repository->html_phrase('TweetStream/export_too_many');
+	}
+
+	my $pluginids = $repository->config('tweepository_exports_on_summary_page');
+
 	my $export_ul = $xml->create_element('ul');
-	foreach my $pluginid (qw/ Export::TweetStream::JSON Export::TweetStream::CSV Export::TweetStream::HTML Export::WordleLink/)
+	foreach my $pluginid (@{$pluginids})
 	{
 		my $plugin = $repository->plugin($pluginid);
 		next unless $plugin;

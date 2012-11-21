@@ -1,6 +1,20 @@
 #turn off links and plugins that are not associated with the twitter harvesting functionality
 $c->{tweepository_simplify_menus} = 1;
 
+$c->{tweepository_exports_on_summary_page} = [qw(
+Export::TweetStream::CSV
+Export::TweetStream::HTML
+Export::TweetStream::JSON
+Export::WordleLink
+)];
+
+$c->{tweepository_tools_on_summary_page} = [
+'Screen::Workflow::View','Screen::Workflow::Edit',
+'Screen::RequestTweetStreamExport'
+];
+
+#the tweet_count at which the user is warned not to export
+$c->{tweepository_export_threshold} = 100000;
 
 #tidier screens achieved by having n divisible by cols
 # n -> how many to store

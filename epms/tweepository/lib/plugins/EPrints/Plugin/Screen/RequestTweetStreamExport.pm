@@ -20,8 +20,8 @@ sub new
 			position => 1600,
 		},
 		{
-			place => "dataobj_view_actions",
-			position => 1600,
+			place => "tweepository_tools_on_summary_page",
+			position => 300,
 		},
 	];
 	

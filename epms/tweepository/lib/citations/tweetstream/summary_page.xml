@@ -13,6 +13,10 @@
     </div>
 </td>
 <td valign = 'top' style = 'padding-left: 1em'>
+    <h2>Export</h2>
+	<epc:print expr="exports"/>
+    <h2>Tools</h2>
+	<epc:print expr="tools"/>
     <h2>Top Tweeters</h2>
     <div style="margin-left: 3em">
       <epc:print expr="top_from_users"/>

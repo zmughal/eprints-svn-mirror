@@ -1,3 +1,14 @@
+.tweepository_summary_page_actions
+{
+	margin-left: 3em;
+}
+
+.tweepository_summary_page_actions td
+{
+	text-align: center;
+	padding-right: 1em;
+}
+
 
 
 /* style for RequestTweetStream table */

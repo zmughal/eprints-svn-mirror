@@ -2,9 +2,10 @@
 <!DOCTYPE phrases SYSTEM "entities.dtd">
 <epp:phrases xmlns="http://www.w3.org/1999/xhtml" xmlns:epp="http://eprints.org/ep3/phrase" xmlns:epc="http://eprints.org/ep3/control">
 
-    <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:title">Generate Twitter Feed Package</epp:phrase>
+    <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:title">Twitter Packager</epp:phrase>
     <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:queue_export">Generate New Package</epp:phrase>
     <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:export_redir">Download Package</epp:phrase>
+    <epp:phrase id="TweetStream/export_too_many"><p>There are too many tweets in this collection to safely use the default exports.  Please use the package exporter in the tools below.</p></epp:phrase>
 
 
     <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:package_exists"><p>A package exists and may be downloaded.
