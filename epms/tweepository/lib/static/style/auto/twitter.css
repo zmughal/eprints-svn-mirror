@@ -1,3 +1,13 @@
+.unshown_tweets
+{
+	display: block;
+	font-size: larger;
+	font-weight: bold;
+	margin-left: 3em;
+	margin-top: 2em;
+	margin-bottom: 1em;
+}
+
 .tweepository_preamble
 {
 	text-align: left;

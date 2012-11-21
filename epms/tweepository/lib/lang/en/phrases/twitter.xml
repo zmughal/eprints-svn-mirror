@@ -53,7 +53,7 @@
         <epp:phrase id="lib/searchfield:desc:bigint_orless" ref="lib/searchfield:desc:orless" />
         <epp:phrase id="lib/searchfield:desc:bigint_ormore" ref="lib/searchfield:desc:ormore" />
 
-    <epp:phrase id="DataObj::Tweet/unshown_items"><epc:pin name="n"/> tweets not shown...</epp:phrase>
+    <epp:phrase id="DataObj::Tweet/unshown_items"><span class='unshown_tweets'><epc:pin name="n"/> tweets not shown...</span></epp:phrase>
     <epp:phrase id="DataObj::Tweet::error_text_-1">A number of unharvested tweets may have appeared in the stream at this point.</epp:phrase>
     <epp:phrase id="TweetStream/export_menu"><p>Export the feed as: <epc:pin name="export_list"/></p></epp:phrase>
     <epp:phrase id="datasethelp_tweetstream">Archive a stream of tweets based on a search term.</epp:phrase> 
