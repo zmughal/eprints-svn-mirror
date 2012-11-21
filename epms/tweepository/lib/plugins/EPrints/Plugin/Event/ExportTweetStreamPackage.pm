@@ -138,23 +138,18 @@ sub export_single_tweetstream
 	my $repo = $self->repository;
 	my $tsid = $ts->id;
 
-	my $target_dir = File::Temp->newdir( "ep-ts-export-zipdirXXXXX", TMPDIR => 1 );
-
 	my $tmp_dir = File::Temp->newdir( "ep-ts-export-explodeXXXXX", TMPDIR => 1 );
 
 	$self->extract_export_data($ts, $tmp_dir);
 
 	my $final_dir = File::Temp->newdir( "ep-ts-export-implodeXXXXX", TMPDIR => 1 );
 
+
 	$self->process_extracted_data($ts, $final_dir, $tmp_dir);
 
-	my $filename = 'tmp.zip';
-	my $filepath = $target_dir . $filename;
-	create_zip($final_dir, "tweetstream$tsid", $filepath );
-
 	my $final_filepath = $ts->export_package_filepath;
-
-	move($filepath, $final_filepath);
+	unlink $final_filepath if -e $final_filepath;
+	create_zip($final_dir, "tweetstream$tsid", $final_filepath );
 }
 
 
@@ -250,7 +245,7 @@ sub tweet_filepath
 {
 	my ($self, $tweet, $tmp_dir) = @_;
 
-	return $tmp_dir . $self->twitterid_to_pathfrag($tweet->value('twitterid'));
+	return $tmp_dir . '/' . $self->twitterid_to_pathfrag($tweet->value('twitterid'));
 }
 
 
@@ -353,7 +348,7 @@ sub create_fh
 {
 	my ($self, $type, $base_dir, $page) = @_;
 
-	my $filename = $base_dir . 'tweets' . sprintf("%04d",$page) . ".$type";
+	my $filename = $base_dir . '/tweets' . sprintf("%04d",$page) . ".$type";
 	open(my $fh, ">", $filename) or die "cannot open $filename for writing: $!";
 
 	return $fh;

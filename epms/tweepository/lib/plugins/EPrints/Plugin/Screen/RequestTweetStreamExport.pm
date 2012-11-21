@@ -10,7 +10,7 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{actions} = [qw/ queue_export /];
+	$self->{actions} = [qw/ queue_export export_redir export /];
 
 	$self->{icon} = "tweetstream_package.png";
 
@@ -35,6 +35,24 @@ sub can_be_viewed
 	return 0 unless $self->{processor}->{dataset}->id eq 'tweetstream';
 
 	return $self->allow( "tweetstream/export" );
+}
+
+sub allow_export_redir
+{
+	my ($self) = @_;
+
+	return 0 unless (-e $self->{processor}->{dataobj}->export_package_filepath);
+
+	return $self->can_be_viewed;
+}
+
+sub allow_export
+{
+	my ($self) = @_;
+
+	return 0 unless (-e $self->{processor}->{dataobj}->export_package_filepath);
+
+	return $self->can_be_viewed;
 }
 
 sub render
@@ -69,22 +87,19 @@ sub render
 
 			my $mtime = (stat( $file ))[9];
 			my $date = $session->make_text(scalar localtime($mtime));
-			my $link = $session->render_link('http://example.org/');
-			$link->appendChild($session->make_text('Download'));
 
-			$div->appendChild($self->html_phrase('package_exists', filesize => $size, datestamp => $date, 'link' => $link));
+			$div->appendChild($self->html_phrase('package_exists',
+				filesize => $size,
+				datestamp => $date,	
+				downloadbutton => $self->form_with_buttons( export_redir => $self->phrase('export_redir') )
+			));
 		}
 		else
 		{
 			$div->appendChild($self->html_phrase('package_absent'));
 		}
-		my %buttons = ( queue_export => $self->phrase('queue_export') );
 
-		my $form= $self->render_form;
-		$form->appendChild( 
-			$self->{session}->render_action_buttons( 
-				%buttons ) );
-		$div->appendChild( $form );
+		$div->appendChild( $self->form_with_buttons(queue_export => $self->phrase('queue_export')));
 	}
 
 #	$div->appendChild( $self->html_phrase("sure_delete",
@@ -94,6 +109,17 @@ sub render
 	return( $div );
 }	
 
+sub form_with_buttons
+{
+	my ($self, %buttons) = @_;
+
+	my $form= $self->render_form;
+	$form->appendChild( $self->{session}->render_action_buttons( %buttons) );
+	return $form;
+}
+
+
+#Queue up the export of the tweetstream
 sub action_queue_export
 {
 	my( $self ) = @_;
@@ -108,6 +134,79 @@ sub action_queue_export
 
 	#$self->{processor}->{screenid} = $self->{processor}->{dataobj}->view_screen;
 }
+
+
+
+sub action_export
+{
+	my( $self ) = @_;
+
+	$self->{processor}->{tweetstream_subscreen} = "export";
+
+	return;
+}
+
+sub wishes_to_export
+{
+	my( $self ) = @_;
+	return 0 unless $self->{processor}->{tweetstream_subscreen} eq "export";
+	return 1;
+}
+
+#Send the file
+sub export 
+{
+	my( $self ) = @_;
+
+	my $tweetstream = $self->{processor}->{dataobj};
+	my $filepath = $tweetstream->export_package_filepath;
+	
+	return unless -e $filepath;
+
+	my $buffer;
+	open ZIP, $filepath || return;
+
+	binmode ZIP;
+	binmode STDOUT;
+
+	while (
+		read (ZIP, $buffer, 655536)
+		and print STDOUT $buffer
+	) {};
+
+	close ZIP;
+
+}
+
+sub export_mimetype
+{
+	return "text/plain";
+}
+
+sub action_export_redir
+{
+	my( $self ) = @_;
+
+	$self->{processor}->{redirect} = $self->export_url();
+}
+
+sub export_url
+{
+	my( $self ) = @_;
+
+	my $url = URI->new( $self->{session}->get_uri() . "/export_" . $self->{session}->get_repository->get_id . ".zip" );
+	my $tweetstreamid = $self->{processor}->{dataobj}->id;
+
+	$url->query_form(
+		screen => $self->{processor}->{screenid},
+		dataset => "tweetstream",
+		dataobj => $tweetstreamid,
+		_action_export => 1,
+	);
+
+	return $url;
+}
+
 
 1;
 

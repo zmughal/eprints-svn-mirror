@@ -39,7 +39,6 @@ $c->{tweetstream_latest_tool_modes} = {
 	}
 };
 
-
 #set up the datasets
 $c->{datasets}->{tweet} = {
 	class => "EPrints::DataObj::Tweet",
