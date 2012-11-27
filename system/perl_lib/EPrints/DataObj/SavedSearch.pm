@@ -505,6 +505,15 @@ sub get_url
 	return $searchexp->search_url;
 }
 
+sub permit
+{
+	my( $self, $priv, $user ) = @_;
+
+	# saved-searches ignore the parent permissions, allowing users to share
+	# their saved-searches without their own user record being visible
+	return $self->EPrints::DataObj::permit( $priv, $user );
+}
+
 =pod
 
 =back
