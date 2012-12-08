@@ -1,5 +1,6 @@
 package EPrints::Plugin::Event::ExportTweetStreamPackage;
 
+use EPrints::Plugin::Event::LockingEvent;
 @ISA = qw( EPrints::Plugin::Event::LockingEvent );
 
 use File::Path qw/ make_path /;
