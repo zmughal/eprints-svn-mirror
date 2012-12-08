@@ -479,7 +479,7 @@ sub remove
 sub add_to_tweetstream
 {
 	my ($self, $tweetstream) = @_;
-	$self->add_to_tweeetstreamid($tweetstream->id);
+	$self->add_to_tweetstreamid($tweetstream->id);
 }
 
 #takes a scalar or hashref

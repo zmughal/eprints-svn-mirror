@@ -205,22 +205,23 @@ sub process_file
 	}
 	if ($filename eq 'json')
 	{
-		print {$data->{json_fh}} ",\n" if $data->{json_count} > 1; #terminate the previous block
+		open FILE, $file or return; ##Again, I sould do exception handling
+
+		print {$data->{json_fh}} ",\n" if ($data->{json_count});
+		print {$data->{json_fh}} <FILE>;
 		$data->{json_count}++;
+
 		if ($data->{json_count} > $self->{json_records_per_file})
 		{
 			$data->{json_page_no}++;
-			$data->{json_count} = 1; #reinitialise to one because this line comes after the increment.
+			$data->{json_count} = 0;
 
-			print {$data->{json_fh}} <FILE>;
 			print {$data->{json_fh}} "\n  ]\n}";
 
 			close $data->{json_fh};
 			$data->{json_fh} = $self->create_fh('json', $data->{base_dir}, $data->{json_page_no});
 			initialise_json($data->{json_fh});
 		}
-		open FILE, $file or return; ##Again, I sould do exception handling
-		print {$data->{json_fh}} <FILE>;
 	}
 
 }

@@ -9,9 +9,14 @@ use EPrints::Plugin::Event::LockingEvent;
 
 use strict;
 
+
+#opts
+#
+# update_from_zero --> deletes the cache and regenerates everything;
 sub action_update_tweetstream_abstracts
 {
-	my ($self) = @_;
+	my ($self, %opts) = @_;
+
         $self->{log_data}->{start_time} = scalar localtime time;
 	my $repo = $self->repository;
 
@@ -25,10 +30,18 @@ sub action_update_tweetstream_abstracts
 	#initialise state variables
 	$self->{tweetstream_data} = {};
 	$self->{cache_file} = $repo->config('archiveroot') . '/var/' . 'tweetstream_update.cache';
+
+	if ($opts{update_from_zero} and -e $self->{cache_file})
+	{
+		#remove the cache
+		unlink $self->{cache_file}; #perhaps we need exception handling here?
+	}
+
+
 	$self->{profile_image_urls} = {};
 	$self->{highest_tweetid} = 0; #don't iterate over anything higher than this (could mess up the cache)
 
-	$self->update_tweetstream_abstracts;
+	$self->update_tweetstream_abstracts();
 
 	$self->remove_lock;
         $self->{log_data}->{end_time} = scalar localtime time;
