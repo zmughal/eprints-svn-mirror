@@ -245,7 +245,7 @@ sub generate_log_string
 		my $earliest = $ts->{earliest_seen} ? $ts->{earliest_seen} : 'unknown';
 		my $latest = $ts->{latest_seen} ? $ts->{latest_seen} : 'unknown';
 
-		push @r, "\t$ts_id: " . $ts->{search_string};
+		push @r, "\t$ts_id: " . ( $ts->{search_string} ? $ts->{search_string} : 'undef' );
 		push @r, "\t\t$new created";
 		push @r, "\t\t$added existing tweets added (stream overlap or page shifting)";
 		push @r, "\t\tFrom: $earliest";
@@ -272,7 +272,7 @@ sub create_queue_item
 	my ($repo, $ds, $tweetstream, $queue_items) = @_;
 
 	my $search_string = $tweetstream->get_value('search_string');
-	my $geocode;
+	my $geocode = '';
 	$geocode = $tweetstream->get_value('geocode') if $tweetstream->is_set('geocode');
 
 	my $key = $search_string . 'XXXXXXX' . $geocode;
