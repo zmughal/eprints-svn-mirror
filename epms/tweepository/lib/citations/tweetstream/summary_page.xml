@@ -2,6 +2,9 @@
 
 <cite:citation xmlns="http://www.w3.org/1999/xhtml" xmlns:cite="http://eprints.org/ep3/citation" xmlns:epc="http://eprints.org/ep3/control">
 
+<epc:if test="is_set(top_from_users)">
+<!--if the field is set then we've generated the abstract at least once -->
+
 <div class='tweetstream_summary'>
 <table> 
 <tr valign = 'top'>
@@ -46,4 +49,17 @@
 </tr>
 </table>
 </div>
+</epc:if>
+<epc:if test="!is_set(top_from_users)">
+<h2>Nothing To See Here</h2>
+<p>This page is generated periodically (probably nightly).  If there is nothing here, there are a number of reasons why this might be:
+<ul>
+<li>The feed may be very new.  If so, please check back tomorrow.</li>
+<li>The feed may not be returning any results.  Please check the search term by typing it into twitter's search and seeing if anything is returned</li>
+<li>There may be a problem with the system.  If you've tried both of the above, please contact an administrator</li>
+</ul>
+</p>
+
+</epc:if>
+
 </cite:citation>
