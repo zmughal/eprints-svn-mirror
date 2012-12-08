@@ -10,10 +10,18 @@ use EPrints;
 
 my ($repoid, $update_from_zero) = @ARGV;
 die "update_tweetstream_abstracts.pl *repositoryid* [update_from_zero]\n" unless $repoid;
-chomp $repoid;
-chomp $update_from_zero;
 
-if ($update_from_zero && $update_from_zerq ne 'update_from_zero')
+#remove newline from last arg
+if ($update_from_zero)
+{
+	chomp $update_from_zero;
+}
+else
+{
+	chomp $repoid;
+}
+
+if ($update_from_zero && $update_from_zero ne 'update_from_zero')
 {
 	die "malformed argument: '$update_from_zero' (should be 'update_from_zero')\n";
 }

@@ -62,8 +62,8 @@ sub generate_log_string
         push @r, "Aggregation started at:        " . $l->{start_time};
 	push @r, "Tweetstream abstracts updated  " . join(',',sort {$a <=> $b} @{$l->{tweetstreams_updated}});
 	push @r, '';
-	push @r, "Iterated over                  " . $l->{iterate_tweet_count} . " tweet rows";
-	push @r, "Iteration Low ID               " . $l->{lowest_tweetid};
+	push @r, "Iterated over                  " . ($l->{iterate_tweet_count} ? $l->{iterate_tweet_count} : 0) . " tweet rows";
+	push @r, "Iteration Low ID               " . ($l->{lowest_tweetid} ? $l->{lowest_tweetid} : 0);
 	push @r, "Iteration High ID              " . $l->{highest_tweetid};
 	push @r, "Started iteration at           " . $l->{iterate_start_time};
 	push @r, "Finished iteration at          " . $l->{iterate_end_time};
@@ -72,6 +72,7 @@ sub generate_log_string
 	push @r, "Mysql queries finished at:     " . $l->{queries_end_time};
 	push @r, '';
 	my $size = $self->{log_data}->{start_cache_file_size};
+	$size = 0 unless $size;
 	push @r, "Cache size at start             $size (" . format_bytes($size) . ")";
 	$size = $self->{log_data}->{end_cache_file_size};
 	push @r, "Cache size at end               $size (" . format_bytes($size) . ")";
@@ -202,8 +203,12 @@ sub read_cache
 	$self->{log_data}->{cache_file_size} = 0;
 
 	my $cache_file = $self->{cache_file};
-	return unless -e $cache_file; #if it doesn't exist, we'll just start from scratch 
-
+	if (!-e $cache_file)
+	{
+		#if it doesn't exist, we'll just start from scratch 
+		$self->{log_data}->{start_cache_file_size} = 0;
+		return;
+	}
 	$self->{log_data}->{start_cache_file_size} = -s $cache_file;
 
 	my $cache_data = retrieve($cache_file);
