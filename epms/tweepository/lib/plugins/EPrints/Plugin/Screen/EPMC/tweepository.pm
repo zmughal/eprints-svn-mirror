@@ -33,8 +33,23 @@ sub action_enable
 	my $repo = $self->{repository};
 
 #before enabling, make sure we have all dependant libs installed
-	my @prereqs = qw/ Data::Dumper Date::Calc Date::Parse Encode HTML::Entities JSON LWP::UserAgent Number::Bytes::Human
-                          Storable URI URI::Find Archive::Zip /;
+	my @prereqs = qw/
+Archive::Zip
+Archive::Zip::MemberRead
+Data::Dumper
+Date::Calc
+Date::Parse
+Encode
+File::Copy
+File::Path
+HTML::Entities
+JSON
+LWP::UserAgent
+Number::Bytes::Human
+Storable
+URI
+URI::Find
+/;
 
 	my $evalstring;
 	foreach my $l (@prereqs)
