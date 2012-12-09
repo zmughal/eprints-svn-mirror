@@ -222,6 +222,15 @@ sub action_update_tweetstreams
 	$self->remove_lock
 }
 
+#return a value or an empty string
+sub v
+{
+	my ($val, $default) = @_;
+	return $val if defined $val;
+	return $default if defined $default;
+	return '';
+}
+
 sub generate_log_string
 {
 	my ($self) = @_;
@@ -229,32 +238,31 @@ sub generate_log_string
 
 	my @r;
 
-	push @r, "Update started at: " . $l->{start_time};
-	push @r, "Update finished at: " . $l->{end_time};
-	push @r, $l->{tweets_processed} . " tweets processed";
-	push @r, $l->{tweets_created} . " tweets created";
-	push @r, (scalar keys %{$l->{tweetstreams}}) . " tweetstreams updated:";
+	push @r, "Update started at: " . v($l->{start_time});
+	push @r, "Update finished at: " . v($l->{end_time});
+	push @r, v($l->{tweets_processed}, 0) . " tweets processed";
+	push @r, v($l->{tweets_created}, 0) . " tweets created";
+	push @r, (scalar keys %{$l->{tweetstreams}}, 0) . " tweetstreams updated:";
 
 	foreach my $ts_id (sort keys %{$l->{tweetstreams}})
 	{
 		my $ts = $l->{tweetstreams}->{$ts_id};
 
-		my $new = $ts->{tweets_created} ? $ts->{tweets_created} : 0;
-		my $added = $ts->{tweets_added} ? $ts->{tweets_added} : 0;
-		my $end = $ts->{end_state} ? $ts->{end_state} : 'Unknown Endstate';
-		my $earliest = $ts->{earliest_seen} ? $ts->{earliest_seen} : 'unknown';
-		my $latest = $ts->{latest_seen} ? $ts->{latest_seen} : 'unknown';
+		my $new = v($ts->{tweets_created},0);
+		my $added = v($ts->{tweets_added},0);
+		my $end = v($ts->{end_state},'Unknown Endstate');
+		my $earliest = v($ts->{earliest_seen},'unknown');
+		my $latest = v($ts->{latest_seen},'unknown');
 
-		push @r, "\t$ts_id: " . ( $ts->{search_string} ? $ts->{search_string} : 'undef' );
+		push @r, "\t$ts_id: " . v($ts->{search_string},'undef') ;
 		push @r, "\t\t$new created";
 		push @r, "\t\t$added existing tweets added (stream overlap or page shifting)";
 		push @r, "\t\tFrom: $earliest";
 		push @r, "\t\tTo:   $latest";
 		push @r, "\t\tCompleted with status: $end";
-
 	}
 
-	my $end = $l->{end_state} ? $l->{end_state} : 'No Known Errors';
+	my $end = v($l->{end_state},'No Known Errors');
 	push @r, "Complete with status: " . $end;
 
 	return join("\n",@r);
