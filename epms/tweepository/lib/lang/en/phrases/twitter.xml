@@ -87,7 +87,19 @@
     <epp:phrase id="tweetstream_fieldhelp_abstract">Please enter a brief description of the purpose of this tweetstream.</epp:phrase>
     <epp:phrase id="tweetstream_fieldhelp_expiry_date">Enter a date at which this tweetstream should no longer be harvested.</epp:phrase>
     <epp:phrase id="tweetstream_fieldhelp_project_title">Enter the title of the project with which this tweetstream is associated.</epp:phrase>
-    <epp:phrase id="tweetstream_fieldhelp_search_string">Enter a string to be passed through to the Twitter search API.</epp:phrase>
+
+<epp:phrase id="tweetstream_fieldhelp_search_string"><p>Enter a string to be passed through to the Twitter search API.  Simple logical operators supported:
+<dl style="margin-left: 1em">
+<dt style="font-weight: bold">@username OR username</dt>
+<dd>Tweets mentioning 'username' or from 'username'</dd>
+<dt style="font-weight: bold">#hashtag</dt>
+<dd>Tweets containing #hashtag</dd>
+<dt style="font-weight: bold">(dog OR cat OR pet) AND food</dt>
+<dd>Tweets containing 'food' and at least one of 'dog', 'cat' or 'pet'</dd>
+</dl>
+</p>
+</epp:phrase>
+
     <epp:phrase id="tweetstream_fieldhelp_title">Enter a title for this tweetstream.  If a title is not supplied, it will default to the Search String.</epp:phrase>
     <epp:phrase id="tweetstream_fieldname_abstract">Abstract</epp:phrase>
     <epp:phrase id="tweetstream_fieldname_datestamp">Date Created</epp:phrase>
