@@ -90,12 +90,18 @@
 
 <epp:phrase id="tweetstream_fieldhelp_search_string"><p>Enter a string to be passed through to the Twitter search API.  Simple logical operators supported:
 <dl style="margin-left: 1em">
-<dt style="font-weight: bold">@username OR username</dt>
-<dd>Tweets mentioning 'username' or from 'username'</dd>
+<dt style="font-weight: bold">@username</dt>
+<dd>Tweets mentioning 'username'</dd>
+<dt style="font-weight: bold">from:username</dt>
+<dd>Tweets from 'username'</dd>
 <dt style="font-weight: bold">#hashtag</dt>
 <dd>Tweets containing #hashtag</dd>
 <dt style="font-weight: bold">(dog OR cat OR pet) AND food</dt>
 <dd>Tweets containing 'food' and at least one of 'dog', 'cat' or 'pet'</dd>
+<dt style="font-weight: bold">"health food"</dt>
+<dd>Tweets containing the phrase "health food"</dd>
+<dt style="font-weight: bold">foo -bar</dt>
+<dd>Tweets containing 'foo' but not 'bar'</dd>
 </dl>
 </p>
 </epp:phrase>
