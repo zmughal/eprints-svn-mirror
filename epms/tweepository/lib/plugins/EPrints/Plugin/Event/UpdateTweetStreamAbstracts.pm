@@ -35,6 +35,7 @@ sub action_update_tweetstream_abstracts
 	{
 		#remove the cache
 		unlink $self->{cache_file}; #perhaps we need exception handling here?
+		$self->{update_from_zero} = 1;
 	}
 
 
@@ -235,6 +236,8 @@ sub get_tweetstream_counts
 	{
 		$self->{tweetstream_data}->{context}->{counts}->{$row->[0]} = $row->[1];
 	}
+
+	return if $self->{update_from_zero}; #don't set an old count -- we'll pretend we don't know it if we're updating from zero
 
 	$sth = $self->run_query({'select' => ['tweetstreamid', 'tweet_count'], from => 'tweetstream'});
 	while (my $row = $sth->fetchrow_arrayref)
