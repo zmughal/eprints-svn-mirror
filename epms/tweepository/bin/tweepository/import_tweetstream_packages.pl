@@ -12,7 +12,7 @@ use Archive::Zip::MemberRead;
 
 use Data::Dumper;
 
-my $STATE = {};
+my $STATE = {tweets_created => 0, tweets_existing => 0};
 
 my ($repoid, $userid, $filename) = @ARGV;
 die "export_tweetstream_packages.pl *repositoryid* *username/userid* *file*\n" unless $filename;
@@ -63,7 +63,7 @@ foreach my $member ($zip->members)
 }
 
 #validate presence of correctly named XML file:
-die "no object XML file in zip file\n" unless $files->{xml}->[0] =~ m/tweetstream[0-9]\/tweetstream\.xml/;
+die "no object XML file in zip file\n" unless $files->{xml}->[0] =~ m/tweetstream[0-9]+\/tweetstream\.xml/;
 
 #check that we have some json files
 die unless $files->{json} and scalar @{$files->{json}} > 0;
