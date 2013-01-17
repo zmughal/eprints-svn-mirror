@@ -1,3 +1,0 @@
-Copyright (c) 2000-2007 University of Southampton, UK. SO17 1BJ.
-
-This code may not be redistributed in any way or for any purpose.
