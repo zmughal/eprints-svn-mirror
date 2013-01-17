@@ -112,7 +112,7 @@ sub _get_property_fields
 		{ name=>"maxlength", type=>"int", input_cols => 5, },
 
 		{ name=>"browse_link", type=>"text", input_cols=>10, },
-		{ name=>"top", type=>"subject", input_cols=>10, top=>$EPrints::DataObj::Subject::root_subject, showall=>1, },
+		{ name=>"top", type=>"text", input_cols=>10, },
 
 		{ name=>"datasetid", type=>"text", input_cols=>10, },
 
@@ -368,9 +368,6 @@ sub get_dataset_id()
 {
 	return "metafield";
 }
-
-sub get_parent_dataset_id { "metafield" }
-sub get_parent_id { shift->value( "parent" ) }
 
 ######################################################################
 

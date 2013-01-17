@@ -84,8 +84,6 @@ sub xml_to_epdata
 	my $article = $citation->getElementsByTagName("Article")->item(0);
 	return unless defined $article;
 
-	$epdata->{source} = "PMC" . $plugin->xml_to_text( $citation->getElementsByTagName( "PMID" )->item(0) );
-
 	my $articletitle = $article->getElementsByTagName( "ArticleTitle" )->item(0);
 	$epdata->{title} = $plugin->xml_to_text( $articletitle ) if defined $articletitle;
 
@@ -165,16 +163,8 @@ sub xml_to_epdata
 	my $abstract = $article->getElementsByTagName( "Abstract" )->item(0);
 	if( defined $abstract )
 	{
-		my @parts;
-		foreach my $at ( $abstract->getElementsByTagName( "AbstractText" ) )
-		{
-			if( $at->hasAttribute( "Label" ) )
-			{
-				push @parts, $at->getAttribute( "Label" );
-			}
-			push @parts, $plugin->xml_to_text( $at );
-		}
-		$epdata->{abstract} = join( "\n\n", @parts ) if scalar @parts;
+		my $abstracttext = $abstract->getElementsByTagName( "AbstractText" )->item(0);
+		$epdata->{abstract} = $plugin->xml_to_text( $abstracttext ) if defined $abstracttext;
 	}
 
 	my $authorlist = $article->getElementsByTagName( "AuthorList" )->item(0);

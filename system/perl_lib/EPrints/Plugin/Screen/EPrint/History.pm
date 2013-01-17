@@ -38,38 +38,11 @@ sub can_be_viewed
 
 sub render
 {
-	my( $self, $basename ) = @_;
+	my( $self ) = @_;
 
-	my $repo = $self->repository;
+	my ($data,$title) = $self->{processor}->{eprint}->render_history; 
 
-	my $eprint = $self->{processor}->{eprint};
-
-	my @filters = (
-		{ meta_fields => [qw( datasetid )], value => 'eprint', },
-		{ meta_fields => [qw( objectid )], value => $eprint->id, },
-	);
-
-	my $list = $repo->dataset( "history" )->search(
-		filters => \@filters,
-		custom_order=>"-historyid",
-#		limit => 10,
-	);
-
-	return EPrints::Paginate->paginate_list(
-		$repo,
-		$basename,
-		$list,
-		params => {
-			$self->{processor}->{screen}->hidden_bits,
-		},
-		container => $repo->make_element( "div" ),
-		render_result => sub {
-			my( undef, $item ) = @_;
-
-			$item->set_parent( $eprint );
-			return $item->render;
-		},
-	);
+	return $data;
 }	
 
 1;

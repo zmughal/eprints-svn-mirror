@@ -60,7 +60,7 @@ sub update_from_form
 		{
 			my $value = $field->form_value( 
 				$session, 
-				$doc,
+				$eprint,
 				$doc_prefix );
 			$doc->set_value( $field->{name}, $value );
 		}
@@ -376,9 +376,6 @@ sub _render_doc_div
 	$tr->appendChild( $td_right );
 
 	$td_right->appendChild( $self->_render_doc_actions( $doc ) );
-
-        my @fields = $self->doc_fields( $doc );
-        return $doc_div if !scalar @fields;
 
 	my $opts_toggle = $session->make_element( "a", onclick => "EPJS_blur(event); EPJS_toggleSlideScroll('${doc_prefix}_opts',".($hide?"false":"true").",'${doc_prefix}_block');EPJS_toggle('${doc_prefix}_opts_hide',".($hide?"false":"true").",'block');EPJS_toggle('${doc_prefix}_opts_show',".($hide?"true":"false").",'block');return false" );
 	$doc_expansion_bar->appendChild( $opts_toggle );
@@ -725,8 +722,6 @@ sub validate
 sub parse_config
 {
 	my( $self, $config_dom ) = @_;
-
-	$self->SUPER::parse_config( $config_dom );
 
 	$self->{config}->{doc_fields} = [];
 

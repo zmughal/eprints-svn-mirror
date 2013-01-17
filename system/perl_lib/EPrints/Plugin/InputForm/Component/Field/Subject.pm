@@ -138,7 +138,13 @@ sub render_content
 		}
 	}
 
-	if( scalar @values )
+	my @sels = ();
+	foreach my $subject_id ( sort keys %{$self->{selected}} )
+	{
+		push @sels, $self->{subject_map}->{ $subject_id };
+	}
+
+	if( scalar @sels )
 	{
 		$out->appendChild( $self->_format_subjects(
 			table_class => "ep_subjectinput_selections",
@@ -146,9 +152,7 @@ sub render_content
 			button_class => "ep_subjectinput_selected_remove",
 			button_text => $self->phrase( "remove" ),
 			button_id => "remove",
-			values => \@values,
-			map => $self->{subject_map}
-			) );
+			subjects => \@sels ) );
 	}
 	
 	# Render the search box
@@ -304,48 +308,45 @@ sub _format_subjects
 	my( $self, %params ) = @_;
 
 	my $session = $self->{session};
-	my $field = $self->{config}->{field};
 	my $table = $session->make_element( "table", class=>$params{table_class} );
-	my $first = 1;
-	foreach my $subject_id (@{$params{values}})
+	my @subjects = @{$params{subjects}};
+	if( scalar @subjects )
 	{
-		my $subject = $params{map}{$subject_id};
+		my $first = 1;
+		foreach my $subject ( @subjects )
+		{
+			next if( !defined $subject ); # need a warning?
 
-		next if $params{hide_selected} && $self->{selected}->{ $subject_id };
-		my $prefix = $self->{prefix}."_".$subject_id;
-		my $tr = $session->make_element( "tr" );
-		
-		my $td1 = $session->make_element( "td" );
-		my $remove_button = $session->render_button(
-			class=> "ep_subjectinput_remove_button",
-			name => "_internal_".$prefix."_".$params{button_id},
-			value => $params{button_text} );
-		$td1->appendChild( $remove_button );
-		my $td2 = $session->make_element( "td" );
-		if( defined $subject )
-		{
+			my $subject_id = $subject->get_id();
+			next if ( $params{hide_selected} && $self->{selected}->{ $subject_id } );
+			my $prefix = $self->{prefix}."_".$subject_id;
+			my $tr = $session->make_element( "tr" );
+			
+			my $td1 = $session->make_element( "td" );
+			my $remove_button = $session->render_button(
+				class=> "ep_subjectinput_remove_button",
+				name => "_internal_".$prefix."_".$params{button_id},
+				value => $params{button_text} );
+			$td1->appendChild( $remove_button );
+			my $td2 = $session->make_element( "td" );
 			$td2->appendChild( $subject->render_description );
+			
+			my @td1_attr = ( $params{subject_class} );
+			my @td2_attr = ( $params{button_class} );
+			if( $first )
+			{
+				push @td1_attr, "ep_first";
+				push @td2_attr, "ep_first";
+				$first = 0;
+			}
+			$td1->setAttribute( "class", join(" ", @td1_attr ) );
+			$td2->setAttribute( "class", join(" ", @td2_attr ) );
+						
+			$tr->appendChild( $td1 ); 
+			$tr->appendChild( $td2 );
+			
+			$table->appendChild( $tr );
 		}
-		else
-		{
-			$td2->appendChild( $field->render_single_value( $session, $subject_id ) );
-		}
-		
-		my @td1_attr = ( $params{subject_class} );
-		my @td2_attr = ( $params{button_class} );
-		if( $first )
-		{
-			push @td1_attr, "ep_first";
-			push @td2_attr, "ep_first";
-			$first = 0;
-		}
-		$td1->setAttribute( "class", join(" ", @td1_attr ) );
-		$td2->setAttribute( "class", join(" ", @td2_attr ) );
-					
-		$tr->appendChild( $td1 ); 
-		$tr->appendChild( $td2 );
-		
-		$table->appendChild( $tr );
 	}
 	return $table;
 }

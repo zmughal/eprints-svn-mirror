@@ -52,7 +52,7 @@ sub logic
 	foreach my $col_name ( $self->{field}->get_sql_names )
 	{
 		push @sql_and,
-			$db->quote_identifier( $table, $col_name )." IS NOT NULL";
+			$db->quote_identifier( $table, $col_name )." != ''";
 	}
 	return "( ".join( " OR ", @sql_and ).")";
 }

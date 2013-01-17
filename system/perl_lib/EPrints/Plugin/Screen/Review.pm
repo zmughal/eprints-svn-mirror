@@ -79,6 +79,20 @@ sub perform_search
 	return $list->intersect( $filter_list );
 }
 
+sub hidden_bits
+{
+	my( $self ) = @_;
+
+	return $self->EPrints::Plugin::Screen::hidden_bits();
+}
+
+sub render
+{
+	my( $self ) = @_;
+
+	return $self->SUPER::render();
+}
+
 sub render_top_bar
 {
 	my( $self ) = @_;

@@ -56,11 +56,6 @@ sub new
 	$params{custom_order} = "" if !exists $params{custom_order};
 	$params{filters} = [] if !exists $params{filters};
 
-	# advertise this search engine
-	$params{advertise} = exists $params{advertise} ? $params{advertise} : 1;
-	# searches an external dataset
-	$params{external} = exists $params{external} ? $params{external} : 0;
-
 	my $self = $class->SUPER::new( %params );
 
 	# distinguish plugins by a quality score
@@ -79,7 +74,7 @@ sub plugins
 {
 	my( $self, @args ) = @_;
 
-	my @plugins = $self->{session}->get_plugins( @args, type => "Search", is_external => 0, );
+	my @plugins = $self->{session}->get_plugins( @args, type => "Search" );
 
 	@plugins = sort { $b->param( "qs" ) <=> $a->param( "qs" ) } @plugins;
 
@@ -93,14 +88,6 @@ sub matches
 	if( $test eq "can_search" )
 	{
 		return $self->can_search( $param );
-	}
-	if( $test eq "is_advertised" )
-	{
-		return $self->param( "advertise" ) == $param;
-	}
-	if( $test eq "is_external" )
-	{
-		return $self->param( "external" ) == $param;
 	}
 
 	return $self->SUPER::matches( $test, $param );
@@ -309,8 +296,17 @@ sub thaw
 	my $uri = URI->new( $spec );
 	my %spec = $uri->query_form;
 
+	my $sconf = {};
+
 	my $dataset = $self->{session}->dataset( $spec{dataset} );
-	my $sconf = $dataset->search_config( $spec{searchid} );
+	if( $dataset->base_id eq "eprint" )
+	{
+		$sconf = $self->{session}->config( "search", $spec{searchid} );
+	}
+	else
+	{
+		$sconf = $self->{session}->config( "datasets", $dataset->id, "search", $spec{searchid} );
+	}
 
 	my $plugin = $self->{session}->plugin( "Search::$spec{plugin}",
 		searchid => $spec{searchid},
@@ -531,19 +527,6 @@ sub split_exp
 	}
 
 	return @sections;
-}
-
-=item $text = $searchexp->describe
-
-Returns a text string describing this search query that will be executed (for debugging).
-
-=cut
-
-sub describe
-{
-	my( $self ) = @_;
-
-	return "[No description available]";
 }
 
 1;

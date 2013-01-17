@@ -60,11 +60,6 @@ GetOptions(
 
 pod2usage( 1 ) if $opt_help;
 
-$opt_username = EPrints::Utils::get_input( qr/.+/, "Username" )
-	if !$opt_username;
-$opt_password = EPrints::Utils::get_input_hidden( qr/.+/, "Password" )
-	if !$opt_password;
-
 my $parser = EPrints::Test::Pod2Wiki->new(
 	wiki_api => "http://wiki.eprints.org/wiki/api.php",
 	username => $opt_username,
@@ -91,11 +86,7 @@ if( !@ARGV )
 		print STDERR "Processing $class\n";
 		$parser->update_page( $class );
 	}, $perl_lib);
-	foreach my $bin_path (
-		$EPrints::SystemSettings::conf->{base_path} . "/bin",
-		$EPrints::SystemSettings::conf->{base_path} . "/tools",
-		)
-	{
+	my $bin_path = $EPrints::SystemSettings::conf->{base_path} . "/bin";
 	File::Find::find(sub {
 		return if $File::Find::dir eq $File::Find::name;
 		my $class = $File::Find::name;
@@ -104,5 +95,4 @@ if( !@ARGV )
 		print STDERR "Processing $class\n";
 		$parser->update_page( "bin/$class" );
 	}, $bin_path);
-	}
 }

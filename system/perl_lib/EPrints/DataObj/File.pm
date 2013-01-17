@@ -588,7 +588,7 @@ sub to_sax
 		Attributes => \%Attributes,
 	});
 
-	if( $self->is_set( "datasetid" ) && $self->value( "datasetid" ) eq "document" )
+	if( $self->value( "datasetid" ) eq "document" )
 	{
 		my $doc = $self->parent();
 		my $url = $doc->get_url( $self->value( "filename" ) );
@@ -622,23 +622,18 @@ sub to_sax
 				},
 			},
 		});
-		for(my $buffer = "")
-		{
+		my $buffer = "";
+		$self->get_file(sub {
 			use bytes;
-			$self->get_file(sub {
-				$_ .= $_[0];
-
-				$handler->characters({
-					Data => MIME::Base64::encode_base64( substr($_,0,length($_) - length($_)%57 ) )
-				});
-				$_ = substr($_,length($_) - length($_)%57);
-
-				1;
-			});
+			substr($_[0],0,0) = $buffer;
 			$handler->characters({
-				Data => MIME::Base64::encode_base64( $_ )
+				Data => MIME::Base64::encode_base64( substr($_[0],0,length($_[0]) - length($_[0])%57 ) )
 			});
-		}
+			$buffer = substr($_[0],length($_[0]) - length($_[0])%57);
+		});
+		$handler->characters({
+			Data => MIME::Base64::encode_base64( $buffer )
+		});
 		$handler->end_element({
 			Prefix => '',
 			LocalName => 'data',
@@ -702,14 +697,6 @@ Get the contents of the stored file.
 $offset is the position in bytes to start reading from, defaults to 0.
 
 $n is the number of bytes to read, defaults to C<filesize>.
-
-CALLBACK is:
-
-	sub {
-		my( $buffer ) = @_;
-		...
-		return 1;
-	}
 
 =cut
 
@@ -939,13 +926,11 @@ sub characters
 	if( $state->{depth} == 2 && defined $state->{encoding} )
 	{
 		my $tmpfile = $epdata->{_content};
+		$state->{buffer} .= $data->{Data};
 		for($state->{buffer})
 		{
-			use bytes;
-			$data->{Data} =~ s/\s+//g;
-			$_ .= $data->{Data};
-			print $tmpfile MIME::Base64::decode_base64( substr($_,0,length($_) - length($_)%4) );
-			$_ = substr($_,length($_) - length($_)%4);
+			print $tmpfile MIME::Base64::decode_base64( substr($_,0,length($_) - length($_)%77) );
+			$_ = substr($_,length($_) - length($_)%77);
 		}
 	}
 }

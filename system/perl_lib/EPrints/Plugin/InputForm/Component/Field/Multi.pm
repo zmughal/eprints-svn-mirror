@@ -86,9 +86,6 @@ sub parse_config
 {
 	my( $self, $config_dom ) = @_;
 	
-	# Super-class checks for 1 <field> element, whereas we have 1 or more
-	$self->EPrints::Plugin::InputForm::Component::parse_config( $config_dom );
-
 	$self->{config}->{fields} = [];
 	$self->{config}->{title} = $self->{session}->make_doc_fragment;
 

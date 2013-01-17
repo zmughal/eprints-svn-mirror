@@ -63,8 +63,7 @@ sub tool_getEprintField
 	my @problems = ensure( \%opts, 'session', 'eprint', 'field' );
 	return( 1, \@problems ) if( @problems );
 
-	my $field = $opts{eprint}->get_dataset->get_field( $opts{field} )->clone;
-	delete $field->{parent_name} if defined $field->{parent_name};
+	my $field = $opts{eprint}->get_dataset->get_field( $opts{field} );
 
 	my $fieldxml = $field->to_xml( 
 			$opts{session},
@@ -343,7 +342,7 @@ sub _aux_tool_searchEprint
 		return( 1, [ $error ] );
 	}
 
-	return( 0, $conditions->process( session => $opts{session}, dataset => $dataset ), $order );
+	return( 0, $conditions->process( $opts{session} ), $order );
 }
 	
 

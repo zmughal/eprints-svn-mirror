@@ -316,7 +316,10 @@ sub process
 		{
 			foreach my $message ( @{$self->{messages}} )
 			{
-				$current_user->create_subdataobj( "messages", $message );
+				$self->{session}->get_database->save_user_message( 
+					$current_user->get_id,
+					$message->{type},
+					$message->{content} );
 			}
 		}
 		$self->{session}->redirect( $self->{redirect} );
@@ -333,7 +336,10 @@ sub process
 		{
 			foreach my $message ( @{$self->{messages}} )
 			{
-				$current_user->create_subdataobj( "messages", $message );
+				$self->{session}->get_database->save_user_message( 
+					$current_user->get_id,
+					$message->{type},
+					$message->{content} );
 			}
 			$self->{session}->redirect( $url );
 			return;
@@ -424,7 +430,7 @@ sub add_message
 	# we'll sanity check now, otherwise it becomes hard to trace later on
 	EPrints->abort( "Requires message argument" ) if !defined $message;
 
-	push @{$self->{messages}},{type=>$type,message=>$message};
+	push @{$self->{messages}},{type=>$type,content=>$message};
 }
 
 
@@ -459,27 +465,25 @@ sub render_messages
 
 	my $chunk = $self->{session}->make_element( "div", id => "ep_messages" );
 
-	my $user = $self->{session}->current_user;
-	if( defined $user )
+	my @old_messages;
+	my $cuser = $self->{session}->current_user;
+	if( defined $cuser )
 	{
-		foreach my $message ( @{$user->value( "messages" )} )
+		my $db = $self->{session}->get_database;
+		@old_messages = $db->get_user_messages( $cuser->get_id, clear => 1 );
+	}
+	foreach my $message ( @old_messages, @{$self->{messages}} )
+	{
+		if( !defined $message->{content} )
 		{
-			$chunk->appendChild( $message->render_citation );
-			$message->remove;
+			# parse error!
+			next;
 		}
+		my $dom_message = $self->{session}->render_message( 
+				$message->{type},
+				$message->{content});
+		$chunk->appendChild( $dom_message );
 	}
-
-	my $dataset = $self->{session}->dataset( "message" );
-	foreach my $message ( @{$self->{messages}} )
-	{
-		# EPrints::DataObj::Message will dispose $message->{message}
-		$chunk->appendChild(
-				$dataset->make_dataobj( $message )->render_citation
-			);
-	}
-
-	# XML has been disposed, so don't let anything else try to use the messages
-	$self->{messages} = [];
 
 	return $chunk;
 }

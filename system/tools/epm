@@ -24,7 +24,6 @@ Where I<command> is one of:
 	link_lib
 	list
 	rebuild
-	reverse_link
 	uninstall
 	unpack
 
@@ -62,7 +61,6 @@ use Pod::Usage;
 use Digest::MD5;
 use MIME::Base64;
 use Cwd;
-use File::Copy;
 
 use strict;
 use warnings;
@@ -353,45 +351,6 @@ sub action_rebuild
 	$epm->commit;
 
 	print $epm->epm_dir . "/" . $epm->id . ".epm\n";
-}
-
-=item reverse_link
-
-Move files from their installed location into the epm/ directory then link them back to the installed location (link_lib).
-
-=cut
-
-sub action_reverse_link
-{
-	my( $repo ) = @_;
-
-	pod2usage( 2 ) if @ARGV != 1;
-
-	my( $name ) = @ARGV;
-
-	my $epm = &epm( $repo, $name );
-
-	my $sourcedir = $epm->epm_dir . '/lib';
-	my $targetdir = $repo->config( "base_path" ) . '/lib';
-
-	for($epm->installed_files) {
-		my $filepath = $_->value( "filename" );
-		next if $filepath =~ m{^epm/};
-
-		my $path = $filepath;
-		$path =~ s/[^\/]+$//;
-
-		print "$targetdir/$filepath => $sourcedir/$filepath\n";
-
-		EPrints->system->mkdir( "$sourcedir/$path" );
-
-		File::Copy::copy("$targetdir/$filepath", "$sourcedir/$filepath")
-			or die "Error copying to $sourcedir/$filepath: $!";
-
-		unlink "$targetdir/$filepath";
-	}
-
-	&action_link_lib( $repo );
 }
 
 =item uninstall I<package>

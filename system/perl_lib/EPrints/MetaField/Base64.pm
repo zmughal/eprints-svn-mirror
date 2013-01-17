@@ -21,33 +21,17 @@ B<EPrints::MetaField::Base64> - Base 64 encoded data
 
 package EPrints::MetaField::Base64;
 
-use MIME::Base64;
-
 use strict;
-use base "EPrints::MetaField::Longtext";
+use warnings;
 
-sub form_value 
+BEGIN
 {
-  my ($self, $session, $object, $prefix) = @_;
+	our( @ISA );
 
-  my $basename = $self->basename($prefix);
-
-  my $value = $self->form_value_actual($session, $object, $basename);
-
-  if(ref $value eq "ARRAY") 
-  {
-    foreach my $v (@{$value}) 
-    {
-      $v = MIME::Base64::encode_base64($v);
-    }
-  } 
-  else 
-  {
-    $value = MIME::Base64::encode_base64($value);
-  }
-
-  return $value;
+	@ISA = qw( EPrints::MetaField::Longtext );
 }
+
+use EPrints::MetaField::Longtext;
 
 sub to_sax
 {
@@ -121,8 +105,6 @@ sub to_sax
 		NamespaceURI => EPrints::Const::EP_NS_DATA,
 	});
 }
-
-
 
 ######################################################################
 1;

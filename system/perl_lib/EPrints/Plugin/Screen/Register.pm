@@ -32,16 +32,14 @@ sub new
 	return $self;
 }
 
-sub allow_register { shift->{session}->config( "allow_web_signup" ) }
-
-sub allow_confirm { shift->{session}->config( "allow_reset_password" ) }
-
+sub allow_register { shift->can_be_viewed }
+sub allow_confirm { shift->can_be_viewed }
 sub can_be_viewed
 {
 	my( $self ) = @_;
 
 	return
-		( $self->{session}->config( 'allow_reset_password' ) || $self->{session}->config( "allow_web_signup" ) ) &&
+		$self->{session}->config( "allow_web_signup" ) &&
 		!defined $self->{session}->current_user;
 }
 
@@ -242,44 +240,16 @@ sub render
 	return $xml->create_document_fragment if ref($self) ne __PACKAGE__;
 
 	my $page = $xml->create_document_fragment;
-	
-	my $user = $processor->{user};
-
-	my $action = $processor->{action};
-	$action = "" if !defined $action;
-
-	# Reset password
-
-	if( $repo->config( "allow_reset_password" ) && $action eq "confirm" )
-	{
-		return $page unless( defined $user );
-		
-		if( $processor->{newemail} )
-		{
-			$page->appendChild( $repo->html_phrase( 
-				"cgi/confirm:set_email",
-				newemail=>$repo->make_text( $processor->{newemail} ) ) );
-		}
-		else
-		{
-			$page->appendChild( $repo->html_phrase( "cgi/confirm:set_password" ) );
-		}
-
-		$page->appendChild( $repo->html_phrase( "cgi/confirm:username",
-			username => $user->render_value( "username" ) ) );
-
-		$page->appendChild( $repo->html_phrase( "cgi/confirm:go_login" ) );
-
-		return $page;
-	}
-
-	# Registration
 
 	if( !$repo->config("allow_web_signup") )
 	{
 		return $repo->render_message( "error", $repo->html_phrase( "cgi/register:no_web_signup" ) );
 	}
 
+	my $user = $processor->{user};
+
+	my $action = $processor->{action};
+	$action = "" if !defined $action;
 	if( $action eq "register" && defined $user )
 	{
 		if( $user->is_set( "newpassword" ) || $user->is_set( "newemail" ) )
@@ -295,6 +265,24 @@ sub render
 				$repo->current_url( host => 1, path => "cgi", "users/home" )
 				);
 		}
+	}
+	elsif( $action eq "confirm" && defined $user )
+	{
+		if( $processor->{newemail} )
+		{
+			$page->appendChild( $repo->html_phrase( 
+				"cgi/confirm:set_email",
+				newemail=>$repo->make_text( $processor->{newemail} ) ) );
+		}
+		else
+		{
+			$page->appendChild( $repo->html_phrase( "cgi/confirm:set_password" ) );
+		}
+
+		$page->appendChild( $repo->html_phrase( "cgi/confirm:username",
+			username => $user->render_value( "username" ) ) );
+
+		$page->appendChild( $repo->html_phrase( "cgi/confirm:go_login" ) );
 	}
 	else
 	{

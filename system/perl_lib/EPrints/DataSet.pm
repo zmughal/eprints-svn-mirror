@@ -228,21 +228,6 @@ my $INFO = {
 		class => "EPrints::DataObj::Import",
 		datestamp => "datestamp",
 	},
-	cache_dataobj_map => {
-		sqlname => "cache_dataobj_map",
-		class => "EPrints::DataObj::CacheDataobjMap",
-	},
-	cache_dataobj => {
-		sqlname => "cache_dataobj",
-		class => "EPrints::DataObj::CacheDataobj",
-		order => 0,
-	},
-	issue => {
-		sqlname => "issue",
-		class => "EPrints::DataObj::Issue",
-		datestamp => "timestamp",
-		columns => [qw( parent description status )],
-	},
 	metafield => {
 		sqlname => "mf", # identifiers get too long
 		class => "EPrints::DataObj::MetaField",
@@ -706,7 +691,9 @@ sub field
 	my $value = $self->{field_index}->{$fieldname};
 	if (!defined $value) 
 	{
-		Carp::carp( "dataset ".$self->{id}." has no field: ".$fieldname );
+		$self->{repository}->log( 
+			"dataset ".$self->{id}." has no field: ".
+			$fieldname );
 		return undef;
 	}
 	return $self->{field_index}->{$fieldname};
@@ -825,6 +812,8 @@ sub get_sql_table_name
 
 	EPrints::abort( "Can't get a SQL table name for dataset: ".$self->{id} );
 }
+
+
 
 ######################################################################
 =pod
@@ -1422,44 +1411,23 @@ Short-cut to L</prepare_search>( %options )->execute.
 
 =over 4
 
-=item satisfy_all
-
-   satisfy_all"=>1 
+=item "satisfy_all"=>1 
 
 Satify all conditions specified. 0 means satisfy any of the conditions specified. Default is 1
 
-=item staff
-
-  "staff"=>1
+=item "staff"=>1
 
 Do search as an adminstrator means you get everything back
 
-=item custom_order
-
-  "custom_order" => "field1/-field2/field3"
+=item "custom_order" => "field1/-field2/field3"
 
 Order the search results by field order. prefixing the field name with a "-" results in reverse ordering
 
-=item filters
+=item "search_fields" => \@({meta_fields=>[ "field1", "field2" "document.field3" ], merge=>"ANY", match=>"EX", value=>"bees"}, {meta_fields=>[ "field4" ], value=>"honey"});
 
-  "filters" => \@(
-                         { meta_fields=>[ "field1", "field2" "document.field3" ],
-                           merge=>"ANY", match=>"EX",
-                           value=>"bees"
-                         },
-                         { meta_fields=>[ "field4" ],
-                           value=> qw( honey ),
-                           match=>"IN"
-                         }
-                       );
+Return values where field1 field2 or field3 is "bees" and field2  is "honey" (assuming satisfy all is set)
 
-This searchs for 'bees' in C<field1> or C<field2> or C<document.field3>, and 'honey' in C<field4>
-
-For details on the C<merge> and C<match> parameters, refer to L<EPrints::Search::Field>
-
-=back
-
-  "limit" => 10
+=item "limit" => 10
 
 Only return 10 results
 
@@ -1549,54 +1517,6 @@ sub run_trigger
 			last TRIGGER if defined $rc && $rc eq EP_TRIGGER_DONE;
 		}
 	}
-}
-
-=item $sconf = $dataset->search_config( $searchid )
-
-Retrieve the search configuration $searchid for this dataset. This typically contains a set of fields to search over, order values and rendering parameters.
-
-=cut
-
-sub search_config
-{
-	my( $self, $searchid ) = @_;
-
-	my $repo = $self->{repository};
-
-	my $sconf;
-	if( $self->id eq "archive" )
-	{
-		$sconf = $repo->config( "search", $searchid );
-	}
-	if( !defined $sconf )	
-	{
-		$sconf = $repo->config( "datasets", $self->id, "search", $searchid );
-	}
-	if( defined $sconf )
-	{
-		# backwards compat. when _fulltext_ was a magic field
-		foreach my $sfs (@{$sconf->{search_fields}})
-		{
-			for(@{$sfs->{meta_fields}})
-			{
-				$_ = "documents" if $_ eq "_fulltext_";
-			}
-		}
-	}
-	elsif( $searchid eq "simple" )
-	{
-		$sconf = $self->_simple_search_config();
-	}
-	elsif( $searchid eq "advanced" )
-	{
-		$sconf = $self->_advanced_search_config();
-	}
-	else
-	{
-		$sconf = {};
-	}
-
-	return $sconf;
 }
 
 =begin InternalDoc

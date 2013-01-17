@@ -238,11 +238,11 @@ sub delete_copy
 	return 1;
 }
 
-=item $fh = $store->get_local_copy( $fileobj )
+=item $filename = $store->get_local_copy( $fileobj )
 
-Return a local copy of the file. Potentially expensive if the file has to be retrieved.
+Return the name of a local copy of the file.
 
-Stringifying $fh will give the full path to the local file, which may be useful for calling external tools (see L<File::Temp>).
+Will retrieve and cache the remote object using L<File::Temp> if necessary.
 
 Returns undef if retrieval failed.
 
@@ -262,11 +262,7 @@ sub get_local_copy
 		last if defined $filename;
 	}
 
-	if( UNIVERSAL::isa( $filename, "File::Temp" ) )
-	{
-		# no further action required
-	}
-	elsif( defined $filename )
+	if( defined $filename )
 	{
 		# see File::Temp::new
 		# by doing this calling code can treat the return in a consistent way
@@ -278,9 +274,7 @@ sub get_local_copy
 	}
 	else
 	{
-		# try retrieving it
-		my $ext = EPrints->system->file_extension( $fileobj->value( "filename" ) );
-		$filename = File::Temp->new( SUFFIX => $ext );
+		$filename = File::Temp->new;
 		binmode($filename);
 
 		my $rc = $self->retrieve( $fileobj, 0, $fileobj->value( "filesize" ),

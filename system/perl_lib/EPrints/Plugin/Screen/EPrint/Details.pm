@@ -337,7 +337,7 @@ sub render_edit_button
 
 	my $session = $self->{session};
 
-	my $div = $session->make_element( "div" );
+	my $div = $session->make_element( "div", class => "ep_act_list" );
 
 	local $self->{processor}->{stage} = $stage;
 

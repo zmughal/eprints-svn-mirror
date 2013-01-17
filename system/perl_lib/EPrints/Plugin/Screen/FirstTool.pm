@@ -62,7 +62,7 @@ sub properties_from
 				);
 			next if !defined $screen;
 			undef $screen if !$screen->can_be_viewed;
-			last if defined $screen;
+			last;
 		}
 	}
 	if( defined $screen )

@@ -1,13 +1,14 @@
 =head1 NAME
 
-EPrints::Plugin::Screen::Import::OnBehalfOf
+EPrints::Plugin::Screen::Import::DOI
 
 =cut
 
+package EPrints::Plugin::Screen::Import::DOI;
 
-package EPrints::Plugin::Screen::Import::OnBehalfOf;
+@ISA = ( 'EPrints::Plugin::Screen::Import' );
 
-use base qw( EPrints::Plugin::Screen::Import::Upload );
+use strict;
 
 sub new
 {
@@ -15,41 +16,27 @@ sub new
 
 	my $self = $class->SUPER::new(%params);
 
-	$self->{appears} = [
-#		{
-#			place => "user_view_action_links",
-#			position => 500,
-#		},
-	];
-
-	$self->{actions} = [qw/ /];
+	$self->{actions} = [qw/ test_data import_data /];
 
 	return $self;
 }
 
-sub properties_from
+sub render
 {
 	my( $self ) = @_;
 
-	$self->SUPER::properties_from;
+	my $repo = $self->{repository};
+	my $xml = $repo->xml;
+	my $xhtml = $repo->xhtml;
 
-	$self->{processor}->{screenid} = "Import::Upload";
+	my $frag = $xml->create_document_fragment;
+
+	$frag->appendChild( $self->html_phrase( "help" ) );
+
+	$frag->appendChild( $self->render_import_form );
+
+	return $frag;
 }
-
-sub hidden_bits
-{
-	my( $self ) = @_;
-
-	local $self->{processor}->{dataset};
-	local $self->{processor}->{results};
-
-	return(
-		$self->SUPER::hidden_bits,
-		on_behalf_of => $self->{processor}->{dataobj}->id,
-	);
-}
-
-sub render_title { shift->EPrints::Plugin::Screen::render_title }
 
 1;
 
@@ -57,7 +44,7 @@ sub render_title { shift->EPrints::Plugin::Screen::render_title }
 
 =for COPYRIGHT BEGIN
 
-Copyright 2012-2012 University of Southampton.
+Copyright 2000-2011 University of Southampton.
 
 =for COPYRIGHT END
 

@@ -25,7 +25,7 @@ sub new
 #		}
 	];
 
-	$self->{actions} = [qw/ search newsearch col_left col_right remove_col add_col set_filters reset_filters /];
+	$self->{actions} = [qw/ search newsearch col_left col_right remove_col add_col /];
 
 	return $self;
 }
@@ -61,11 +61,6 @@ sub properties_from
 	if( !defined $processor->{columns_key} )
 	{
 		$processor->{columns_key} = "screen.listings.columns.".$dataset->id;
-	}
-
-	if( !defined $processor->{filters_key} )
-	{
-		$processor->{filters_key} = "screen.listings.filters.".$dataset->id;
 	}
 
 	my $columns = $self->show_columns();
@@ -121,16 +116,12 @@ sub from
 
 	my $search = $self->{processor}->{search};
 	my $exp = $session->param( "exp" );
-	my $action = $self->{processor}->{action};
-	$action = "" if !defined $action;
 
-	if( $action ne "newsearch" )
+	if( $self->{processor}->{action} ne "newsearch" )
 	{
 		if( $exp )
 		{
-			my $order = $search->{custom_order};
 			$search->from_string( $exp );
-			$search->{custom_order} = $order;
 		}
 		else
 		{
@@ -143,12 +134,6 @@ sub from
 				}
 			}
 		}
-	}
-
-	# don't apply the user filters (/preferences) if they're about to be changed or reset	
-	unless( $action eq 'set_filters' || $action eq 'reset_filters' )
-	{
-		$self->apply_user_filters();
 	}
 
 	$self->SUPER::from();
@@ -255,80 +240,13 @@ sub action_remove_col
 
 	$self->_set_user_columns( $columns );
 }
-
-sub action_set_filters
-{
-        my( $self ) = @_;
-
-        my $user = $self->{session}->current_user;
-
-        my @filters = ();
-        foreach my $sf ( $self->{processor}->{search}->get_non_filter_searchfields )
-        {
-		push @filters, $sf->serialise;
-        }
-
-        $user->set_preference( $self->{processor}->{filters_key}, \@filters );
-        $user->commit;
-
-	$self->{session}->redirect( $self->redirect_to_me_url );
-	return;
-}
-
-sub action_reset_filters
-{
-        my( $self ) = @_;
-
-        $self->{session}->current_user->set_preference( $self->{processor}->{filters_key}, undef );
-        $self->{session}->current_user->commit();
-
-	$self->{session}->redirect( $self->redirect_to_me_url );
-	return;
-}
+	
 
 sub get_filters
 {
 	my( $self ) = @_;
 
 	return ();
-}
-
-sub get_user_filters
-{
-        my( $self ) = @_;
-
-	my @filters;
-
-        my $pref = $self->{session}->current_user->preference( $self->{processor}->{filters_key} );
-
-        if( EPrints::Utils::is_set( $pref ) && ref( $pref ) eq 'ARRAY' )
-        {
-                push @filters, $_ for( @$pref );
-        }
-
-        return @filters;
-}
-
-sub apply_user_filters
-{
-	my( $self ) = @_;
-
-	my @user_filters = $self->get_user_filters;
-
-	foreach my $uf ( @user_filters )
-	{
-		my $sf = EPrints::Search::Field->unserialise( repository => $self->{session}, 
-			dataset => $self->{processor}->{dataset}, 
-			string => $uf 
-		);
-		next unless( defined $sf );
-
-		$self->{processor}->{search}->add_field( fields => $sf->get_fields, 
-			value => $sf->get_value, 
-			match => $sf->get_match, 
-			merge => $sf->get_merge 
-		);
-	}
 }
 
 sub perform_search
@@ -433,7 +351,8 @@ sub render
 
 		if( $i > 0 )
 		{
-			my $form_l = $self->render_form;
+			my $form_l = $session->render_form( "post" );
+			$form_l->appendChild( $self->render_hidden_bits );
 			$form_l->appendChild( $session->render_hidden_field( "column", $i ) );
 			$form_l->appendChild( $session->make_element( 
 				"input",
@@ -451,7 +370,8 @@ sub render
 		}
 
 		my $msg = $self->phrase( "remove_column_confirm" );
-		my $form_rm = $self->render_form;
+		my $form_rm = $session->render_form( "post" );
+		$form_rm->appendChild( $self->render_hidden_bits );
 		$form_rm->appendChild( $session->render_hidden_field( "column", $i ) );
 		$form_rm->appendChild( $session->make_element( 
 			"input",
@@ -466,7 +386,8 @@ sub render
 
 		if( $i < $#$columns )
 		{
-			my $form_r = $self->render_form;
+			my $form_r = $session->render_form( "post" );
+			$form_r->appendChild( $self->render_hidden_bits );
 			$form_r->appendChild( $session->render_hidden_field( "column", $i ) );
 			$form_r->appendChild( $session->make_element( 
 				"input",
@@ -524,15 +445,13 @@ sub render
 		},
 		rows_after => $final_row,
 	);
-
-	$opts{page_size} = $self->param( 'page_size' );
-
 	$chunk->appendChild( EPrints::Paginate::Columns->paginate_list( $session, "_listing", $list, %opts ) );
 
 
 	# Add form
 	my $div = $session->make_element( "div", class=>"ep_columns_add" );
-	my $form_add = $self->render_form;
+	my $form_add = $session->render_form( "post" );
+	$form_add->appendChild( $self->render_hidden_bits );
 
 	my %col_shown = map { $_->name() => 1 } @$columns;
 	my $fieldnames = {};
@@ -578,7 +497,6 @@ sub hidden_bits
 
 	return(
 		dataset => $self->{processor}->{dataset}->id,
-		_listing_order => $self->{processor}->{search}->{custom_order},
 		$self->SUPER::hidden_bits,
 	);
 }
@@ -651,8 +569,8 @@ sub render_search_form
 {
 	my( $self ) = @_;
 
-	my $form = $self->render_form;
-	$form->setAttribute( method => "get" );
+	my $form = $self->{session}->render_form( "get" );
+	$form->appendChild( $self->render_hidden_bits );
 
 	my $table = $self->{session}->make_element( "table", class=>"ep_search_fields" );
 	$form->appendChild( $table );
@@ -720,18 +638,17 @@ sub render_anyall_field
 
 sub render_controls
 {
-        my( $self ) = @_;
+	my( $self ) = @_;
 
-        my $div = $self->{session}->make_element(
-                "div" ,
-                class => "ep_search_buttons" );
-        $div->appendChild( $self->{session}->render_action_buttons(
-                set_filters => $self->{session}->phrase( "lib/searchexpression:action_filter" ),
-                reset_filters => $self->{session}->phrase( "lib/searchexpression:action_reset" ),
-                _order => [ "set_filters", "reset_filters" ],
-        ) );
-
-        return $div;
+	my $div = $self->{session}->make_element( 
+		"div" , 
+		class => "ep_search_buttons" );
+	$div->appendChild( $self->{session}->render_action_buttons( 
+		_order => [ "search", "newsearch" ],
+		newsearch => $self->{session}->phrase( "lib/searchexpression:action_reset" ),
+		search => $self->{session}->phrase( "lib/searchexpression:action_filter" ) )
+ 	);
+	return $div;
 }
 
 1;

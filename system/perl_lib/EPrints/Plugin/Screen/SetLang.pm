@@ -40,43 +40,71 @@ sub render_action_link
 {
 	my( $self ) = @_;
 
-	my $repo = $self->{session};
+	my $session = $self->{session};
 
-	my $xml = $repo->xml;
+	my $xml = $session->xml;
 	my $f = $xml->create_document_fragment;
 
-	my $languages = $repo->config( "languages" );
-	return $f if @$languages == 1;
+	my $languages = $session->config( "languages" );
 
-	$f->appendChild( my $ul = $xml->create_element( "ul",
-			class => "ep_tm_languages",
-		) );
+	if( @$languages == 1 )
+	{
+		return $f;
+	}
 
-	my $uri = $repo->get_url( path => "cgi", "set_lang" );
-	$uri->query_form( referrer => $repo->get_url( host => 1, query => 1 ) )
-		if $repo->get_online;
+	my $imagesurl = $session->config( "rel_path" )."/images/flags";
+	my $scripturl = URI->new( $session->current_url( path => "cgi", "set_lang" ), 'http' );
+	my $curl = "";
+	if( $session->get_online )
+	{
+		$curl = $session->current_url( host => 1, query => 1 );
+	}
+
+	my $div = $xml->create_element( "div", id => "ep_tm_languages" );
+	$f->appendChild( $div );
 
 	foreach my $langid (@$languages)
 	{
-		my $u = $uri->clone;
-		$u->query_form(
-				$uri->query_form,
-				lang => $langid,
-			);
-		{
-			local $repo->{lang};
-			$repo->change_lang( $langid );
-			$ul->appendChild( $xml->create_data_element( "li", [
-					[ "a", $repo->html_phrase( "languages_typename_".$langid ), href => $u ]
-				]) );
-		}
+		next if $langid eq $session->get_lang->get_id;
+		$scripturl->query_form(
+			lang => $langid,
+			referrer => $curl
+		);
+		my $clangid = $session->get_lang()->get_id;
+		$session->change_lang( $langid );
+		my $title = $session->phrase( "languages_typename_$langid" );
+		$session->change_lang( $clangid );
+		my $link = $xml->create_element( "a",
+			href => "$scripturl",
+			title => $title,
+		);
+		my $img = $xml->create_element( "img",
+			src => "$imagesurl/$langid.png",
+			align => "top",
+			border => 0,
+			alt => $title,
+		);
+		$link->appendChild( $img );
+		$div->appendChild( $link );
 	}
 
-	$ul->appendChild( $xml->create_data_element( "li", [
-			[ "a", $repo->html_phrase( "cgi/set_lang:clear_cookie" ), href => $uri ]
-		]) );
+	$scripturl->query_form( referrer => $curl );
 
-	return $f;
+	my $title = $session->phrase( "cgi/set_lang:clear_cookie" );
+	my $link = $xml->create_element( "a",
+		href => "$scripturl",
+		title => $title,
+	);
+	my $img = $xml->create_element( "img",
+		src => "$imagesurl/aero.png",
+		align => "top",
+		border => 0,
+		alt => $title,
+	);
+	$link->appendChild( $img );
+	$div->appendChild( $link );
+
+	return $div;
 }
 
 1;

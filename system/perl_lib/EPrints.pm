@@ -42,12 +42,6 @@ Do not check the current user/group is the same as the user/group in SystemSetti
 
 =back
 
-=head2 Debugging
-
-To get a full stack trace on errors and warnings use L<Carp>'s verbose mode. E.g. in F<perl_lib/EPrints/SystemSettings.pm> add:
-
-	use Carp 'verbose';
-
 =begin InternalDoc
 
 =head2 Debugging Slow Processes
@@ -106,7 +100,7 @@ use Carp;
 
 use strict;
 
-our $VERSION = v3.4.0;
+our $VERSION = v3.3.10;
 $conf->{version} = "EPrints ".EPrints->human_version;
 $conf->{versionid} = "eprints-".EPrints->human_version;
 
@@ -218,8 +212,6 @@ use EPrints::DataObj;
 use EPrints::DataObj::SubObject;
 use EPrints::DataObj::Access;
 use EPrints::DataObj::Cachemap;
-use EPrints::DataObj::CacheDataobj;
-use EPrints::DataObj::CacheDataobjMap;
 use EPrints::DataObj::Document;
 use EPrints::DataObj::EPrint;
 use EPrints::DataObj::EPM;
@@ -227,7 +219,6 @@ use EPrints::DataObj::File;
 use EPrints::DataObj::History;
 use EPrints::DataObj::Import;
 use EPrints::DataObj::Import::XML;
-use EPrints::DataObj::Issue;
 use EPrints::DataObj::EventQueue;
 use EPrints::DataObj::LoginTicket;
 use EPrints::DataObj::Message;
@@ -246,7 +237,6 @@ use EPrints::Index::Daemon;
 use EPrints::Language;
 use EPrints::Latex;
 use EPrints::List;
-use EPrints::List::Cache;
 use EPrints::MetaField;
 use EPrints::NamedSet;
 use EPrints::OpenArchives;
@@ -643,9 +633,8 @@ sub sigusr2_cluck
 	$SIG{'USR2'} = \&sigusr2_cluck;
 };
 
-# Attach die and warn to Carp if Carp is verbose
+# Die with stack trace if Carp is verbose
 $SIG{__DIE__} = \&Carp::croak if $Carp::Verbose;
-$SIG{__WARN__} = \&Carp::carp if $Carp::Verbose;
 
 umask( 0002 );
 

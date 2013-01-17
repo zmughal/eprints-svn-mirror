@@ -159,14 +159,6 @@ Called just before the object is removed from the database.
 
 	dataobj - the object being removed
 
-=item EP_TRIGGER_DUPLICATE_SEARCH
-
-Search for duplicate entries of the given data object. Triggers must be quick and conservative i.e. only return duplicates that are very likely candidates. B<ids> is a list of object identifiers of the duplicate records.
-
-	dataset = EPrints::DataSet
-	dataobj = EPrints::DataObj
-	ids = ARRAY
-
 =item EP_TRIGGER_RDF
 
 =item EP_TRIGGER_DEFAULTS
@@ -337,7 +329,6 @@ use constant {
 	EP_TRIGGER_WARNINGS => 107,
 	EP_TRIGGER_FILES_MODIFIED => 108,
 	EP_TRIGGER_REMOVED => 109,
-	EP_TRIGGER_DUPLICATE_SEARCH => 110,
 };
 
 # Field properties
@@ -468,7 +459,6 @@ use constant {
 	EP_TRIGGER_WARNINGS
 	EP_TRIGGER_FILES_MODIFIED
 	EP_TRIGGER_REMOVED
-	EP_TRIGGER_DUPLICATE_SEARCH
 );
 
 @metafield = qw(

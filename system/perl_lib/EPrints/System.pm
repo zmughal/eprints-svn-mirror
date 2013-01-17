@@ -256,11 +256,6 @@ sub exec
 
 	my $command = $repository->invocation( $cmd_id, %map );
 
-	if( $repository->{noise} >= 2 )
-	{
-		$repository->log( "Executing: $command" );
-	}
-
 	my $rc = 0xffff & system $command;
 
 	if( $rc != 0 )
@@ -508,26 +503,6 @@ sub join_path
 	my( $self, @parts ) = @_;
 
 	return join '/', @parts;
-}
-
-=item $ext = $sys->file_extension( $filename )
-
-Returns the file extension of $filename including the leading '.' e.g. F<.tar.gz>
-
-Returns empty string if there is no file extension.
-
-=cut
-
-sub file_extension
-{
-	my( $self, $filename ) = @_;
-
-	if( $filename =~ /((?:\.[a-z0-9]{1,4}){1,2})$/i )
-	{
-		return $1;
-	}
-
-	return "";
 }
 
 =item $filepath = $sys->sanitise( $filepath )

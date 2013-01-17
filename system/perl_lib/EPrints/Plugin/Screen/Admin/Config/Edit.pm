@@ -314,7 +314,7 @@ sub action_process_image_upload
 		}
 		seek($tmpfile, 0, 0);
 		
-		EPrints::Utils::copy($tmpfile,$image_location);
+		rename($tmpfile,$image_location);
 		
 		$self->{processor}->add_message( 
 			"message", 

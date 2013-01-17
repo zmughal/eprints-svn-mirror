@@ -38,7 +38,6 @@ The L<DBD::Pg> SQL_VARCHAR type is mapped to text instead of varchar(n).
 package EPrints::Database::Pg;
 
 use EPrints::Database qw( :sql_types );
-use DBD::Pg qw( :pg_types );
 
 @ISA = qw( EPrints::Database );
 
@@ -232,7 +231,10 @@ sub quote_binary
 {
 	my( $self, $bytes ) = @_;
 
-	return [ $bytes, { pg_type => DBD::Pg::PG_BYTEA } ];
+	$bytes =~ s/\\/\\\\/g;
+	$bytes =~ s/\0/\\000/g;
+
+	return $bytes;
 }
 
 sub prepare_regexp

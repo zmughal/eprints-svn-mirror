@@ -27,22 +27,39 @@ function generate_uuid()
 }
 
 Element.addMethods({
-        attributesHash: function(element) {
-                var attr = element.attributes;
-                var h = {};
-		// list of attributes that we want to be copied over to the hash
-                var whitelist = { 'name': true, 'id':true, 'style':true, 'value':true };
+	attributesHash: function(element) {
+		var attr = element.attributes;
+		var h = {};
 
-                for (var i = 0; i < attr.length; ++i)
-                {
-                        var name = attr[i].name;
-                        if( Prototype.Browser.IE && !attr[i].specified && !whitelist[attr[i].name])
-                                continue;
-                        h[name] = element.readAttribute (name);
-                }
+		for (var i = 0; i < attr.length; ++i)
+		{
+			var name = attr[i].name;
+			var value;
+			/*
+			 * IE 7 blows up with getAttribute ('dataSrc') with "No such
+			 * interface supported"
+			 * IE 7 generates disabled controls if we copy in functional
+			 * attributes
+			 */
+			try {
+				value = element.readAttribute (name);
+			}
+			catch (e) {
+				continue;
+			}
+			switch (typeof value)
+			{
+				case "undefined":
+				case "function":
+				case "object":
+					break;
+				default:
+					h[name] = value;
+			}
+		}
 
-                return h;
-        }
+		return h;
+	}
 });
 
 /*

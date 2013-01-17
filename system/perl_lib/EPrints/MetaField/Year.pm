@@ -11,7 +11,7 @@
 
 =head1 NAME
 
-EPrints::MetaField::Year - no description
+B<EPrints::MetaField::Year> - no description
 
 =head1 DESCRIPTION
 
@@ -23,17 +23,50 @@ not done
 
 package EPrints::MetaField::Year;
 
-use EPrints::MetaField::Int;
-@ISA = qw( EPrints::MetaField::Int );
-
 use strict;
+use warnings;
+
+BEGIN
+{
+	our( @ISA );
+
+	@ISA = qw( EPrints::MetaField::Int );
+}
+
+use EPrints::MetaField::Int;
+
+sub render_search_input
+{
+	my( $self, $session, $searchfield ) = @_;
+	
+	return $session->render_input_field(
+				class => "ep_form_text",
+				name=>$searchfield->get_form_prefix,
+				value=>$searchfield->get_value,
+				size=>9,
+				maxlength=>9 );
+}
+
+sub from_search_form
+{
+	my( $self, $session, $prefix ) = @_;
+
+	my $val = $session->param( $prefix );
+	return unless defined $val;
+
+	if( $val =~ m/^(\d\d\d\d)?\-?(\d\d\d\d)?/ )
+	{
+		return( $val );
+	}
+			
+	return( undef,undef,undef, $session->html_phrase( "lib/searchfield:year_err" ) );
+}
 
 sub get_property_defaults
 {
 	my( $self ) = @_;
 	my %defaults = $self->SUPER::get_property_defaults;
-	$defaults{maxlength} = 4; # Still running Perl in 10000?
-	$defaults{regexp} = qr/\d{4}/;
+	$defaults{digits} = 4;
 	return %defaults;
 }
 
@@ -41,8 +74,6 @@ sub should_reverse_order { return 1; }
 
 ######################################################################
 1;
-
-=back
 
 =head1 COPYRIGHT
 

@@ -81,14 +81,8 @@ $view = EPrints::Update::Views->new( repository => $session, view => $view );
 my @path_values = $view->unescape_path_values( @view_path );
 my $filters = $view->get_filters( \@path_values, 1 ); # EXact
 
-my $order = $view->{order};
-if( $plugin->is_feed )
-{
-	$order = "-datestamp";
-}
-
 my $list = $view->dataset->search(
-	custom_order => $order,
+	custom_order => $view->{order},
 	satisfy_all => 1,
 	filters => $filters );
 
