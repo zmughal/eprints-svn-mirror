@@ -29,9 +29,6 @@ case "$1" in
 	`update-rc.d epindexer defaults 99 99 > /dev/null`
 	`chown eprints:www-data /usr/share/eprints3/ > /dev/null`
 	`chown eprints:www-data /usr/share/eprints3/* -R > /dev/null`
-	`chmod g+w /usr/share/eprints3/lib > /dev/null`
-	`chmod g+w /usr/share/eprints3/lib/* -R > /dev/null`
-	`chmod g+w /usr/share/eprints3/var > /dev/null`
 	echo "###################################################################";
 	echo "##                                                               ##";
 	echo "##                    Welcome to EPrints 3                       ##";

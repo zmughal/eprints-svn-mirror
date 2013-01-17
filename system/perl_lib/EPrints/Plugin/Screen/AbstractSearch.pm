@@ -306,8 +306,6 @@ sub _vis_level
 {
 	my( $self ) = @_;
 
-	return "staff" if defined $self->{session}->current_user && $self->{session}->current_user->is_staff;
-
 	return "all";
 }
 
@@ -514,12 +512,15 @@ sub render_export_bar
 	$button->appendChild( $session->render_button(
 			name=>"_action_export_redir",
 			value=>$session->phrase( "lib/searchexpression:export_button" ) ) );
+	$button->appendChild( $self->render_hidden_bits );
+	$button->appendChild( 
+		$session->render_hidden_field( "order", $order ) ); 
+	$button->appendChild( 
+		$session->render_hidden_field( "cache", $cacheid ) ); 
+	$button->appendChild( 
+		$session->render_hidden_field( "exp", $escexp, ) );
 
 	my $form = $self->{session}->render_form( "GET" );
-	$form->appendChild( $self->render_hidden_bits );
-	$form->appendChild( $session->render_hidden_field( "order", $order ) ); 
-	$form->appendChild( $session->render_hidden_field( "cache", $cacheid ) ); 
-	$form->appendChild( $session->render_hidden_field( "exp", $escexp, ) );
 	$form->appendChild( $session->html_phrase( "lib/searchexpression:export_section",
 					feeds => $feeds,
 					tools => $tools,
@@ -534,36 +535,27 @@ sub render_export_bar
 sub get_basic_controls_before
 {
 	my( $self ) = @_;
-
-	my $repo = $self->repository;
-
-	my @controls_before;
-
 	my $cacheid = $self->{processor}->{results}->{cache_id};
 	my $escexp = $self->{processor}->{search}->serialise;
 
-	my $baseurl = $self->{session}->get_url;
-	$baseurl->query_form( $self->hidden_bits );
-
-	{
-		my $url = $baseurl->clone;
-		$url->query_form(
-			$url->query_form,
-			cache => $cacheid,
-			exp => $escexp,
-			order => $self->{processor}->{search}->{custom_order},
-			_action_update => 1,
-		);
-		push @controls_before, {
-				url => "$url",
-				label => $repo->html_phrase( "lib/searchexpression:refine" ),
-			};
-	}
-
-	push @controls_before, {
-			url => $baseurl->clone,
-			label => $repo->html_phrase( "lib/searchexpression:new" ),
-		};
+	my $baseurl = URI->new( $self->{session}->get_uri );
+	$baseurl->query_form(
+		cache => $cacheid,
+		exp => $escexp,
+		screen => $self->{processor}->{screenid},
+		dataset => $self->search_dataset->id,
+		order => $self->{processor}->{search}->{custom_order},
+	);
+	my @controls_before = (
+		{
+			url => "$baseurl&_action_update=1",
+			label => $self->{session}->html_phrase( "lib/searchexpression:refine" ),
+		},
+		{
+			url => $self->{session}->get_uri . "?screen=".$self->{processor}->{screenid},
+			label => $self->{session}->html_phrase( "lib/searchexpression:new" ),
+		}
+	);
 
 	return @controls_before;
 }
@@ -627,7 +619,7 @@ sub paginate_opts
 		above_results => $export_div,
 		controls_after => $order_div,
 		params => { 
-			$self->hidden_bits,
+			screen => $self->{processor}->{screenid},
 			_action_search => 1,
 			cache => $cacheid,
 			exp => $escexp,

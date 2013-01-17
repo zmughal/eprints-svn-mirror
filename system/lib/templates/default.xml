@@ -59,22 +59,24 @@
           </ul>
         </li>
       </ul>
-      <div class="ep_tm_searchbar">
-		<epc:pin ref="login_status"/>
-		<div class="ep_tm_searchform">
-          <form method="get" accept-charset="utf-8" action="{$config{http_cgiurl}}/search">
-            <input type="text" name="q" placeholder="{phrase('lib/searchexpression:action_search')}"/>
-            <button value="{phrase('lib/searchexpression:action_search')}" title="{phrase('lib/searchexpression:action_search')}">
-              <img src="{$config{rel_path}}/style/images/action_search.png" />
-            </button>
-            <input type="hidden" name="_action_search" value="Search"/>
-            <input type="hidden" name="_order" value="bytitle"/>
-            <input type="hidden" name="basic_srchtype" value="ALL"/>
-            <input type="hidden" name="_satisfyall" value="ALL"/>
-          </form>
-        </div>
-		<div style="clear: both"></div>
-      </div>
+      <table class="ep_tm_searchbar">
+        <tr>
+          <td align="left">
+            <epc:pin ref="login_status"/>
+          </td>
+          <td align="right" style="white-space: nowrap">
+            <epc:pin ref="languages"/>
+            <form method="get" accept-charset="utf-8" action="{$config{http_cgiurl}}/search" style="display:inline">
+              <input class="ep_tm_searchbarbox" size="20" type="text" name="q"/>
+              <input class="ep_tm_searchbarbutton" value="{phrase('lib/searchexpression:action_search')}" type="submit" name="_action_search"/>
+              <input type="hidden" name="_action_search" value="Search"/>
+              <input type="hidden" name="_order" value="bytitle"/>
+              <input type="hidden" name="basic_srchtype" value="ALL"/>
+              <input type="hidden" name="_satisfyall" value="ALL"/>
+            </form>
+          </td>
+        </tr>
+      </table>
     </div>
     <div>
       <div class="ep_tm_page_content">
@@ -90,7 +92,6 @@
           <img alt="EPrints Logo" src="{$config{rel_path}}/images/eprintslogo.gif"/>
         </a>
       </div>
-	  <div class="ep_block"><epc:pin ref="languages"/></div>
       <epc:phrase ref="template:about_eprints"/>
     </div>
   </body>

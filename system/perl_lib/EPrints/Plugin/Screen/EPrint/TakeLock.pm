@@ -69,14 +69,10 @@ sub action_take
 	my $a = $session->render_link( "?screen=EPrint::View&eprintid=".$self->{processor}->{eprintid} );
 	$a->appendChild( $title );
 
-	my $edit_lock_user = $session->user( $eprint->value( "edit_lock_user" ) );
-	if( defined $edit_lock_user )
-	{
-		$edit_lock_user->create_subdataobj( "messages", {
-			type => "warning",
-			message => $self->html_phrase( "lock_taken", user=>$user->render_citation, item=>$a ),
-		});
-	}
+	$self->{session}->get_database->save_user_message( 
+			$eprint->get_value( "edit_lock_user" ),
+			"warning",
+			$self->html_phrase( "lock_taken", user=>$user->render_citation, item=>$a ) );
 	
 	$eprint->set_value( "edit_lock_until", 0 );
 	$eprint->obtain_lock( $user );

@@ -560,14 +560,6 @@ sub type_info
 			COLUMN_SIZE => 2 ** 31,
 		};
 	}
-	elsif( $data_type eq SQL_LONGVARBINARY )
-	{
-		return {
-			TYPE_NAME => "mediumblob",
-			CREATE_PARAMS => "",
-			COLUMN_SIZE => 2 ** 31,
-		};
-	}
 	else
 	{
 		return $self->SUPER::type_info( $data_type );

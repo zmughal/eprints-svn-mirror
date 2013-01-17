@@ -303,19 +303,12 @@ sub to_sax
 
 	for($self->property( "multiple" ) ? @$value : $value)
 	{
-		my $dataobj = $_;
-		# raw epdata
-		if(ref($dataobj) eq "HASH")
-		{
-			my $dataset = $self->{repository}->dataset( $self->property( "datasetid" ) );
-			$dataobj = $dataset->make_dataobj( $dataobj );
-		}
 		next if(
 			$opts{hide_volatile} &&
-			$dataobj->isa( "EPrints::DataObj::Document" ) &&
-			$dataobj->has_relation( undef, "isVolatileVersionOf" )
+			$_->isa( "EPrints::DataObj::Document" ) &&
+			$_->has_relation( undef, "isVolatileVersionOf" )
 		);
-		$dataobj->to_sax( %opts );
+		$_->to_sax( %opts );
 	}
 
 	$handler->end_element( {

@@ -1,30 +1,59 @@
-=for Pod2Wiki
-
 =head1 NAME
 
-EPrints::Plugin::Search::Search::External
-
-=head1 DESCRIPTION
-
-External data source search utility super class.
+EPrints::Plugin::Screen::Import::View
 
 =cut
 
-package EPrints::Plugin::Search::External;
+package EPrints::Plugin::Screen::Import::View;
 
-use base "EPrints::Plugin::Search";
+@ISA = ( 'EPrints::Plugin::Screen::Workflow' );
 
 use strict;
 
-$EPrints::Plugin::Search::External::DISABLE = 1;
+sub get_dataset_id { "import" }
 
 sub new
 {
 	my( $class, %params ) = @_;
 
-	$params{external} = exists $params{external} ? $params{external} : 1;
+	my $self = $class->SUPER::new(%params);
 
-	return $class->SUPER::new( %params );
+	$self->{icon} = "action_view.png";
+
+	$self->{appears} = [
+		{
+			place => "import_item_actions",
+			position => 200,
+		},
+	];
+
+	$self->{actions} = [qw/ /];
+
+	return $self;
+}
+
+sub render
+{
+	my( $self ) = @_;
+
+	my $session = $self->{session};
+	my $dataobj = $self->{processor}->{dataobj};
+
+	my $page = $session->make_doc_fragment;
+
+	my $ul = $session->make_element( "ul" );
+	$page->appendChild( $ul );
+
+	$dataobj->map(sub {
+		my( undef, undef, $item ) = @_;
+
+		my $li = $session->make_element( "li" );
+		$ul->appendChild( $li );
+
+		$li->appendChild( $item->render_citation_link() );
+	});
+
+	return $page;
 }
 
 1;

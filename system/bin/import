@@ -46,10 +46,6 @@ The id of the input plugin to use. This should not include the leading "Import::
 
 If this is ommited or an invalid plugin is requested, then 'import' will list all plugins compatible with the dataset and exit.
 
-=item I<filename>
-
-Filename to read from. To read from STDIN specify '-'.
-
 =back
 
 =head1 OPTIONS
@@ -68,7 +64,7 @@ If this is an integer then it is assumed to be the userid of the user, otherwise
 
 You may wish to create one or more "bulk import" users and make imported eprint records belong to them.
 
-=item B<--argument key=value>
+=item B<--arg key=value>
 
 Add an argument to the import plugin. May be repeated. Effects depend on the import plugin.
 
@@ -93,10 +89,6 @@ This sets the "enable_file_imports" configuration option for this session only.
 
 Allow the imported data to import files from the Web. This can obviously be seen as a security hole if you don't trust the data you are importing.
 This sets the "enable_web_imports" configuration option for this session only.
-
-=item B<--xml>
-
-Output to STDOUT the parsed objects in EPrints XML (does not import anything).
 
 =item B<--update>
 
@@ -159,7 +151,6 @@ my $migration = 0;
 my $update = 0;
 my %opt_args;
 my @actions;
-my $output_xml = 0;
 
 Getopt::Long::Configure("permute");
 
@@ -180,9 +171,8 @@ GetOptions(
 	'enable-web-imports' => \$enable_web_imports,
 	'migration' => \$migration,
 	'update' => \$update,
-	'argument|arg=s' => \%opt_args,
+	'arg=s' => \%opt_args,
 	'action=s' => \@actions,
-	'xml' => \$output_xml,
 ) || pod2usage( 2 );
 EPrints::Utils::cmd_version() if $version;
 pod2usage( 1 ) if $help;
@@ -330,16 +320,6 @@ my $handler = EPrints::CLIProcessor->new(
 
 		$count++, return if $parse_only;
 
-		if( $output_xml )
-		{
-			my $dataobj = $opts{dataset}->make_dataobj( $epdata );
-			my $frag = $dataobj->to_xml;
-			print $session->xml->to_string( $frag, indent => 1 );
-			print "\n";
-			$session->xml->dispose( $frag );
-			return;
-		}
-
 		my $item;
 
 		if(
@@ -355,7 +335,6 @@ my $handler = EPrints::CLIProcessor->new(
 			$item->update( $epdata,
 					include_subdataobjs => 1,
 				);
-			$item->commit;
 			print "EPRINTS_IMPORT: ITEM_UPDATED ".$item->get_id."\n" if $scripted;
 		}
 		elsif( defined($item = $opts{dataset}->create_dataobj( $epdata )) )
@@ -422,40 +401,16 @@ if( $scripted )
 # improve ordervalues insertion performance
 $session->cache_subjects;
 
-if( $output_xml )
-{
-	binmode(STDOUT, ":utf8");
-	print "<?xml version='1.0'?>\n<eprints xmlns='".EPrints::Const::EP_NS_DATA()."'>\n";
-}
-
-my $fh;
-
-if( $filename eq "-" )
-{
-	$fh = \*STDIN;
-}
-else
-{
-	open($fh, "<", $filename) or die "Error reading from $filename: $!";
-}
-
-my $list = eval { $plugin->input_fh(
+my $list = eval { $plugin->input_file(
 		%arguments,
 		dataset=>$ds,
-		fh=>$fh,
+		filename=>$filename,
 		user=>$userobj,
 		actions=>\@actions,
 ) };
 if( $@ )
 {
 	$handler->message( "error", $session->make_text( "Unhandled exception in ".$plugin->{id}.": $@" ) );
-}
-
-close $fh;
-
-if( $output_xml )
-{
-	print "\n</eprints>\n";
 }
 
 if( $scripted )

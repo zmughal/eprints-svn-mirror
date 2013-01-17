@@ -84,8 +84,6 @@ sub xml_to_epdata
 	my $article = $citation->getElementsByTagName("Article")->item(0);
 	return unless defined $article;
 
-	$epdata->{source} = "PMC" . $plugin->xml_to_text( $citation->getElementsByTagName( "PMID" )->item(0) );
-
 	my $articletitle = $article->getElementsByTagName( "ArticleTitle" )->item(0);
 	$epdata->{title} = $plugin->xml_to_text( $articletitle ) if defined $articletitle;
 

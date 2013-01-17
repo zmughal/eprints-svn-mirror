@@ -42,13 +42,13 @@ The rest of this page concerns the I<EPrints::Test::Pod2Wiki> module.
 =head1 SYNOPSIS
 
 	use EPrints::Test::Pod2Wiki;
-	
+
 	my $p = EPrints::Test::Pod2Wiki->new(
 		wiki_index => "http://wiki.foo.org/index.php",
 		username => "johnd",
 		password => "xiPi00",
 		);
-	
+
 	$p->update_page( "EPrints::Utils" );
 
 =head1 DESCRIPTION
@@ -71,7 +71,6 @@ use HTML::Entities;
 use HTTP::Cookies;
 use Pod::Coverage;
 use MediaWiki::API;
-use List::Util qw( reduce );
 
 use strict;
 
@@ -86,15 +85,12 @@ Create a new Pod2Wiki parser. Required options:
   wiki_index - URL of the MediaWiki "index.php" page
   username - MediaWiki username
   password - MediaWiki password
-  comments - "section", "none"
 
 =cut
 
 sub new
 {
 	my( $class, %opts ) = @_;
-
-	$opts{comments} = "none" if !defined $opts{comments};
 
 	my $self = $class->SUPER::new( %opts );
 
@@ -127,10 +123,7 @@ sub update_page
 	local $self->{_p2w_pod_section};
 	local $self->{_p2w_format} = "";
 	local $self->{_p2w_head_depth} = 0;
-	local $self->{_p2w_over} = [];
-	local $self->{_p2w_over_section} = [];
 	local $self->{_p2w_methods} = 0;
-	local $self->{_p2w_verbatim_lang};
 	local $self->{_wiki} = {};
 	local $self->{_package_name} = $package_name;
 
@@ -165,8 +158,8 @@ sub update_page
 	$self->command( "pod" );
 
 	push @{$self->{_out}},
-		"<!-- ${PREFIX}_postamble_ -->\n",
-		"<!-- $END_PREFIX -->\n";
+		"<!-- ${PREFIX}_postamble_ -->",
+		"<!-- $END_PREFIX -->";
 
 	push @{$self->{_out}}, delete($self->{_wiki}->{"_postamble_"})
 		if defined $self->{_wiki}->{"_postamble_"};
@@ -225,9 +218,8 @@ EOC
 	$sort_key =~ s/^.*:://;
 
 	my $file = $package_name;
-	if( $file =~ s/::/\//g ) {
-		$file = "perl_lib/$file.pm";
-	}
+	$file =~ s/::/\//g;
+	$file = "$file.pm";
 
 	my $parent = $package_name;
 	$parent =~ s/::[^:]+$//;
@@ -335,8 +327,6 @@ sub _p2w_parse_wiki
 	foreach my $key (keys %wiki)
 	{
 		$wiki{$key} =~ s/^\n\n+/\n/;
-		$wiki{$key} =~ s/^\n+//s;
-		$wiki{$key} =~ s/\s+$//s;
 		delete $wiki{$key} unless $wiki{$key} =~ /\S/;
 	}
 
@@ -387,94 +377,35 @@ sub command
 {
 	my( $self, $cmd, $text, $line_num, $pod_para ) = @_;
 
-	$text = "" if !defined $text;
-
-	# any other command clears the verbatim lang
-	undef $self->{_p2w_verbatim_lang};
-
-	if( $self->{_p2w_pod_section} && $self->{_p2w_pod_section} eq "begin" )
-	{
-		if( $cmd eq "end" )
-		{
-			$self->{_p2w_format} = "";
-			delete $self->{_p2w_pod_section};
-		}
-		return;
-	}
-
-	if( $cmd eq "for" )
-	{
-		my( $type, $value ) = split /\s+/, $text, 2;
-		if( lc($type) eq "pod2wiki" )
-		{
-			push @{$self->{_out}}, "<!-- ${PREFIX}_private_ -->";
-			$self->{_is_api} = 1;
-			push @{$self->{_out}}, $value if $value;
-		}
-		elsif( lc($type) eq "mediawiki" )
-		{
-			push @{$self->{_out}}, "<!-- ${PREFIX}_private_ -->";
-			push @{$self->{_out}}, $value if $value;
-		}
-		elsif( lc($type) eq "verbatim_lang" )
-		{
-			$value =~ s/\s+//g;
-			$self->{_p2w_verbatim_lang} = $value if $value;
-		}
-		return;
-	}
-	elsif( $cmd eq "over" )
-	{
-		$self->{_p2w_head_depth}++;
-		push @{$self->{_p2w_over}}, $text / 4;
-		push @{$self->{_p2w_over_section}}, delete $self->{_p2w_pod_section};
-		return;
-	}
-	elsif( $cmd eq "back" )
-	{
-		$self->{_p2w_head_depth}--;
-		pop @{$self->{_p2w_over}};
-		$self->{_p2w_pod_section} = pop @{$self->{_p2w_over_section}};
-		return;
-	}
-
 	if( $self->{_p2w_pod_section} )
 	{
-		my $key = delete $self->{_p2w_pod_section};
-		if( $key =~ /^head_/ )
+		if( $self->{_p2w_pod_section} eq "begin" )
 		{
-			if( $self->{comments} eq "section" )
+			if( $cmd eq "end" )
 			{
-				push @{$self->{_out}}, "<div style='$STYLE'>\n<span style='display:none'>User Comments</span>\n";
+				$self->{_p2w_format} = "";
+				delete $self->{_p2w_pod_section};
 			}
-			push @{$self->{_out}}, "<!-- $END_PREFIX -->\n\n";
-			if( $self->{_wiki}->{$key} )
-			{
-				push @{$self->{_out}},
-					delete $self->{_wiki}->{$key};
-			}
-			push @{$self->{_out}}, "\n<!-- ${PREFIX} -->\n";
-			if( $self->{comments} eq "section" )
-			{
-				push @{$self->{_out}}, "</div>\n";
-			}
+			return;
 		}
+		my $key = delete $self->{_p2w_pod_section};
+		push @{$self->{_out}}, "<div style='$STYLE'>\n<span style='display:none'>User Comments</span>\n<!-- $END_PREFIX -->\n\n";
+		if( $self->{_wiki}->{$key} )
+		{
+			push @{$self->{_out}},
+				delete $self->{_wiki}->{$key};
+		}
+		push @{$self->{_out}}, "\n<!-- ${PREFIX} -->\n</div>\n";
 	}
 	return if $cmd eq "pod";
 
-	my( $key, $ref, $orig_text );
-	if( defined $text )
-	{
-		$orig_text = $text;
-		$text =~ s/\n+//g;
-		$key = EPrints::Utils::escape_filename( $text );
-		$ref = _p2w_fragment_id( $text );
-		$text = $self->interpolate( $text, $line_num );
-	}
+	$text =~ s/\n+//g;
+	my $key = EPrints::Utils::escape_filename( $text );
+	my $ref = lc( _p2w_fragment_id( $text ) );
+	$text = $self->interpolate( $text, $line_num );
 
 	if( $cmd =~ /^head(\d+)/ )
 	{
-		$ref = lc( $ref );
 		$self->{_p2w_head_depth} = $1;
 		my $eqs = "=" x $1;
 		$eqs .= "="; # start at == not =
@@ -491,36 +422,49 @@ sub command
 			$self->{_p2w_methods} = 0;
 		}
 	}
+	elsif( $cmd eq "over" or $cmd eq "back" )
+	{
+	}
 	elsif( $cmd eq "item" )
 	{
 		my $depth = $self->{_p2w_head_depth} || 0;
-		my $indent = @{$self->{_p2w_over}};
-		$indent-- if $self->{_p2w_methods};
+		++$depth;
 		my $eqs = "=" x $depth;
 		$eqs .= "="; # start at == not =
-		my $stars = "*" x $indent;
-		# show synopsis below the item heading
-		if( $self->{_p2w_methods} && $depth == 2 )
+		push @{$self->{_out}}, "<!-- ${PREFIX}item_$ref -->\n";
+		if( $self->{_p2w_methods} )
 		{
 			$ref = $text if !$ref;
-			push @{$self->{_out}}, "<!-- ${PREFIX}head_$ref -->\n";
 			push @{$self->{_out}}, 
 				"$eqs$ref$eqs\n\n",
-				"<source lang=\"perl\">$orig_text</source>\n";
-			$self->{_p2w_pod_section} = "head_$ref";
+				" $text\n";
 		}
 		else
 		{
-			push @{$self->{_out}}, "$stars $text\n";
-			$self->{_p2w_pod_section} = "item_$ref";
+			push @{$self->{_out}}, "$eqs$text$eqs\n\n";
+		}
+#		if( $ref ne $text )
+#		{
+#			push @{$self->{_out}}, "  $text\n\n";
+#		}
+		$self->{_p2w_pod_section} = "item_$ref";
+	}
+	elsif( $cmd eq "for" )
+	{
+		my( $type, $value ) = split /\s+/, $text, 2;
+		if( $type eq "Pod2Wiki" )
+		{
+			push @{$self->{_out}}, "<!-- ${PREFIX}_private_ -->";
+			$self->{_is_api} = 1;
+			push @{$self->{_out}}, $value if $value;
 		}
 	}
 	elsif( $cmd eq "begin" )
 	{
 		$self->{_p2w_pod_section} = $cmd;
-		$self->{_p2w_format} = $text;
 		if( $text eq "Pod2Wiki" )
 		{
+			$self->{_p2w_format} = $text;
 			push @{$self->{_out}}, "<!-- ${PREFIX}_private_ -->";
 		}
 	}
@@ -546,27 +490,11 @@ sub verbatim
 
 	return unless $self->{_p2w_pod_section};
 	return if $self->{_p2w_pod_section} eq "begin" && $self->{_p2w_format} ne "Pod2Wiki";
-
-	my $_out = $self->{_out};
-	if( !@$_out || !UNIVERSAL::isa( $_out->[-1], "EPrints::Test::Pod2Wiki::Verbatim" ) )
-	{
-		if( $self->{_p2w_pod_section} eq "head_synopsis" || $self->{_p2w_verbatim_lang} )
-		{
-			push @$_out, EPrints::Test::Pod2Wiki::Verbatim::Source->new(
-					[$text],
-					$self->{_p2w_verbatim_lang}
-				);
-		}
-		else
-		{
-			$text = $self->interpolate( $text, $line_num );
-			push @$_out, EPrints::Test::Pod2Wiki::Verbatim->new( [$text] );
-		}
-	}
-	else
-	{
-		push @{$_out->[-1]}, $text;
-	}
+	$text = $self->interpolate( $text, $line_num );
+	# tabs = indented
+	$text =~ s/\t/  /g;
+	$text =~ s/\n\n/\n  \n/g;
+	push @{$self->{_out}}, $text;
 }
 
 =item $parser->textblock( ... )
@@ -588,16 +516,8 @@ sub textblock
 		}
 		return;
 	}
-
 	$text = $self->interpolate( $text, $line_num );
-
-	my $indent = @{$self->{_p2w_over}};
-	$indent-- if $self->{_p2w_methods} && $indent > 0;
-#	my $stars = $self->{_p2w_pod_section} =~ /^item_/ ? "*" x $indent : "";
-	my $colons = ":" x $indent;
-	$colons .= " " if length $colons;
-
-	push @{$self->{_out}}, "$colons$text";
+	push @{$self->{_out}}, $text;
 }
 
 =item $parser->interpolate( ... )
@@ -632,11 +552,11 @@ sub interior_sequence
 	# shouldn't happen (and breaks =item text)
 #	return unless $self->{_p2w_pod_section};
 
-	'B' eq $seq_cmd && return "'''$seq_arg'''";
-	'F' eq $seq_cmd && return "''$seq_arg''";
-	'C' eq $seq_cmd && return "\x{00}code\x00$seq_arg\x00";
-	'I' eq $seq_cmd && return "\x{00}em\x00$seq_arg\x00";
-	'U' eq $seq_cmd && return "\x{00}u\x00$seq_arg\x00";
+	return "'''$seq_arg'''" if $seq_cmd eq 'B';
+	return "''$seq_arg''" if $seq_cmd eq 'F';
+	return "\x{00}tt\x00$seq_arg\x00" if $seq_cmd eq 'C';
+	return "\x{00}em\x00$seq_arg\x00" if $seq_cmd eq 'I';
+	return "\x{00}u\x00$seq_arg\x00" if $seq_cmd eq 'U';
 	if( $seq_cmd eq "E" )
 	{
 		return {
@@ -655,7 +575,7 @@ sub interior_sequence
 			return $seq_arg;
 		}
 		# link to the API wiki page
-		elsif( $seq_arg =~ /^([^\|]+\|)?EPrints\b/ )
+		elsif( $seq_arg =~ /^EPrints\b/ )
 		{
 			my( $text, $module, $sec ) = $self->_p2w_split_pod_link( $seq_arg );
 			if( defined $module )
@@ -794,69 +714,6 @@ sub _fragment_id_readable {
 
     $text;
 }}
-
-package EPrints::Test::Pod2Wiki::Verbatim;
-
-use overload '""' => \&stringify;
-
-sub new 
-{
-	my( $class, $arr ) = @_;
-	
-	return bless $arr, $class;
-}
-
-sub stringify
-{
-	my( $self ) = @_;
-
-	for(@$self)
-	{
-		s/\t/  /g;
-		s/\n\n/\n  \n/g;
-		s/\s+$//;
-	}
-
-	return "<pre>".join("\n  \n", @$self)."</pre>\n\n";
-}
-
-package EPrints::Test::Pod2Wiki::Verbatim::Source;
-
-our @ISA = qw( EPrints::Test::Pod2Wiki::Verbatim );
-
-use overload '""' => \&stringify;
-use Scalar::Util qw( refaddr );
-
-my %LANG;
-
-sub new
-{
-	my( $class, $self, $lang ) = @_;
-
-	$self = $class->SUPER::new( $self );
-
-	$LANG{refaddr($self)} = $lang;
-
-	return $self;
-}
-
-sub stringify
-{
-	my( $self ) = @_;
-
-	for(@$self)
-	{
-		s/^(\t|  )//mg;
-		s/\s+$//;
-	}
-
-	my $lang = $LANG{refaddr($self)};
-	$lang = "perl" if !defined $lang;
-
-	return "<source lang=\"$lang\">".join("\n\n", @$self)."</source>\n\n";
-}
-
-sub DESTROY { delete $LANG{refaddr($_[0])} }
 
 1;
 

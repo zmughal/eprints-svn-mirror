@@ -588,7 +588,7 @@ sub to_sax
 		Attributes => \%Attributes,
 	});
 
-	if( $self->is_set( "datasetid" ) && $self->value( "datasetid" ) eq "document" )
+	if( $self->value( "datasetid" ) eq "document" )
 	{
 		my $doc = $self->parent();
 		my $url = $doc->get_url( $self->value( "filename" ) );
@@ -942,10 +942,9 @@ sub characters
 		for($state->{buffer})
 		{
 			use bytes;
-			$data->{Data} =~ s/\s+//g;
 			$_ .= $data->{Data};
-			print $tmpfile MIME::Base64::decode_base64( substr($_,0,length($_) - length($_)%4) );
-			$_ = substr($_,length($_) - length($_)%4);
+			print $tmpfile MIME::Base64::decode_base64( substr($_,0,length($_) - length($_)%77) );
+			$_ = substr($_,length($_) - length($_)%77);
 		}
 	}
 }

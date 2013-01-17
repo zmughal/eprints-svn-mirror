@@ -6,7 +6,8 @@ EPrints::Plugin::Import::ISIWoK
 
 package EPrints::Plugin::Import::ISIWoK;
 
-use base "EPrints::Plugin::Import";
+use EPrints::Plugin::Import::TextFile;
+@ISA = qw( EPrints::Plugin::Import::TextFile );
 
 use strict;
 
@@ -18,10 +19,49 @@ sub new
 
 	$self->{name} = "ISI Web of Knowledge";
 	$self->{visible} = "all";
-	$self->{advertise} = 0;
 	$self->{produce} = [ 'list/eprint' ];
+	$self->{screen} = "Import::ISIWoK";
+
+	if( !EPrints::Utils::require_if_exists( "SOAP::ISIWoK::Lite", "1.05" ) )
+	{
+		$self->{visible} = 0;
+		$self->{error} = "Requires SOAP::ISIWoK::Lite 1.05";
+	}
 
 	return $self;
+}
+
+sub input_text_fh
+{
+	my( $self, %opts ) = @_;
+
+	my $session = $self->{session};
+	my $dataset = $opts{dataset};
+
+	my @ids;
+
+	my $fh = $opts{fh};
+	my $query = join '', <$fh>;
+
+	my $wok = SOAP::ISIWoK::Lite->new;
+
+	my $xml = $wok->search( $query,
+		offset => $opts{offset},
+	);
+	$self->{total} = $xml->documentElement->getAttribute( "recordsFound" );
+
+	foreach my $rec ($xml->getElementsByTagName( "REC" ))
+	{
+		my $epdata = $self->xml_to_epdata( $dataset, $rec );
+		next if !scalar keys %$epdata;
+		my $dataobj = $self->epdata_to_dataobj( $dataset, $epdata );
+		push @ids, $dataobj->id if defined $dataobj;
+	}
+
+	return EPrints::List->new(
+		session => $session,
+		dataset => $dataset,
+		ids => \@ids );
 }
 
 sub xml_to_epdata
@@ -109,8 +149,8 @@ sub xml_to_epdata
 	( $node ) = $rec->findnodes( "item/abstract" );
 	$epdata->{abstract} = $node->textContent if $node;
 
-	# include the complete data for debug (disabled for being too big)
-#	$epdata->{suggestions} = $rec->toString( 1 );
+	# include the complete data for debug
+	$epdata->{suggestions} = $rec->toString( 1 );
 
 	return $epdata;
 }
