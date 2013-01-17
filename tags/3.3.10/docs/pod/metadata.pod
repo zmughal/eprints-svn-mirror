@@ -1,0 +1,786 @@
+=head1 EPrints Metadata
+
+=head2 Introduction 
+
+Metadata is data about data. In this case information about the documents we are storing.
+
+This section describes how to configure the metadata of an archive, and gives information on the various properties of metadata in GNU EPrints.
+
+From the point of view of the database, all eprint records have the same metadata fields. Although each eprint type will only expose a subset of those fields to the user interface.
+
+=head2 Modifying the Metadata fields in an Archive
+
+To add metadata fields you must edit C<ArchiveMetadataFieldsConfig.pm> and then erase and recreate the database tables. This will destroy all your data. If you want to add or modify fields to an archive without destroying your data, you will need to go into the SQL.
+
+All types of record in GNU EPrints have metadata. All have a core set of fields which may not be modified as these are required by the software. The "eprints" and "users" table also have a list of metadata fields which are used for storing the information about users and eprints.
+
+In addition to the metadata types there are functions in C<ArchiveMetadataFieldsConfig.pm> which can be modified to set default values of fields and to set certain fields based on values from other fields (automatics).
+
+Automatics are useful as they allow you store the simple answer to a more complex question. Eg. "Does this record have a document which has a security level public?" which a user may want to make a search criteria. If this is stored as a simple field in the record then it is easy to search on it.
+
+=head2 Default Configuration
+
+The default configuration of metadata fields, as of v2.3.0, has been designed as part of a collaboration between EPrints and library staff as a good starting setup for an institutional archive. It will still probably want some change or other depending on your requirements.
+
+There are also so default values for some fields and some automatics.
+
+The default value for the "hideemail" of user records is "TRUE" because we don't want to show peoples emails unless we were given explicit permission.
+
+If the "frequency" field of a user record is not set, it automaticall gets set to "never". This is because undefined means pretty much the same as "never" but it makes it clearer not to have it listed as "unspecified". "frequency"  only applies to editors. It's how often they get sent updates on what needs approving.
+
+The default security level for a document is "" (public). The default language for a document is the language of the current session (whatever requested by the user doing the deposit). This is not important unless you have an archive which cares what languages individual documents are in.
+
+The default type for an eprint is "article". This means that eprints can never have an undefined type.
+
+There are several automatics for eprint records. If the eprint is a "monograph" or "thesis" and it does not have the "institution" field set, then nothing happens... but there is some code you can uncomment to make it set "institution" to the name of your University (or whatever). 
+
+If the eprint is of type "patent" then it is automatically set to "published" as we should never be storing unpublished patents.
+
+If the eprint is of type "thesis" then it is automatically set to "unpublished" as thesis' do not get published. If this is incorrect for your archive it is easily disabled.
+
+The "effective date" field is set to the same value as the "date of issue". Unless it's undefined in which case it's set to the value of the "date of submission". If they are I<both> undefined then it is set to the datestamp of the metadata record. This means that "effective date" contains the "best" date for this record, to use when searching and ordering. It's not actually rendered anywhere. 
+
+"full_text_status" is set to a value indicating the status of the full text. One of "none" - no full text, "public" - full text is available, "restricted" - full text is available but is restricted in some way (security setting is not public).
+
+There is also a rather ugly hack to set the value of "fileinfo" to info about the documents so that it can be rendered as icons in citations. 
+
+=head1 Fields Configuration
+
+Fields have a number of properties. The only required properties are "name" and "type". Name is the name of the field. This is used to identify this throughout the system. The other properties depend on what type the field is.
+
+When you add a field you need to add the "human readable" version in the phrase file, this seperation allows you to change the description without changing the field itself. When you add a field named "foo" to the "eprint" metadata you should add "eprint_typename_foo" to the phrases. You may also wish to add "eprint_typehelp_foo" which is the explanation given to the user on the metadata input page.
+
+The following types of field are supported, along with their special property options.
+
+(there are some internal types not mentioned here. There use is not recommended.)
+
+=head1 Metadata Types
+
+There are a number of different types which are stored, input, rendered and searched differently.
+
+Some types extend more simple types. Eg. "Year" extends "int", but forces a limitation of 4 digits
+and all the descriptive text is different.
+
+It is theoretically possible to add your own types which inherrit from the inbuilt ones. This should be approached with caution. Pagerange is a good example to look at, when considering making your own types. You must make sure your ArchiveConfig.pm has a "use" for the module for your new type as it won't be loaded otherwise. The module name is the same as for the type, except that the first letter is capitalised. Field type "latlong" would be described by module C<EPrints::MetaField::Latlong>. 
+
+=begin latex
+
+\begin{figure}
+\centering
+\includegraphics[width=4in]{../lateximages/metafieldsoo.eps}
+\caption{EPrints 2 Metadata Types Inherritance}
+\end{figure}
+
+=end latex
+
+=begin html 
+
+=head2 Metadata Types Inherritance Diagram
+
+=end html
+
+=for html <p align="center"><img src="metafieldsoo.png" width="940" height="380" /></p>
+
+
+=for text A diagram of which types extend other types is at this point in the HTML & PDF versions of this document.
+
+=for texinfo A diagram of which types extend other types is at this point in the HTML & PDF versions of this document.
+
+=over 8
+
+=item int
+
+Optional properties: digits
+
+This type describes a positive integer. Stored as an C<INT> in the database.
+
+=item year
+
+Where possible use a "date" field with a minimum resolution of "year" instead of the "year" type. That way the field can be treated as a date in the searches rather than an int.
+
+This type describes a year. It works pretty much like "int" but is always 4
+digits long. Stored as an C<INT> in the database.
+
+=item longtext
+
+Optional properties: input_rows, input_cols, search_cols
+
+This type describes an unlimited length text field. Used for things like titles and abstracts. It can't be effiently searched as a single value, the system indexes the words. See "free text indexing" section. Stored in MySQL as a C<TEXT> field.
+
+=item date
+
+Optional properties: min_resolution
+
+This type describes a date, always expressed as YYYY-MM-DD, eg. 1969-05-23. It is stored as a C<DATE> in the database.
+
+=item boolean
+
+Optional properties: input_style
+
+This is a simple yes/no field which is stored in the database as C<SET( 'TRUE','FALSE' )>. It can be rendered as a menu, a check box or radio buttons. (See input_style)
+
+=item name
+
+Optional properties: input_name_cols, search_cols, hide_honourific, hide_lineage, family_first
+
+This type is used to store names of people (eg. authors). It is split into 4 parts: honourific, given names, family name and lineage. This may seem over fussy but it avoids people putting "Reverend" in the given names or "Junior" in the family name. If you dislike this you can hide honourific and lineage (See ArchiveConfig.pm).
+
+We use "family name" rather than "last name" in the hope of avoiding international confusion (some countries list family name first, so their last name is what I would call their "christian", or "first", name.
+
+Names are stored using 4 SQL fields. The name field "supervisor" would be stored as supervisor_honourific, supervisor_given, supervisor_family, supervisor_lineage. Each is a C<VARCHAR(255)>.
+
+=item set
+
+Required properties: options
+
+Optional properties: input_rows, search_rows
+
+This type is a limited set of options. The list of options must be specified. Each option must also be added to the phrase file. Option "foo" of field "bar" in the "user" dataset will have the phrase id "user_fieldopt_bar_foo".
+
+Stored in the database as a C<VARCHAR(255)>, containing the id of the option.
+
+=item text
+
+Optional properties: input_cols, maxlength, search_cols
+
+This is a simple text field. It normally has a maximum length of 255 ASCII characters, less if non-ASCII characters are used as these are UTF-8 encoded.
+
+Stored in the database as a C<VARCHAR(255)>.
+
+=item secret
+
+Identical to "text" except that the input field is a starred-out password input field, and it is only ever written to the database, it can't be read back. Writing an empty value will NOT change the previous value. 
+
+=item url
+
+Identical to "text" except it is rendered and validated differently.
+
+=item email
+
+Identical to "text" except it is rendered and validated differently.
+
+=item subject
+
+Optional properties: top, showtop, showall, input_rows, search_rows
+
+This is a hierarchical subject tree. At first glance it works like sets, but
+it can be searched for all items in or below a given subject. Subjects may be
+added to the live system.
+
+The subject tree starts at a subject with the id "ROOT" but a subject I<field> only offers all the items below the subject with the id "subjects". This can be changed using the "top" property, so that you can have two fields which options are different parts of the same tree. 
+
+Subjects may have more than one parent. eg. I<biophysics> can appear under both I<physics> and I<biology>, while still being the same subject.
+
+See the bin/import_subjects manpage for more information on seting up the initial subjects.
+
+You may have more than one "subject" field, eg. Subject and Department, with unrelated parts of the subject tree as their "top".
+
+A later version of eprints2 will have a feature which allows an admin user to limit an editor user to a certain subject (and things below it). So that in the above example you can declare an editor of either a Subject (capital-S) or a Department.
+
+=item pagerange
+
+A range of pages, eg 1-44. Currently not searchable.
+
+Stored in the database as a C<VARCHAR(255)>.
+
+=item datatype
+
+Required properties: datasetid
+
+Optional properties: input_rows, search_rows
+
+This field works like a set, but gets its options from the types of the dataset specified. 
+
+For example, if you specified the datasetid "user" then, unless you've changed the defaults, would give the options "user","editor" and "admin" - which are the types of user specified in B<metadata-types.xml>.
+
+Options are:
+
+=over 4
+
+=item I<user>
+
+The types of user.
+
+=item I<document>
+
+The types of document.
+
+=item I<eprint>
+
+The types of eprint.
+
+=item I<security>
+
+Security levels of a document (probably not very useful).
+
+=item I<language>
+
+All the languages specified in B<languages.xml>
+
+=item I<arclanguage>
+
+The languages supported by this archive. Configured in ArchiveConfig.pm.
+Stored in the database as a C<VARCHAR(255)>.
+
+=item langid
+
+This is used internally, it contains an ISO language ID. You probably don't want to use it. Stored as a CHAR(16).
+
+=item id
+
+This is also used internally, it contains the ID part of a field with the hasid property. Don't use it! Stored in the database as a C<VARCHAR(255)>.
+
+=back
+
+=item search (Since EPrints v2.1)
+
+Required properties: datasetid, fieldnames
+
+Optional properties: allow_set_order
+
+This type describes a stored search acting on the named dataset. The fields that can be searched are described by fieldnames. 
+
+This field type is quite unusual and you are not really expected to use it. It was created for use in the systems field of the Subscription dataset.
+
+This field is stored in MySQL as a C<TEXT> field.
+
+=back
+
+Field Properties:
+
+"status" indicates either "system" or "cosmetic" or "other". "system" properties cannot be changed without erasing and recreating your archive. "cosmetic" fields only effect the display of data and can be safely changed. "other" is explained in the description.
+
+=over 8
+
+=item name
+
+Status: system
+
+Required by: all
+
+Default: NO DEFAULT
+
+The name of the field. Strongly recommended to only be lowercase a-z only.
+
+=item type
+
+Status: system
+
+Required by: all
+
+Default: NO DEFAULT
+
+The type of field. One of the list described above.
+
+=item browse_link
+
+Status: cosmetic
+
+Optional on: all
+
+Default: undef
+
+This is the id of a "browse" view. This will hyperlink this value to the browse for that value when rendering it.
+
+=item confid 
+
+Status: cosmetic
+
+Internal use only. Sets the confid if a field is being created without a dataset. The confid is used as a fake dataset for generating phrase ids.
+
+=item datasetid
+
+Status: other
+
+Required by: datatype
+
+Default: NO DEFAULT
+
+Used to set which dataset's types are this fields options. 
+
+Changing this on a live system could cause some confusion, as values in the old dataset may exist.
+
+=item digits
+
+Status: cosmetic
+
+Optional on: int
+
+Default: 20
+
+Maximum number of digits for this number. 
+
+=item input_rows
+
+Status: cosmetic
+
+Optional on: longtext, set, subject, datatype
+
+Default: set in ArchiveConfig.pm
+
+The number of input rows in a text area, or options to display at once in a menu. Setting to 1 will make a pull down menu (unless this is a "multiple" field).
+
+=item search_cols
+
+Status: cosmetic
+
+Optional on: text, longtext, url, email, name, id
+
+Default: set in ArchiveConfig.pm
+
+The width of the search field. If searching multiple fields at once then the value is taken from the first field in the list.
+
+=item search_rows
+
+Status: cosmetic
+
+Optional on: datatype, set, subject
+
+Default: set in ArchiveConfig.pm
+
+The number of items to display in a search field list.  If searching multiple fields at once then the value is taken from the first field in the list.
+
+=item input_cols
+
+Status: cosmetic
+
+Optional on: text, longtext, url, email 
+
+Default: set in ArchiveConfig.pm
+
+The width of the input field.
+
+=item input_name_cols
+
+Status: cosmetic
+
+Optional on: name
+
+Default: set in ArchiveConfig.pm
+
+The width of the input fields of a "name" field. 
+
+=item input_id_cols
+
+Status: cosmetic
+
+Optional on: fields with "hasid" set.
+
+Sets the width of the ID input field on a field with an ID.
+
+Default: set in ArchiveConfig.pm
+
+=item input_add_boxes
+
+Status: cosmetic
+
+Optional on: fields with "multiple" or "multilang" set.
+
+Default: set in ArchiveConfig.pm
+
+How many boxes to add when the user hits the "more spaces" button.
+
+=item input_boxes
+
+Status: cosmetic
+
+Optional on: fields with "multiple" set.
+
+Default: set in ArchiveConfig.pm
+
+How many boxes to initially show on a multiple field.
+
+=item input_style
+
+Status: cosmetic
+
+Optional on: boolean
+
+Default: undef
+
+By default booleans render as a check box. These other formats look a bit clearer on the input field:
+
+=over 4
+
+=item menu
+
+Display as a pull-down menu. You will need to set the phrases
+I<dataset>_fieldopt_I<fieldname>_TRUE and
+I<dataset>_fieldopt_I<fieldname>_FALSE (where dataset & fieldname are the ids of the dataset and field). These are the menu options.
+
+=item radio
+
+Display as radio buttons (ones which deselect when you select another one). You will need to set the phrase I<dataset>_radio_I<fieldname>. This phrase should have two "pin" elements: true and false, which are the positions to place the radio buttons.
+
+=back
+
+=item input_assist
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+Add an internal button which reloads the page, with a "#" jump to make the page load at the current input field. The assist button does not do anything except cause the page to be reloaded. This is intended to work with the input_advice fields.
+
+=item input_advice_right
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+If defined this should be a function pointer which takes params ( $session, $field, $value )
+
+value is the current value of the field.
+
+The return value of this should be an XHTML chunk based on the value. This XHTML will appear to the right of the input fields for the value.
+
+This is intended to give useful advice, which as if the field is an int which is the eprintid of another eprint, this feature could render then name and a link to that eprint to appear next to the integer input box. 
+
+=item input_advice_below
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+As with input_advice_right, only the results appear below, not to the right. Both _right and _below may be used.
+
+=item fromform
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+A reference to a perl function which will process the value from the form before storing it. The function will be passed ($value, $session) where value is the value from the form and session is the current EPrints::Session. It should return the processed value.
+
+This could be used, for example, to turn a username "moj199" into a userid "312" for internal user. 
+
+=item toform
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+A reference to a perl function which will process the value just before it is displayed in the form. The function will be passed ($value, $session) where value is the value from the database and session is the current EPrints::Session. It should return the processed value.
+
+This could be used, for example, to turn a userid "312" being used internally by your systems into more human-friendly username "moj199".
+
+If you use toform then you should probably set fromform to change your values back again.
+
+=item maxlength
+
+Status: cosmetic
+
+Optional to: text, email, url, secret
+
+Default: 255
+
+The maximum length of the value.
+
+=item hasid
+
+Status: system
+
+Optional to: all
+
+Default: 0
+
+This adds an additional "ID" property to the field. This is most useful on a "name" field which is "multiple". It associates an additional value with the name, for example a username, or email address, which can be used to I<uniquely> identify that person. If you want to get an accurate list of all of someones papers then their name is NOT good enough.
+
+You might also wish to make a "publication" text field have an ID which is an optional ISSN, but it makes more sense in "multiple" fields.
+
+=item multilang
+
+Status: system
+
+Optional to: all (but silly for date, year, int, boolean)
+
+Default: 0
+
+If set this makes the field "multilingual". That is to say it can have more than one value, one value per language.
+
+For example, the "canadian stuff" archive may wish to make your title and abstract multilang so that authors can enter them in both french and english.
+
+This is more useful than having title_en and title_fr as eprints I<understands> it and can render the version of the field appropriate to the viewer (if they set a language preference).
+
+=item multiple
+
+Status: system
+
+Optional to: all (but silly for date, year, int, boolean)
+
+Default: 0
+
+If set this property makes the field a LIST rather than one value and handles rendering it as a list and inputing it. The input field will appear with a default of 3 inputs and a "more spaces" button which will reload the page with more if you need more than 3.
+
+This causes the field to be stored in a seperate SQL table.
+
+=item options 
+
+Status: other
+
+Required by: set
+
+Default: NO DEFAULT
+
+This should be a array of options. eg.
+
+ [ "blue", "green", "red" ]
+
+Removing options on a live system could leave invalid values floating around. Adding options is fine. Don't forget to add them to the phrase file too.
+
+=item required
+
+Status: system
+
+Optional to: all
+
+Default: 0
+
+This indicates that this field is I<always> required. It is not recommended to set this, but rather indicate requirednes of fields by type in the metadata-types.xml file.
+
+Either way you set it, required fields will cause the item they are in to fail to validate unless the field has a value.
+
+=item requiredlangs
+
+Status: other
+
+Optional to: fields with "multilang" property
+
+Default: []
+
+A list of languages which are required for this multilang field. eg. you can force an "en" (english) entry, while allowing them to optionally add others.
+
+eg. [ "en", "fr" ] 
+
+A list of codes can be found in languages.xml
+
+Adding more requiredlangs does not magically give you values for these languages in existing data.
+
+=item showall
+
+Status: cosmetic
+
+optional to: subjects
+
+Default: 0
+
+By default subjects are only shown if they are "depositable". This option makes all subjects, depositable or not, options.
+
+=item showtop
+
+Status: cosmetic
+
+optional to: subjects
+
+Default: 0
+
+If set then the topmost item in the subject is shown. Usually this is a container, eg. "subjects", and should remain hidden.
+
+=item top
+
+Status: cosmetic
+
+optional to: subjects
+
+Default: "subjects"
+
+Sets the top node in the tree. The options are all the children (and their children).
+
+=item idpart
+
+Used internally.
+
+=item mainpart
+
+Used internally.
+
+=item render_single_value
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+This overrides the rendering of a single item. In a multiple, multilang field it will be called on each value of the language to display. 
+
+This is a reference to a function which takes ( $session, $field, $value ) and
+returns a XHTML DOM fragment.
+
+Set this to \&EPrints::Latex::render_string to make eprints try and spot latex in this fields values and render it as images instead!
+
+(Since EPrints v2.1) Set this to \&EPrints::Utils::render_xhtml_field to make eprints read this field as XML and place that XML right in the XHTML web page. (Normally the system would escape all the greater-than and less-than characters.
+
+=item render_value
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+This is a reference to a function which will render the entire value of the field, overriding eprints own renderer. It should take as parameters: ( $session, $field, $value, $alllangs, $nolink )
+
+The function should return an XHTML DOM fragment.
+
+If $alllangs is set then the function should render all values on a multilang field, rather than just the "best" one.
+
+If $nolink is set then no HTML anchor links should be used, eg. to link a URL.
+
+=item render_opts (v2.3.0)
+
+Status: cosmetic
+
+Optional to: all
+
+Default: undef
+
+This allows you to specify certain minor tweaks in how this fields values are displayed without going to all the trouble of creating a custom render_value subroutine. 
+
+See the section on "Metadata Field Render Options" for details.
+
+=item export_as_xml
+
+Status: cosmetic
+
+Optional to: all
+
+Default: 1
+
+If this attribute is set to zero then this field will be ommitted from the output of the XML export script.
+
+=item make_value_orderkey
+
+Status: other
+
+Optional to: all
+
+Default: undef
+
+This may be a reference to a subroutine which returns a single string which can be used to alphabetically sort this string. It is used to order the results within the database. The function is passed the following parameters ( $field, $value, $session, $langid ). You may wish to sort certainly fields differently for different languages.
+
+For example - for some reason you may want a field formated with a single character then an integer ( a934 or b3 ) - If you sort this alphabetically then a2 would come after a11. So you make the orderkey function do something like:
+
+ $value =~ m/^(.)([0-9]+)$/;
+ return sprintf( "%s%08d", $1, $2 );
+
+This would turn a2 into a00000002 and a11 into a00000011 which will sort correctly alphabetically. Don't worry - these values are only ever used for sorting, they should never get output.
+
+You should probably use the bin/reindex command on the dataset in question (probably "archive" or "user" after adding or changing this property to a field. This may take a significant amount of time. 
+
+=item make_single_value_orderkey
+
+Status: other
+
+Optional to: all
+
+Default: undef
+
+This is a slightly more simple version of make_value_orderkey. It only takes ( $field, $value ) as parameters. It is only ever passed single values of $value and lets eprints takes care of multiple values (or multilang values) by calling the function once per value.
+
+As with make_value_orderkey you should reindex after meddling with orderkeys.
+
+=item fieldnames
+
+Status: cosmetic(ish)
+
+Required by: search
+
+Default: NO DEFAULT
+
+This should be a reference to an array of field names - exactly like the ones used in ArchiveConfig.pm to configure search, advanced search and subscriptions.
+
+Adding fields to this will cause no problem. Removing fields will mean that those fields are ignored when turning values of this field back into searches.
+
+=item can_clone (since v2.2)
+
+Status: changeable (but changes functionality)
+
+Default: 1
+
+If can_clone is set to zero then this field will not be cloned when the record is cloned. This may be useful for automaticly generated fields or fields with meaning such as "content has been spellchecked" or somesuch.
+
+=item sql_index (2.2)
+
+Status: system
+
+Default: 1
+
+If this field is set to zero then an SQL index will NOT be created for it. This means the field should never be used in a "value exactly matches" search as it may be very slow. MySQL has a limit of 32 indexes per table, which is why you should use this field if you go over that limit.
+
+=item id_editors_only (2.2)
+
+Status: cosmetic
+
+Default: 0
+
+Optional on: fields with "has_id" set.
+
+It means that the "id" part of the field only appears in the editor view, not the normal user submission form. Some archives may wish to do this to save confusing the person making the deposit.
+
+=item allow_set_order (2.2)
+
+Status: changeable (but changes functionality)
+
+Default: 1
+
+Optional on: search
+
+Prompt user for a search order in addition to the search fields.
+
+=item min_resolution (2.3.0)
+
+Status: changeable
+
+Default: day
+
+Optional on: date
+
+If this is set to "month" then the "day" part of date field will be made optional in the input form and validation.
+
+If this is set to "year" then both the "day" and "month" parts will be optional.
+
+This allows you to allow users to only enter "2003" if that's all they know, without preventing them give the exact date if relevant and known.
+
+=item hide_honourific (2.3.0)
+
+Status: changeable
+
+Default: 0
+
+Optional on: name
+
+If set to true (1) then the honourific field does not appear in the input form for this field.
+
+=item hide_lineage (2.3.0)
+
+Status: changeable
+
+Default: 0
+
+Optional on: name
+
+As for honourific.
+
+=item family_first (2.3.0)
+
+Status: changeable
+
+Default: 0
+
+Optional on: name
+
+If set to true (1) then the input form presents the "family" field before the "given" field. This seems to make librarians happy.
+
+=back
+
