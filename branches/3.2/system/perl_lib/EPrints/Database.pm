@@ -732,6 +732,32 @@ sub update_ticket_userid
 	]);
 }
 
+=item $ok = $db->lock_table(TABLE1 [, TABLE2 ...])
+
+Lock a table for writing, preventing any other processes from working on this table until L</unlock_table> is called on the tables.
+
+=cut
+
+sub lock_table
+{
+	my ($self, @tables) = @_;
+
+	return 1;
+}
+
+=item $ok = $db->unlock_table(TABLE1 [, TABLE2 ...])
+
+Unlock tables previously locked with L</lock_table>.
+
+=cut
+
+sub unlock_table
+{
+	my ($self, @tables) = @_;
+
+	return 1;
+}
+
 =item $type_info = $db->type_info( DATA_TYPE )
 
 See L<DBI/type_info>.
@@ -1613,22 +1639,20 @@ sub update
 	# Erase old, and insert new, values into aux-tables.
 	foreach my $multifield ( @aux )
 	{
-		my $auxtable = $dataset->get_sql_sub_table_name( $multifield );
-		if( !$insert )
+		my $values = $data->{$multifield->get_name()};
+
+		if( ref($values) ne "ARRAY" )
 		{
-			$rv &&= $self->delete_from( $auxtable, [$keyname], [$keyvalue] );
+			EPrints->abort( "Expected array reference for ".$multifield->get_name."\n".Data::Dumper::Dumper( $data ) );
 		}
 
-		my $values = $data->{$multifield->get_name()};
+		my $auxtable = $dataset->get_sql_sub_table_name( $multifield );
 
 		# skip if there are no values at all
 		if( !EPrints::Utils::is_set( $values ) )
 		{
+			$rv &&= $self->delete_from( $auxtable, [$keyname], [$keyvalue] );
 			next;
-		}
-		if( ref($values) ne "ARRAY" )
-		{
-			EPrints->abort( "Expected array reference for ".$multifield->get_name."\n".Data::Dumper::Dumper( $data ) );
 		}
 
 		my @names = ($keyname, "pos", $multifield->get_sql_names);
@@ -1644,7 +1668,15 @@ sub update
 			];
 		}
 
+		$self->lock_table($auxtable);
+
+		if( !$insert )
+		{
+			$rv &&= $self->delete_from( $auxtable, [$keyname], [$keyvalue] );
+		}
 		$rv &&= $self->insert( $auxtable, \@names, @rows );
+
+		$self->unlock_table($auxtable);
 	}
 
 	if( $insert )
