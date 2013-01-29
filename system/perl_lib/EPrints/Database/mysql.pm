@@ -574,6 +574,22 @@ sub index_name
 	return undef;
 }
 
+sub lock_table
+{
+	my ($self, @tables) = @_;
+
+	my $sql = "LOCK TABLES ".join(',', map { $self->quote_identifier($_) . " WRITE" } @tables);
+
+	return $self->do($sql);
+}
+
+sub unlock_table
+{
+	my ($self, @tables) = @_;
+
+	return $self->do("UNLOCK TABLES");
+}
+
 1; # For use/require success
 
 ######################################################################
