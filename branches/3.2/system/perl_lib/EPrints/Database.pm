@@ -1641,11 +1641,6 @@ sub update
 	{
 		my $values = $data->{$multifield->get_name()};
 
-		if( ref($values) ne "ARRAY" )
-		{
-			EPrints->abort( "Expected array reference for ".$multifield->get_name."\n".Data::Dumper::Dumper( $data ) );
-		}
-
 		my $auxtable = $dataset->get_sql_sub_table_name( $multifield );
 
 		# skip if there are no values at all
@@ -1653,6 +1648,11 @@ sub update
 		{
 			$rv &&= $self->delete_from( $auxtable, [$keyname], [$keyvalue] );
 			next;
+		}
+
+		if( ref($values) ne "ARRAY" )
+		{
+			EPrints->abort( "Expected array reference for ".$multifield->get_name."\n".Data::Dumper::Dumper( $values ) );
 		}
 
 		my @names = ($keyname, "pos", $multifield->get_sql_names);
