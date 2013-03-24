@@ -5,6 +5,7 @@ $c->{tweepository_exports_on_summary_page} = [qw(
 Export::TweetStream::CSV
 Export::TweetStream::HTML
 Export::TweetStream::JSON
+Export::TweetStream::GraphML
 Export::WordleLink
 )];
 

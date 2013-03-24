@@ -1,6 +1,7 @@
 $c->{plugins}{"Export::TweetStream::JSON"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::CSV"}{params}{disable} = 0;
 $c->{plugins}{"Export::TweetStream::HTML"}{params}{disable} = 0;
+$c->{plugins}{"Export::TweetStream::GraphML"}{params}{disable} = 0;
 $c->{plugins}{"Event::ExportTweetStreamPackage"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreams"}{params}{disable} = 0;
 $c->{plugins}{"Event::UpdateTweetStreamAbstracts"}{params}{disable} = 0;
