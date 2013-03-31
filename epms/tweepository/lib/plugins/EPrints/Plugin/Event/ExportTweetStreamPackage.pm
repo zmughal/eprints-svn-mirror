@@ -1,4 +1,4 @@
-package EPrints::Plugin::Event::ExportTweetStreamPackage;
+package EPrints::Plugin::Event::ExportTweetStreamPackage2;
 
 use EPrints::Plugin::Event::LockingEvent;
 @ISA = qw( EPrints::Plugin::Event::LockingEvent );
@@ -14,8 +14,8 @@ sub _initialise_constants
 	my ($self) = @_;
 
 	$self->{search_page_size} = 5000; #page size 
-	$self->{json_records_per_file} = 10000;
-	$self->{csv_rows_per_file} = 10000;
+	$self->{max_per_file}->{csv} = 10000;
+	$self->{max_per_file}->{json} = 10000;
 
 }
 
@@ -132,46 +132,192 @@ sub export_requested_tweetstreams
 	}
 }
 
+sub _generate_sql_query
+{
+	my ($self, $tsid, $high_twitterid) = @_;
+
+	my @parts;
+	push @parts, 'SELECT tweet.tweetid, tweet.twitterid';
+	push @parts, 'FROM tweet JOIN tweet_tweetstreams ON tweet.tweetid = tweet_tweetstreams.tweetid';
+	push @parts, "WHERE tweet_tweetstreams.tweetstreams = $tsid";
+	if ($high_twitterid)
+	{
+		push @parts, "AND tweet.twitterid > $high_twitterid";
+	}
+	push @parts, 'ORDER BY tweet.twitterid';
+	push @parts, 'LIMIT ' . $self->{search_page_size};
+
+	return join(' ',@parts);
+}
+
+sub create_fh
+{
+	my ($self, $type, $page) = @_;
+
+	if (!$self->{tmp_dir})
+	{
+		$self->{tmp_dir} = File::Temp->newdir( "ep-ts-export-tempXXXXX", TMPDIR => 1 );
+	}
+	my $base_dir = $self->{tmp_dir};
+
+	my $filename;
+	if ($type eq 'tweetstreamXML')
+	{
+		$filename = $base_dir . '/tweetstream.xml'; 
+	}
+	else
+	{
+		$filename = $base_dir . '/tweets' . sprintf("%04d",$page) . ".$type";
+	}
+
+	open (my $fh, ">:encoding(UTF-8)", $filename) or die "cannot open $filename for writing: $!";
+
+	return $fh;
+}
+
+sub initialise_file
+{
+	my ($self, $type) = @_;
+
+	my $fh = $self->{files}->{$type}->{filehandle};
+	if ($type eq 'csv')
+	{
+		my $ts = $self->{current_tweetstream};
+		print $fh EPrints::Plugin::Export::TweetStream::CSV::csv_headings($ts);	
+	}
+	elsif ($type eq 'json')
+	{
+		print $fh "{\n  \"tweets\": [\n"; 
+	}
+
+}
+
+sub close_file
+{
+	my ($self, $type) = @_;
+
+	my $fh = $self->{files}->{$type}->{filehandle};
+
+	if ($type eq 'json')
+	{
+		print $fh "\n  ]\n}"; 
+	}
+	close $fh;
+	$self->{files}->{$type}->{filehandle} = undef;
+
+}
+
+sub write_to_filehandle
+{
+	my ($self, $type, $data) = @_;
+
+	#close filehandle if we are about to write item n+1 to it
+	if
+	(
+		$self->{max_per_file}->{$type} && #if this type does paging
+		defined $self->{files}->{$type}->{count} && #if this type has been initialised (a bit of a hack)
+		$self->{files}->{$type}->{count} >= $self->{max_per_file}->{$type}
+	)
+	{
+		$self->close_file($type);
+	}
+
+	#create new file if we don't have a filehandle
+	if (!$self->{files}->{$type}->{filehandle})
+	{
+		$self->{files}->{$type}->{page}++;
+		$self->{files}->{$type}->{filehandle} = $self->create_fh($type, $self->{files}->{$type}->{page});
+		$self->{files}->{$type}->{count} = 0;
+		$self->initialise_file($type);
+	}
+
+	my $fh = $self->{files}->{$type}->{filehandle};
+
+	if ($type eq 'json' && !$self->{files}->{$type}->{count}) #if it's not the first json entry
+	{
+		print $fh ",\n"; #record separator
+	}
+
+	$self->{files}->{$type}->{count}++;
+	print $fh $data;
+}
+
+sub append_tweet_to_file
+{
+	my ($self, $tweet) = @_;
+
+	my $ts = $self->{current_tweetstream};
+	my $csv = EPrints::Plugin::Export::TweetStream::CSV::tweet_to_csvrow($tweet, $ts->csv_cols);
+	$self->write_to_filehandle('csv', $csv);
+
+	my $json = EPrints::Plugin::Export::TweetStream::JSON::tweet_to_json($tweet, 6, 0 );
+	$self->write_to_filehandle('json', $json);
+}
+
+sub write_tweetstream_metadata
+{
+	my ($self) = @_;
+	my $repo = $self->repository;
+
+	my $ts = $self->{current_tweetstream};
+
+	my $xml = $ts->to_xml;
+	my $fh = $self->create_fh('tweetstreamXML');
+#	binmode($fh, ":utf8");
+	print $fh $repo->xml->to_string($xml);
+	close $fh;
+
+}
+
+
+sub t
+{
+	my ($msg) = @_;
+	print STDERR scalar localtime time, $msg, "\n";
+}
+
 sub export_single_tweetstream
 {
 	my ($self, $ts) = @_;
 
+	$self->{current_tweetstream} = $ts;
+
 	my $repo = $self->repository;
+	my $db = $repo->database;
+	my $ds = $repo->dataset('tweet');
 	my $tsid = $ts->id;
 
-	my $tmp_dir = File::Temp->newdir( "ep-ts-export-explodeXXXXX", TMPDIR => 1 );
+	$self->write_tweetstream_metadata;
 
-	$self->extract_export_data($ts, $tmp_dir);
+t('about to run query');
 
-	my $final_dir = File::Temp->newdir( "ep-ts-export-implodeXXXXX", TMPDIR => 1 );
+	my $sth = $db->prepare($self->_generate_sql_query($tsid));
+	$db->execute($sth);
+t('query finished');
+	while ($sth->rows > 0)
+	{
+		my $highid;
+		while (my $row = $sth->fetchrow_hashref)
+		{
+			$highid = $row->{twitterid}; #they're coming out in ascending order
+	
+			my $tweet = $ds->dataobj($row->{tweetid});
 
+			$self->append_tweet_to_file($tweet);
 
-	$self->process_extracted_data($ts, $final_dir, $tmp_dir);
+		}
+t('about to run query');
+		$sth = $db->prepare($self->_generate_sql_query($tsid, $highid));
+		$db->execute($sth);
+t('query finished');
+	}
+	$self->close_file('csv');
+	$self->close_file('json');
 
 	my $final_filepath = $ts->export_package_filepath;
-	unlink $final_filepath if -e $final_filepath;
-	create_zip($final_dir, "tweetstream$tsid", $final_filepath );
+	unlink $final_filepath if -e $final_filepath; #if there's one already, delete it before creating the zip
+	create_zip($self->{tmp_dir}, "tweetstream$tsid", $final_filepath );
 }
-
-
-#the tweet data is spread across a temporary tree on the filesystem.
-#Collate this data.
-sub process_extracted_data
-{
-	my ($self, $ts, $dest_dir, $src_dir) = @_;
-	my $repo = $self->repository;
-
-	my $xml = $ts->to_xml;
-	open FILE, ">$dest_dir/tweetstream.xml" or die "couldn't open $dest_dir/tweetstream.xml for writing\n";
-	binmode(FILE, ":utf8");
-	print FILE $repo->xml->to_string($xml);
-	close FILE;
-
-	$self->traverse_source_tree($ts, $src_dir, $dest_dir);
-
-}
-
-
 
 
 sub create_zip
@@ -179,93 +325,9 @@ sub create_zip
 	my ($dir_to_zip, $dirname_in_zip, $zipfile) = @_;
 
 	my $z = Archive::Zip->new();
-
+print STDERR `ls -lh $dir_to_zip`;
 	$z->addTree($dir_to_zip, $dirname_in_zip);
 	$z->writeToFileNamed($zipfile);
-}
-
-
-
-sub process_file
-{
-	my ($self, $file, $filename, $data, $ts) = @_;
-
-	if ($filename eq 'csv')
-	{
-		$data->{csv_count}++;
-		if ($data->{csv_count} > $self->{csv_rows_per_file})
-		{
-			$data->{csv_page_no}++;
-			$data->{csv_count} = 1; #reinitialise to one because this line comes after the increment.
-			close $data->{csv_fh};
-			$data->{csv_fh} = $self->create_fh('csv', $data->{base_dir}, $data->{csv_page_no});
-			initialise_csv($data->{csv_fh}, $ts);
-		}
-		open FILE, $file or return; ##Again, I sould do exception handling
-		print {$data->{csv_fh}} <FILE>;
-	}
-	if ($filename eq 'json')
-	{
-		open FILE, $file or return; ##Again, I sould do exception handling
-
-		print {$data->{json_fh}} ",\n" if ($data->{json_count});
-		print {$data->{json_fh}} <FILE>;
-		$data->{json_count}++;
-
-		if ($data->{json_count} > $self->{json_records_per_file})
-		{
-			$data->{json_page_no}++;
-			$data->{json_count} = 0;
-
-			print {$data->{json_fh}} "\n  ]\n}";
-
-			close $data->{json_fh};
-			$data->{json_fh} = $self->create_fh('json', $data->{base_dir}, $data->{json_page_no});
-			initialise_json($data->{json_fh});
-		}
-	}
-
-}
-
-sub initialise_csv
-{
-	my ($fh, $ts) = @_;
-
-	print $fh EPrints::Plugin::Export::TweetStream::CSV::csv_headings($ts);	
-}
-
-sub initialise_json
-{
-	my ($fh) = @_;
-
-	print $fh "{\n  \"tweets\": [\n"; 
-}
-
-
-
-sub tweet_filepath
-{
-	my ($self, $tweet, $tmp_dir) = @_;
-
-	return $tmp_dir . '/' . $self->twitterid_to_pathfrag($tweet->value('twitterid'));
-}
-
-
-sub twitterid_to_pathfrag
-{
-	my ($self, $twitterid) = @_;
-
-	#Make the padding three or four digits longer just in case
-	my $len = length($twitterid);
-
-	$len += $len%3; #get it up to a multiple of 4
-	$len += 3; #in case of overflow
-
-	my $idstring = sprintf("%0${len}d",$twitterid);
-        $idstring =~ s#(...)#/$1#g;
-        substr($idstring,0,1) = '';
-
-	return $idstring;
 }
 
 
@@ -287,123 +349,6 @@ sub generate_log_string
 
 
 	return join("\n", @r);
-}
-
-sub process_tweet
-{
-	my ($self, $tweet, $ts, $tmp_dir) = @_;
-
-	my $path = $self->tweet_filepath($tweet, $tmp_dir);
-	make_path($path);
-
-	my $csv = EPrints::Plugin::Export::TweetStream::CSV::tweet_to_csvrow($tweet, $ts->csv_cols);
-	
-	open FILE, ">$path/csv" or die "couldn't open $path/csv for writing";
-	binmode(FILE, ":utf8");
-	print FILE $csv;
-	close FILE;
-
-	my $json = EPrints::Plugin::Export::TweetStream::JSON::tweet_to_json($tweet, 6, 0 ); 
-	
-	open FILE, ">$path/json" or die "couldn't open $path/json for writing";
-	binmode(FILE, ":utf8");
-	print FILE $json;
-	close FILE;
-
-}
-
-#Tweets are not ordered by twitterid, and we'd like them to be -- there are performance issues with ordering them in the database.
-#So, we'll run across the database and extract the data from each tweet and store it on the filesystem
-#then we'll aggregate all the filesystem data in order into the final files
-sub extract_export_data
-{
-	my ($self, $ts, $tmp_dir) = @_;
-	my $repo = $self->repository;
-	my $tweet_ds = $repo->dataset('tweet');
-
-	my $high_id = 0;
-
-	while (1)
-	{
-		$high_id++; #we've seen the item with high_id. let's not include it in our next search
-	        my $search = $tweet_ds->prepare_search(limit => $self->{search_page_size}, custom_order => 'tweetid' );
-	        $search->add_field($tweet_ds->get_field('tweetid'), $high_id . '-');
-	        $search->add_field($tweet_ds->get_field('tweetstreams'), $ts->id);
-	
-	        my $results = $search->perform_search;
-
-		last unless $results->count > 0;
-
-		$results->map(sub {
-			my ($repo, $ds, $tweet, $data) = @_;
-
-			my $tweetid = $tweet->id;
-			$high_id = $tweetid if $tweetid > $high_id;
-			$self->process_tweet($tweet, $ts, $tmp_dir);
-		});
-
-		$results->DESTROY;
-	}
-}
-
-sub create_fh
-{
-	my ($self, $type, $base_dir, $page) = @_;
-
-	my $filename = $base_dir . '/tweets' . sprintf("%04d",$page) . ".$type";
-	open(my $fh, ">", $filename) or die "cannot open $filename for writing: $!";
-
-	return $fh;
-}
-
-sub traverse_source_tree
-{
-	my ($self, $ts, $src_dir, $dest_dir) = @_;
-
-	my $data = {
-		csv_count => 0,
-		csv_page_no => 1,
-		json_count => 0,
-		json_page_no => 1,
-		base_dir => $dest_dir,
-	};
-	$data->{csv_fh} = $self->create_fh('csv', $dest_dir, $data->{csv_page_no});
-	$data->{json_fh} = $self->create_fh('json', $dest_dir, $data->{json_page_no});
-	initialise_csv($data->{csv_fh}, $ts);
-	initialise_json($data->{json_fh});
-
-	$self->process_dir($src_dir, $data, $ts);
-
-	#print the json file footer before closing the file
-	print {$data->{json_fh}} "\n  ]\n}";
-	close $data->{csv_fh};
-	close $data->{json_fh};
-
-}
-
-sub process_dir
-{
-	my ($self, $dir, $data, $ts) = @_;
-	$dir .= '/' unless $dir =~ m/\/$/;
-
-	opendir (my $dir_h, $dir) or return; ##This shouldn't happen!  May need exception handling.
-	my @contents = readdir($dir_h);
-
-	foreach my $filename (sort @contents)
-	{
-		next if $filename =~ m/^\./;
-		my $file = $dir . $filename;
-		if (-d $file)
-		{
-			$self->process_dir($file, $data, $ts)
-		}
-		else
-		{
-			$self->process_file($file, $filename, $data, $ts);
-		}
-	}
-	closedir $dir_h;
-
 }
 
 1;
