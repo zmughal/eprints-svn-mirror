@@ -10,7 +10,7 @@
 <tr valign = 'top'>
 <td>
     <h2>Tweets</h2>
-    <p>Below, in chronolical order are a few of the tweets in the stream.</p>
+    <p>Below, in chronological order are a few of the tweets in the stream.</p>
     <div style="margin-left: 3em">
       <epc:print expr="rendered_tweetlist"/> 
     </div>

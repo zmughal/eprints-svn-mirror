@@ -26,7 +26,7 @@
 <p>If you wish a more up-to-date package, please click below to generate one (which may take some time).</p>
  </epp:phrase>
     <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:package_absent"><p>No package exists for this Twitter feed.  Please click below to generate one.</p></epp:phrase>
-    <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:package_pending"><p>A package is currently being generated for this Twitter feed.  Please chack back later.</p></epp:phrase>
+    <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:package_pending"><p>A package is currently being generated for this Twitter feed.  Please check back later.</p></epp:phrase>
     <epp:phrase id="Plugin/Screen/RequestTweetStreamExport:export_queued">Your export has been queued.</epp:phrase>
 
 
