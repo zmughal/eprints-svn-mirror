@@ -1,4 +1,4 @@
-package EPrints::Plugin::Event::ExportTweetStreamPackage2;
+package EPrints::Plugin::Event::ExportTweetStreamPackage;
 
 use EPrints::Plugin::Event::LockingEvent;
 @ISA = qw( EPrints::Plugin::Event::LockingEvent );
@@ -289,11 +289,10 @@ sub export_single_tweetstream
 
 	$self->write_tweetstream_metadata;
 
-t('about to run query');
 
 	my $sth = $db->prepare($self->_generate_sql_query($tsid));
 	$db->execute($sth);
-t('query finished');
+
 	while ($sth->rows > 0)
 	{
 		my $highid;
@@ -306,10 +305,8 @@ t('query finished');
 			$self->append_tweet_to_file($tweet);
 
 		}
-t('about to run query');
 		$sth = $db->prepare($self->_generate_sql_query($tsid, $highid));
 		$db->execute($sth);
-t('query finished');
 	}
 	$self->close_file('csv');
 	$self->close_file('json');
@@ -325,7 +322,7 @@ sub create_zip
 	my ($dir_to_zip, $dirname_in_zip, $zipfile) = @_;
 
 	my $z = Archive::Zip->new();
-print STDERR `ls -lh $dir_to_zip`;
+
 	$z->addTree($dir_to_zip, $dirname_in_zip);
 	$z->writeToFileNamed($zipfile);
 }
