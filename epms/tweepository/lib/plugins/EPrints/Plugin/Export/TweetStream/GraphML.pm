@@ -27,22 +27,21 @@ sub output_dataobj
 	my $repository = $dataobj->repository;
 
 	#this is only for little sets of tweets
+	if
+	(
+		$dataobj->value('tweet_count') > $repository->config('tweepository_export_threshold')
+	)
 	{
-		if (
-			$dataobj->value('tweet_count') > $repository->config('tweepository_export_threshold')
-		)
+		my $msg =
+			"Disallowing GraphML export of Tweetstream " . $dataobj->id .
+			" with " . $dataobj->value('tweet_count') . " tweets ";
+		$repository->log($msg);
+		if( defined $opts{fh} )
 		{
-			my $msg =
-				"Disallowing GraphML export of Tweetstream " . $dataobj->id .
-				" with " . $dataobj->value('tweet_count') . " tweets ";
-			$repository->log($msg);
-			if( defined $opts{fh} )
-			{
-				print {$opts{fh}} $msg;
-				return;
-			}
-			return $msg;
+			print {$opts{fh}} $msg;
+			return;
 		}
+		return $msg;
 	}
 
 
