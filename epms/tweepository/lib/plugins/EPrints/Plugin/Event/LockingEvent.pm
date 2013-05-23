@@ -32,6 +32,7 @@ sub write_log
 
 	my $filename = $self->logfile;
 	open FILE, ">>$filename";
+	binmode FILE, ":utf8";
 
 	print FILE $self->generate_log_string, "\n\n";
 
